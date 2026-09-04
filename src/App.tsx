@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react';
+import { RosterBuilder } from './RosterBuilder.tsx';
 import snapshot from './data/playthrough-2024.json';
 import { EASTSIDE } from './domain/rules.ts';
 import { display } from './domain/scoring.ts';
@@ -68,18 +69,11 @@ function RoundDetail({ placing }: { placing: Placing }) {
   );
 }
 
-export function App() {
+function Standings() {
   const [open, setOpen] = useState<string | null>(null);
 
   return (
-    <div className="wrap">
-      <header>
-        <h1>Second Season</h1>
-        <p>
-          {snapshot.season} postseason · {PLACINGS.length} managers · byes {snapshot.byeTeams.join(', ')}
-        </p>
-      </header>
-
+    <>
       <div className="card scroll">
         <table>
           <thead>
@@ -126,6 +120,28 @@ export function App() {
       <p style={{ color: 'var(--dim)', fontSize: 13 }}>
         Tap a manager to see every round, and the multiplier behind each score.
       </p>
+    </>
+  );
+}
+
+export function App() {
+  const [tab, setTab] = useState<'team' | 'standings'>('team');
+
+  return (
+    <div className="wrap">
+      <header>
+        <h1>Second Season</h1>
+        <p>
+          {snapshot.season} postseason · {PLACINGS.length} managers · byes {snapshot.byeTeams.join(', ')}
+        </p>
+      </header>
+
+      <nav>
+        <button aria-current={tab === 'team'} onClick={() => setTab('team')}>My Team</button>
+        <button aria-current={tab === 'standings'} onClick={() => setTab('standings')}>Standings</button>
+      </nav>
+
+      {tab === 'team' ? <RosterBuilder /> : <Standings />}
     </div>
   );
 }

@@ -164,6 +164,15 @@ const snapshot = {
     }),
   ),
   placings,
+  // The whole eligible field, so the roster builder has real people to choose between rather than
+  // the handful these five managers happened to pick.
+  pool: pool
+    .filter((p) => p.form > 0.5)
+    .sort((a, b) => b.form - a.form)
+    .map((p) => ({ id: p.id, name: p.name, team: p.team, position: p.position, form: Math.round(p.form * 10) / 10 })),
+  // One manager's Wild Card roster, so the builder can open on the Divisional round with survivors
+  // carried over and eliminated men needing replacing — which is the screen doing its real work.
+  seedRoster: histories.get('Chalk')![0],
 };
 mkdirSync('src/data', { recursive: true });
 writeFileSync('src/data/playthrough-2024.json', JSON.stringify(snapshot, null, 2));
