@@ -91,6 +91,30 @@ export interface Scoring {
 }
 
 /**
+ * How a dead heat is broken, tried in order until one of them separates the two.
+ *
+ * A list rather than fixed logic because leagues care about this far more than the length of it
+ * suggests, and because a five manager playthrough of the 2024 postseason produced an exact tie —
+ * two managers who drafted the same team finished on the same number. It will happen.
+ *
+ * 'prediction' compares a guess at the total points scored in the Super Bowl, collected before the
+ * contest locks. An entry without one loses that step rather than winning it by default.
+ */
+export type Tiebreaker =
+  | { kind: 'roundScore'; round: number }
+  | { kind: 'rawPoints' }
+  | { kind: 'prediction' }
+  | { kind: 'commissioner' };
+
+export const EASTSIDE_TIEBREAKERS: readonly Tiebreaker[] = [
+  { kind: 'roundScore', round: 3 },
+  { kind: 'roundScore', round: 2 },
+  { kind: 'rawPoints' },
+  { kind: 'prediction' },
+  { kind: 'commissioner' },
+];
+
+/**
  * What a player on a resting team is worth during Wild Card weekend.
  *
  * 'keep-streak' is the original game: he scores nothing, but the round still counts towards his
@@ -103,6 +127,7 @@ export interface ContestSettings {
   scoring: Scoring;
   slots: readonly Slot[];
   byeRule: ByeRule;
+  tiebreakers: readonly Tiebreaker[];
   /** How many decimals are shown. What is stored never loses precision. */
   displayDecimals: number;
 }
@@ -145,5 +170,6 @@ export const EASTSIDE: ContestSettings = {
   scoring: EASTSIDE_SCORING,
   slots: EASTSIDE_SLOTS,
   byeRule: 'keep-streak',
+  tiebreakers: EASTSIDE_TIEBREAKERS,
   displayDecimals: 2,
 };
