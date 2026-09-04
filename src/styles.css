@@ -1,0 +1,98 @@
+/* A postseason table, meant to be read across a room as well as on a phone. */
+:root {
+  --ink: #e8ecf6;
+  --dim: #93a0bd;
+  --ground: #0b1020;
+  --panel: #151c30;
+  --line: #253049;
+  --live: #4ade80;
+  --gone: #f87171;
+  --gold: #fbbf24;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+.wrap { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+
+header h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: -0.01em; }
+header p { margin: 0 0 20px; color: var(--dim); font-size: 13px; }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px 12px; text-align: right; white-space: nowrap; }
+th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  border-bottom: 1px solid var(--line);
+  font-weight: 600;
+}
+tbody tr { border-bottom: 1px solid var(--line); cursor: pointer; }
+tbody tr:last-child { border-bottom: 0; }
+tbody tr:hover { background: #1b2340; }
+tbody tr[aria-expanded='true'] { background: #1b2340; }
+
+.rank { color: var(--dim); font-variant-numeric: tabular-nums; width: 34px; }
+.total { font-weight: 700; font-variant-numeric: tabular-nums; }
+td { font-variant-numeric: tabular-nums; }
+.leader .total { color: var(--gold); }
+
+.tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--dim);
+  vertical-align: 1px;
+}
+
+/* Multipliers must be legible without relying on colour alone, so each carries its own number. */
+.mult {
+  display: inline-block;
+  min-width: 26px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  border: 1px solid var(--line);
+}
+.mult-1 { color: var(--dim); }
+.mult-2 { color: #93c5fd; border-color: #2b4a7a; }
+.mult-3 { color: #c4b5fd; border-color: #4c3f8a; }
+.mult-4 { color: #0b1020; background: var(--gold); border-color: var(--gold); }
+
+.detail { background: #101728; padding: 4px 12px 12px; }
+.detail h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--dim); margin: 14px 0 6px; }
+.line { display: grid; grid-template-columns: 52px 1fr 44px 40px 1fr; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px solid #1c2540; }
+.line:last-child { border-bottom: 0; }
+.slot { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.team { font-size: 12px; color: var(--dim); }
+.math { text-align: right; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--dim); }
+.math b { color: var(--ink); }
+.zero { color: var(--gone); }
+
+.scroll { overflow-x: auto; }
+@media (max-width: 620px) {
+  .line { grid-template-columns: 44px 1fr 40px; }
+  .line .team, .line .mult { display: none; }
+}

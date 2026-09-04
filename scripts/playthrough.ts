@@ -12,8 +12,9 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { EASTSIDE } from '../src/domain/rules.ts';
 import { display, rawPoints } from '../src/domain/scoring.ts';
-import { creditedPoints, standingsFor } from '../src/domain/multiplier.ts';
-import type { HeldPlayer, RoundRoster } from '../src/domain/multiplier.ts';
+import { table } from '../src/domain/standings.ts';
+import type { Entry } from '../src/domain/standings.ts';
+import type { HeldPlayer } from '../src/domain/multiplier.ts';
 import { directory, seasonTotals, stats, teamsPlaying } from '../src/providers/sleeper.ts';
 import type { SleeperPlayer } from '../src/providers/sleeper.ts';
 import type { StatLine } from '../src/domain/scoring.ts';
@@ -103,48 +104,67 @@ console.log(`\n${SEASON} postseason — ${field.size} teams, ${pool.length} rost
 console.log(`Byes: ${[...byeTeams].join(', ')}`);
 alive.forEach((teams, index) => console.log(`  ${ROUND_NAMES[index]!.padEnd(12)} ${[...teams].sort().join(' ')}`));
 
-const histories = new Map<string, RoundRoster[]>(MANAGERS.map((m) => [m.name, []]));
-const totalsByManager = new Map<string, number>(MANAGERS.map((m) => [m.name, 0]));
-const byRound = new Map<string, number[]>(MANAGERS.map((m) => [m.name, []]));
+// Rosters are carried forward round by round, patched only where a club went out. Building the
+// whole history first means the contest is scored by the same table() the app renders.
+const histories = new Map<string, HeldPlayer[][]>(MANAGERS.map((m) => [m.name, []]));
 
 for (let round = 0; round < 4; round += 1) {
-  const playing = alive[round]!;
-
+    const playing = alive[round]!;
+  // A resting club is eligible in Wild Card even though it does not play: that is the bye rule, and
+  // excluding them would quietly make it untestable.
+  const eligible = round === 0 ? field : playing;
   for (const manager of MANAGERS) {
     const history = histories.get(manager.name)!;
-    const previous = history[round - 1] ?? [];
-    // Anyone whose club is out is dropped; everyone else carries over untouched.
-    const survivors = previous.filter((held) => {
+    const survivors = (history[round - 1] ?? []).filter((held) => {
       const team = pool.find((p) => p.id === held.playerId)?.team;
       return team && playing.has(team);
     });
-    history.push(pickRoster(manager, pool, playing, round === 0 ? byeTeams : new Set(), survivors));
-
-    let scored = 0;
-    for (const standing of standingsFor(history, round, EASTSIDE)) {
-      const raw = rawPoints(standing.position, rounds[round]![standing.playerId]);
-      scored += creditedPoints(raw, standing.multiplier);
-    }
-    byRound.get(manager.name)!.push(scored);
-    totalsByManager.set(manager.name, totalsByManager.get(manager.name)! + scored);
+    history.push(pickRoster(manager, pool, eligible, round === 0 ? byeTeams : new Set(), survivors));
   }
 }
 
+const entries: Entry[] = MANAGERS.map((manager, index) => ({
+  entryId: manager.name,
+  name: manager.name,
+  history: histories.get(manager.name)!,
+  // Super Bowl LIX finished 40-22. Guesses either side of it, to exercise the tiebreaker.
+  prediction: [44, 51, 62, 47, 55][index],
+}));
+
+const placings = table(entries, { statsByRound: rounds, superBowlTotal: 62 }, EASTSIDE);
+
 console.log(`\n${'Manager'.padEnd(14)}${ROUND_NAMES.map((n) => n.padStart(12)).join('')}${'TOTAL'.padStart(12)}`);
-const table = [...totalsByManager.entries()].sort((a, b) => b[1] - a[1]);
-for (const [name, total] of table) {
-  const cells = byRound.get(name)!.map((points) => display(points, EASTSIDE).toFixed(1).padStart(12)).join('');
-  console.log(`${name.padEnd(14)}${cells}${display(total, EASTSIDE).toFixed(1).padStart(12)}`);
+for (const placing of placings) {
+  const cells = placing.rounds.map((round) => display(round.credited).toFixed(1).padStart(12)).join('');
+  console.log(`${placing.name.padEnd(14)}${cells}${display(placing.credited).toFixed(1).padStart(12)}`);
 }
 
-const [champion] = table[0]!;
-console.log(`\n${champion} in the Super Bowl round:`);
-const finalRoster = standingsFor(histories.get(champion)!, 3, EASTSIDE);
-for (const standing of finalRoster.sort((a, b) => b.multiplier - a.multiplier)) {
-  const who = pool.find((p) => p.id === standing.playerId)!;
-  const raw = rawPoints(standing.position, rounds[3]![standing.playerId]);
+const champion = placings[0]!;
+console.log(`\n${champion.name} in the Super Bowl round:`);
+for (const player of [...champion.rounds[3]!.players].sort((a, b) => b.multiplier - a.multiplier)) {
+  const who = pool.find((p) => p.id === player.playerId)!;
   console.log(
-    `  ${standing.slot.padEnd(5)} ${who.name.padEnd(22)} ${(who.team ?? '').padEnd(4)}` +
-      `${standing.multiplier}x  ${display(raw).toFixed(1).padStart(6)} raw  ->${display(creditedPoints(raw, standing.multiplier)).toFixed(1).padStart(7)}`,
+    `  ${player.slot.padEnd(5)} ${who.name.padEnd(22)} ${(who.team ?? '').padEnd(4)}${player.multiplier}x  ` +
+      `${display(player.raw).toFixed(1).padStart(6)} raw  ->${display(player.credited).toFixed(1).padStart(7)}`,
   );
 }
+
+// A snapshot the app can render without a network or a cache, so the screens have real data from
+// the first commit rather than something invented to look plausible.
+const rostered = new Set(placings.flatMap((p) => p.rounds.flatMap((r) => r.players.map((x) => x.playerId))));
+const snapshot = {
+  season: SEASON,
+  roundNames: ROUND_NAMES,
+  byeTeams: [...byeTeams],
+  teamsByRound: alive.map((teams) => [...teams].sort()),
+  players: Object.fromEntries(
+    [...rostered].map((id) => {
+      const who = pool.find((p) => p.id === id)!;
+      return [id, { name: who.name, team: who.team, position: who.position }];
+    }),
+  ),
+  placings,
+};
+mkdirSync('src/data', { recursive: true });
+writeFileSync('src/data/playthrough-2024.json', JSON.stringify(snapshot, null, 2));
+console.log(`\nWrote src/data/playthrough-2024.json (${rostered.size} players)`);

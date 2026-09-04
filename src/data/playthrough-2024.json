@@ -1,0 +1,2103 @@
+{
+  "season": 2024,
+  "roundNames": [
+    "Wild Card",
+    "Divisional",
+    "Conference",
+    "Super Bowl"
+  ],
+  "byeTeams": [
+    "DET",
+    "KC"
+  ],
+  "teamsByRound": [
+    [
+      "BAL",
+      "BUF",
+      "DEN",
+      "GB",
+      "HOU",
+      "LAC",
+      "LAR",
+      "MIN",
+      "PHI",
+      "PIT",
+      "TB",
+      "WAS"
+    ],
+    [
+      "BAL",
+      "BUF",
+      "DET",
+      "HOU",
+      "KC",
+      "LAR",
+      "PHI",
+      "WAS"
+    ],
+    [
+      "BUF",
+      "KC",
+      "PHI",
+      "WAS"
+    ],
+    [
+      "KC",
+      "PHI"
+    ]
+  ],
+  "players": {
+    "1466": {
+      "name": "Travis Kelce",
+      "team": "KC",
+      "position": "TE"
+    },
+    "1945": {
+      "name": "Chris Boswell",
+      "team": "PIT",
+      "position": "K"
+    },
+    "3198": {
+      "name": "Derrick Henry",
+      "team": "BAL",
+      "position": "RB"
+    },
+    "3451": {
+      "name": "Ka'imi Fairbairn",
+      "team": "HOU",
+      "position": "K"
+    },
+    "4033": {
+      "name": "David Njoku",
+      "team": "LAC",
+      "position": "TE"
+    },
+    "4037": {
+      "name": "Chris Godwin",
+      "team": "TB",
+      "position": "WR"
+    },
+    "4046": {
+      "name": "Patrick Mahomes",
+      "team": "KC",
+      "position": "QB"
+    },
+    "4195": {
+      "name": "Jake Elliott",
+      "team": "PHI",
+      "position": "K"
+    },
+    "4227": {
+      "name": "Harrison Butker",
+      "team": "KC",
+      "position": "K"
+    },
+    "4866": {
+      "name": "Saquon Barkley",
+      "team": "PHI",
+      "position": "RB"
+    },
+    "4881": {
+      "name": "Lamar Jackson",
+      "team": "BAL",
+      "position": "QB"
+    },
+    "4984": {
+      "name": "Josh Allen",
+      "team": "BUF",
+      "position": "QB"
+    },
+    "5012": {
+      "name": "Mark Andrews",
+      "team": "BAL",
+      "position": "TE"
+    },
+    "5927": {
+      "name": "Terry McLaurin",
+      "team": "WAS",
+      "position": "WR"
+    },
+    "6794": {
+      "name": "Justin Jefferson",
+      "team": "MIN",
+      "position": "WR"
+    },
+    "6904": {
+      "name": "Jalen Hurts",
+      "team": "PHI",
+      "position": "QB"
+    },
+    "7042": {
+      "name": "Tyler Bass",
+      "team": "BUF",
+      "position": "K"
+    },
+    "7525": {
+      "name": "DeVonta Smith",
+      "team": "PHI",
+      "position": "WR"
+    },
+    "7547": {
+      "name": "Amon-Ra St. Brown",
+      "team": "DET",
+      "position": "WR"
+    },
+    "7569": {
+      "name": "Nico Collins",
+      "team": "HOU",
+      "position": "WR"
+    },
+    "8138": {
+      "name": "James Cook",
+      "team": "BUF",
+      "position": "RB"
+    },
+    "8151": {
+      "name": "Kenneth Walker",
+      "team": "KC",
+      "position": "RB"
+    },
+    "9221": {
+      "name": "Jahmyr Gibbs",
+      "team": "DET",
+      "position": "RB"
+    },
+    "9225": {
+      "name": "Tank Bigsby",
+      "team": "PHI",
+      "position": "RB"
+    },
+    "9493": {
+      "name": "Puka Nacua",
+      "team": "LAR",
+      "position": "WR"
+    },
+    "9997": {
+      "name": "Zay Flowers",
+      "team": "BAL",
+      "position": "WR"
+    },
+    "10229": {
+      "name": "Rashee Rice",
+      "team": "KC",
+      "position": "WR"
+    },
+    "10937": {
+      "name": "Jake Moody",
+      "team": "BAL",
+      "position": "K"
+    },
+    "11539": {
+      "name": "Jake Bates",
+      "team": "DET",
+      "position": "K"
+    },
+    "11624": {
+      "name": "Xavier Worthy",
+      "team": "KC",
+      "position": "WR"
+    },
+    "KC": {
+      "name": "Chiefs",
+      "team": "KC",
+      "position": "DEF"
+    },
+    "DEN": {
+      "name": "Broncos",
+      "team": "DEN",
+      "position": "DEF"
+    },
+    "HOU": {
+      "name": "Texans",
+      "team": "HOU",
+      "position": "DEF"
+    },
+    "BUF": {
+      "name": "Bills",
+      "team": "BUF",
+      "position": "DEF"
+    },
+    "PHI": {
+      "name": "Eagles",
+      "team": "PHI",
+      "position": "DEF"
+    },
+    "DET": {
+      "name": "Lions",
+      "team": "DET",
+      "position": "DEF"
+    },
+    "BAL": {
+      "name": "Ravens",
+      "team": "BAL",
+      "position": "DEF"
+    },
+    "WAS": {
+      "name": "Commanders",
+      "team": "WAS",
+      "position": "DEF"
+    }
+  },
+  "placings": [
+    {
+      "entryId": "Chiefs Stack",
+      "name": "Chiefs Stack",
+      "rounds": [
+        {
+          "round": 0,
+          "raw": 41.400000000000006,
+          "credited": 41.400000000000006,
+          "players": [
+            {
+              "playerId": "4881",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 27.1,
+              "credited": 27.1
+            },
+            {
+              "playerId": "8151",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 14.3,
+              "credited": 14.3
+            },
+            {
+              "playerId": "10229",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "4037",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "9221",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "4227",
+              "position": "K",
+              "slot": "K",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "KC",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            }
+          ]
+        },
+        {
+          "round": 1,
+          "raw": 164.84,
+          "credited": 320.98,
+          "players": [
+            {
+              "playerId": "4881",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 22.06,
+              "credited": 44.12
+            },
+            {
+              "playerId": "8151",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 39.2,
+              "credited": 78.4
+            },
+            {
+              "playerId": "10229",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 24.7,
+              "credited": 49.4
+            },
+            {
+              "playerId": "9221",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 35.5,
+              "credited": 71
+            },
+            {
+              "playerId": "4227",
+              "position": "K",
+              "slot": "K",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 11,
+              "credited": 22
+            },
+            {
+              "playerId": "KC",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 23.68,
+              "credited": 47.36
+            },
+            {
+              "playerId": "11624",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 8.7,
+              "credited": 8.7
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "raw": 133.62,
+          "credited": 257.76,
+          "players": [
+            {
+              "playerId": "8151",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 31.2,
+              "credited": 93.6
+            },
+            {
+              "playerId": "10229",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 3.9,
+              "credited": 11.7
+            },
+            {
+              "playerId": "4227",
+              "position": "K",
+              "slot": "K",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 6,
+              "credited": 18
+            },
+            {
+              "playerId": "KC",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 9.92,
+              "credited": 29.759999999999998
+            },
+            {
+              "playerId": "11624",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 22.1,
+              "credited": 44.2
+            },
+            {
+              "playerId": "4046",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 32.1,
+              "credited": 32.1
+            },
+            {
+              "playerId": "8138",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 28.4,
+              "credited": 28.4
+            }
+          ]
+        },
+        {
+          "round": 3,
+          "raw": 114.54000000000002,
+          "credited": 314.2,
+          "players": [
+            {
+              "playerId": "8151",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 4,
+              "multiplier": 4,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 4,
+              "multiplier": 4,
+              "retained": true,
+              "raw": 15.7,
+              "credited": 62.8
+            },
+            {
+              "playerId": "10229",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 4,
+              "multiplier": 4,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 4,
+              "multiplier": 4,
+              "retained": true,
+              "raw": 7.9,
+              "credited": 31.6
+            },
+            {
+              "playerId": "4227",
+              "position": "K",
+              "slot": "K",
+              "streak": 4,
+              "multiplier": 4,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "KC",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 4,
+              "multiplier": 4,
+              "retained": true,
+              "raw": 9.56,
+              "credited": 38.24
+            },
+            {
+              "playerId": "11624",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 35.7,
+              "credited": 107.10000000000001
+            },
+            {
+              "playerId": "4046",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 28.78,
+              "credited": 57.56
+            },
+            {
+              "playerId": "7525",
+              "position": "WR",
+              "slot": "FLEX",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 16.9,
+              "credited": 16.9
+            }
+          ]
+        }
+      ],
+      "raw": 454.40000000000003,
+      "credited": 934.3399999999999,
+      "rank": 1,
+      "decidedBy": null
+    },
+    {
+      "entryId": "Chalk",
+      "name": "Chalk",
+      "rounds": [
+        {
+          "round": 0,
+          "raw": 88.74000000000001,
+          "credited": 88.74000000000001,
+          "players": [
+            {
+              "playerId": "4881",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 27.1,
+              "credited": 27.1
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 14.3,
+              "credited": 14.3
+            },
+            {
+              "playerId": "9221",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "4037",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "9493",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 10.100000000000001,
+              "credited": 10.100000000000001
+            },
+            {
+              "playerId": "4033",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "3198",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 30.6,
+              "credited": 30.6
+            },
+            {
+              "playerId": "1945",
+              "position": "K",
+              "slot": "K",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 2,
+              "credited": 2
+            },
+            {
+              "playerId": "DEN",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 4.64,
+              "credited": 4.64
+            }
+          ]
+        },
+        {
+          "round": 1,
+          "raw": 190.94,
+          "credited": 317.8,
+          "players": [
+            {
+              "playerId": "4881",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 22.06,
+              "credited": 44.12
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 39.2,
+              "credited": 78.4
+            },
+            {
+              "playerId": "9221",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 35.5,
+              "credited": 71
+            },
+            {
+              "playerId": "9493",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 15.7,
+              "credited": 31.4
+            },
+            {
+              "playerId": "3198",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 14.4,
+              "credited": 28.8
+            },
+            {
+              "playerId": "7547",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 21.7,
+              "credited": 21.7
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 24.7,
+              "credited": 24.7
+            },
+            {
+              "playerId": "3451",
+              "position": "K",
+              "slot": "K",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 7,
+              "credited": 7
+            },
+            {
+              "playerId": "HOU",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 10.68,
+              "credited": 10.68
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "raw": 117.33999999999999,
+          "credited": 183.64,
+          "players": [
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 31.2,
+              "credited": 93.6
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 3.9,
+              "credited": 7.8
+            },
+            {
+              "playerId": "4984",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 25.38,
+              "credited": 25.38
+            },
+            {
+              "playerId": "8138",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 28.4,
+              "credited": 28.4
+            },
+            {
+              "playerId": "10229",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "5927",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 14.1,
+              "credited": 14.1
+            },
+            {
+              "playerId": "8151",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "7042",
+              "position": "K",
+              "slot": "K",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 7,
+              "credited": 7
+            },
+            {
+              "playerId": "BUF",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 7.36,
+              "credited": 7.36
+            }
+          ]
+        },
+        {
+          "round": 3,
+          "raw": 118.61999999999999,
+          "credited": 181.51999999999998,
+          "players": [
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 4,
+              "multiplier": 4,
+              "retained": true,
+              "raw": 15.7,
+              "credited": 62.8
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 7.9,
+              "credited": 23.700000000000003
+            },
+            {
+              "playerId": "10229",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "8151",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "6904",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 32.04,
+              "credited": 32.04
+            },
+            {
+              "playerId": "9225",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "7525",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 16.9,
+              "credited": 16.9
+            },
+            {
+              "playerId": "4195",
+              "position": "K",
+              "slot": "K",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 20,
+              "credited": 20
+            },
+            {
+              "playerId": "PHI",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 26.08,
+              "credited": 26.08
+            }
+          ]
+        }
+      ],
+      "raw": 515.64,
+      "credited": 771.7,
+      "rank": 2,
+      "decidedBy": null
+    },
+    {
+      "entryId": "Bye Hunter",
+      "name": "Bye Hunter",
+      "rounds": [
+        {
+          "round": 0,
+          "raw": 41.400000000000006,
+          "credited": 41.400000000000006,
+          "players": [
+            {
+              "playerId": "4881",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 27.1,
+              "credited": 27.1
+            },
+            {
+              "playerId": "9221",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "8151",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "7547",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "10229",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 14.3,
+              "credited": 14.3
+            },
+            {
+              "playerId": "11539",
+              "position": "K",
+              "slot": "K",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "DET",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            }
+          ]
+        },
+        {
+          "round": 1,
+          "raw": 154.72000000000003,
+          "credited": 309.44000000000005,
+          "players": [
+            {
+              "playerId": "4881",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 22.06,
+              "credited": 44.12
+            },
+            {
+              "playerId": "9221",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 35.5,
+              "credited": 71
+            },
+            {
+              "playerId": "8151",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "7547",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 21.7,
+              "credited": 43.4
+            },
+            {
+              "playerId": "10229",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 24.7,
+              "credited": 49.4
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 39.2,
+              "credited": 78.4
+            },
+            {
+              "playerId": "11539",
+              "position": "K",
+              "slot": "K",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 7,
+              "credited": 14
+            },
+            {
+              "playerId": "DET",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 4.56,
+              "credited": 9.12
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "raw": 117.33999999999999,
+          "credited": 187.54000000000002,
+          "players": [
+            {
+              "playerId": "8151",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "10229",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 3.9,
+              "credited": 11.7
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 31.2,
+              "credited": 93.6
+            },
+            {
+              "playerId": "4984",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 25.38,
+              "credited": 25.38
+            },
+            {
+              "playerId": "8138",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 28.4,
+              "credited": 28.4
+            },
+            {
+              "playerId": "5927",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 14.1,
+              "credited": 14.1
+            },
+            {
+              "playerId": "7042",
+              "position": "K",
+              "slot": "K",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 7,
+              "credited": 7
+            },
+            {
+              "playerId": "BUF",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 7.36,
+              "credited": 7.36
+            }
+          ]
+        },
+        {
+          "round": 3,
+          "raw": 118.61999999999999,
+          "credited": 189.42000000000002,
+          "players": [
+            {
+              "playerId": "8151",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 4,
+              "multiplier": 4,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "10229",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 4,
+              "multiplier": 4,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 4,
+              "multiplier": 4,
+              "retained": true,
+              "raw": 7.9,
+              "credited": 31.6
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 4,
+              "multiplier": 4,
+              "retained": true,
+              "raw": 15.7,
+              "credited": 62.8
+            },
+            {
+              "playerId": "6904",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 32.04,
+              "credited": 32.04
+            },
+            {
+              "playerId": "9225",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "7525",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 16.9,
+              "credited": 16.9
+            },
+            {
+              "playerId": "4195",
+              "position": "K",
+              "slot": "K",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 20,
+              "credited": 20
+            },
+            {
+              "playerId": "PHI",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 26.08,
+              "credited": 26.08
+            }
+          ]
+        }
+      ],
+      "raw": 432.08000000000004,
+      "credited": 727.8000000000002,
+      "rank": 3,
+      "decidedBy": null
+    },
+    {
+      "entryId": "Ravens Stack",
+      "name": "Ravens Stack",
+      "rounds": [
+        {
+          "round": 0,
+          "raw": 85.36,
+          "credited": 85.36,
+          "players": [
+            {
+              "playerId": "4881",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 27.1,
+              "credited": 27.1
+            },
+            {
+              "playerId": "3198",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 30.6,
+              "credited": 30.6
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 14.3,
+              "credited": 14.3
+            },
+            {
+              "playerId": "9997",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "4037",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "5012",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 5.2,
+              "credited": 5.2
+            },
+            {
+              "playerId": "9221",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "10937",
+              "position": "K",
+              "slot": "K",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "BAL",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 8.16,
+              "credited": 8.16
+            }
+          ]
+        },
+        {
+          "round": 1,
+          "raw": 144.26,
+          "credited": 272.82,
+          "players": [
+            {
+              "playerId": "4881",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 22.06,
+              "credited": 44.12
+            },
+            {
+              "playerId": "3198",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 14.4,
+              "credited": 28.8
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 39.2,
+              "credited": 78.4
+            },
+            {
+              "playerId": "9997",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "5012",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 9.399999999999999,
+              "credited": 18.799999999999997
+            },
+            {
+              "playerId": "9221",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 35.5,
+              "credited": 71
+            },
+            {
+              "playerId": "10937",
+              "position": "K",
+              "slot": "K",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "BAL",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 8,
+              "credited": 16
+            },
+            {
+              "playerId": "9493",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 15.7,
+              "credited": 15.7
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "raw": 117.33999999999999,
+          "credited": 179.74,
+          "players": [
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 31.2,
+              "credited": 93.6
+            },
+            {
+              "playerId": "4984",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 25.38,
+              "credited": 25.38
+            },
+            {
+              "playerId": "8138",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 28.4,
+              "credited": 28.4
+            },
+            {
+              "playerId": "10229",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "5927",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 14.1,
+              "credited": 14.1
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 3.9,
+              "credited": 3.9
+            },
+            {
+              "playerId": "8151",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "7042",
+              "position": "K",
+              "slot": "K",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 7,
+              "credited": 7
+            },
+            {
+              "playerId": "BUF",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 7.36,
+              "credited": 7.36
+            }
+          ]
+        },
+        {
+          "round": 3,
+          "raw": 118.61999999999999,
+          "credited": 173.62,
+          "players": [
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 4,
+              "multiplier": 4,
+              "retained": true,
+              "raw": 15.7,
+              "credited": 62.8
+            },
+            {
+              "playerId": "10229",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 7.9,
+              "credited": 15.8
+            },
+            {
+              "playerId": "8151",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "6904",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 32.04,
+              "credited": 32.04
+            },
+            {
+              "playerId": "9225",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "7525",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 16.9,
+              "credited": 16.9
+            },
+            {
+              "playerId": "4195",
+              "position": "K",
+              "slot": "K",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 20,
+              "credited": 20
+            },
+            {
+              "playerId": "PHI",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 26.08,
+              "credited": 26.08
+            }
+          ]
+        }
+      ],
+      "raw": 465.58,
+      "credited": 711.5400000000001,
+      "rank": 4,
+      "decidedBy": null
+    },
+    {
+      "entryId": "Spread",
+      "name": "Spread",
+      "rounds": [
+        {
+          "round": 0,
+          "raw": 68.94000000000001,
+          "credited": 68.94000000000001,
+          "players": [
+            {
+              "playerId": "4881",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 27.1,
+              "credited": 27.1
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 14.3,
+              "credited": 14.3
+            },
+            {
+              "playerId": "9221",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "4037",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "9493",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 10.100000000000001,
+              "credited": 10.100000000000001
+            },
+            {
+              "playerId": "4033",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 0,
+              "credited": 0
+            },
+            {
+              "playerId": "6794",
+              "position": "WR",
+              "slot": "FLEX",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 10.8,
+              "credited": 10.8
+            },
+            {
+              "playerId": "1945",
+              "position": "K",
+              "slot": "K",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 2,
+              "credited": 2
+            },
+            {
+              "playerId": "DEN",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 4.64,
+              "credited": 4.64
+            }
+          ]
+        },
+        {
+          "round": 1,
+          "raw": 181.45999999999998,
+          "credited": 293.92,
+          "players": [
+            {
+              "playerId": "4881",
+              "position": "QB",
+              "slot": "QB",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 22.06,
+              "credited": 44.12
+            },
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 39.2,
+              "credited": 78.4
+            },
+            {
+              "playerId": "9221",
+              "position": "RB",
+              "slot": "RB2",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 35.5,
+              "credited": 71
+            },
+            {
+              "playerId": "9493",
+              "position": "WR",
+              "slot": "WR2",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 15.7,
+              "credited": 31.4
+            },
+            {
+              "playerId": "7569",
+              "position": "WR",
+              "slot": "WR1",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 13.1,
+              "credited": 13.1
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 24.7,
+              "credited": 24.7
+            },
+            {
+              "playerId": "8138",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 11.2,
+              "credited": 11.2
+            },
+            {
+              "playerId": "WAS",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 1,
+              "multiplier": 1,
+              "retained": false,
+              "raw": 20,
+              "credited": 20
+            }
+          ]
+        },
+        {
+          "round": 2,
+          "raw": 71.42,
+          "credited": 174.04,
+          "players": [
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 31.2,
+              "credited": 93.6
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 3.9,
+              "credited": 7.8
+            },
+            {
+              "playerId": "8138",
+              "position": "RB",
+              "slot": "FLEX",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 28.4,
+              "credited": 56.8
+            },
+            {
+              "playerId": "WAS",
+              "position": "DEF",
+              "slot": "DEF",
+              "streak": 2,
+              "multiplier": 2,
+              "retained": true,
+              "raw": 7.92,
+              "credited": 15.84
+            }
+          ]
+        },
+        {
+          "round": 3,
+          "raw": 23.6,
+          "credited": 86.5,
+          "players": [
+            {
+              "playerId": "4866",
+              "position": "RB",
+              "slot": "RB1",
+              "streak": 4,
+              "multiplier": 4,
+              "retained": true,
+              "raw": 15.7,
+              "credited": 62.8
+            },
+            {
+              "playerId": "1466",
+              "position": "TE",
+              "slot": "TE",
+              "streak": 3,
+              "multiplier": 3,
+              "retained": true,
+              "raw": 7.9,
+              "credited": 23.700000000000003
+            }
+          ]
+        }
+      ],
+      "raw": 345.42,
+      "credited": 623.4,
+      "rank": 5,
+      "decidedBy": null
+    }
+  ]
+}
