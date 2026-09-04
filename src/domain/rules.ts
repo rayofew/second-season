@@ -1,9 +1,12 @@
 /**
  * What the contest is and how it scores.
  *
- * Everything here is data rather than behaviour, because all of it is meant to be a league setting
- * one day: the commissioner should be able to change a scoring value or a roster slot without anyone
- * touching the engine that reads them.
+ * Everything here is data rather than behaviour, because all of it is a league setting: the
+ * commissioner changes a value on the rules screen and every engine that reads it follows, with
+ * nothing recompiled and no code aware that anything moved. Eastside FFL is only the default.
+ *
+ * The engines take settings as an argument rather than importing them, so a contest played under
+ * unusual rules is not a special case — it is the same code given different numbers.
  */
 
 export type Position = 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DEF';
@@ -11,8 +14,8 @@ export type Position = 'QB' | 'RB' | 'WR' | 'TE' | 'K' | 'DEF';
 /**
  * A roster slot, described by what may fill it rather than by a single position.
  *
- * Written this way so FLEX is not a special case in the code, and so Superflex or WR/TE later is a
- * change to this list rather than to the validator.
+ * Written this way so FLEX is not a special case, and so Superflex or WR/TE is a change to a list
+ * rather than to the validator.
  */
 export interface Slot {
   id: string;
@@ -20,7 +23,7 @@ export interface Slot {
 }
 
 /** Nine slots, all of which score. There is no bench. */
-export const SLOTS: readonly Slot[] = [
+export const EASTSIDE_SLOTS: readonly Slot[] = [
   { id: 'QB', eligible: ['QB'] },
   { id: 'RB1', eligible: ['RB'] },
   { id: 'RB2', eligible: ['RB'] },
@@ -37,6 +40,26 @@ export const ROUNDS = ['wildcard', 'divisional', 'conference', 'superbowl'] as c
 export type Round = (typeof ROUNDS)[number];
 export const MAX_MULTIPLIER = ROUNDS.length;
 
+/**
+ * What a defence earns for holding an offence down, cheapest tier first.
+ *
+ * A list rather than named fields because leagues disagree about how many tiers there are far more
+ * than they disagree about what they pay. Eastside stops after two; a league wanting the usual six
+ * bands adds them here and nothing else changes.
+ */
+export interface PointsAllowedTier {
+  /** The most a defence may concede and still earn this. */
+  upTo: number;
+  points: number;
+}
+
+/**
+ * Field goals are scored by the distance bands Sleeper actually reports.
+ *
+ * Bands rather than a points-per-yard formula because the data arrives pre-bucketed — nobody tells
+ * us a kick was 47 yards, only that it fell in the forties. Sleeper does separate 0-19, 20-29 and
+ * 30-39, so a league wanting finer tiers under forty could have them; Eastside pays one rate.
+ */
 export interface Scoring {
   reception: number;
   passingYardsPerPoint: number;
@@ -48,12 +71,15 @@ export interface Scoring {
   receivingTouchdown: number;
   twoPointConversion: number;
   fumbleLost: number;
+
   extraPoint: number;
   fieldGoalUnder40: number;
   fieldGoal40To49: number;
   fieldGoal50To59: number;
   fieldGoal60Plus: number;
-  fiveFieldGoalBonus: number;
+  /** A bonus for a big day from the kicker, paid once however many follow. */
+  fieldGoalBonus: { atLeast: number; points: number };
+
   sack: number;
   defensiveInterception: number;
   fumbleRecovery: number;
@@ -61,18 +87,28 @@ export interface Scoring {
   blockedKick: number;
   defensiveTouchdown: number;
   returnYardsPerPoint: number;
-  shutout: number;
-  oneToThreePointsAllowed: number;
+  pointsAllowed: readonly PointsAllowedTier[];
 }
 
 /**
- * Eastside FFL scoring, copied from the league's own settings so the postseason game feels like the
- * season it follows.
+ * What a player on a resting team is worth during Wild Card weekend.
  *
- * Two values are ours rather than theirs: `fumbleLost` and `blockedKick`. Eastside's published
- * settings carry neither, so these are the conventional figures and want confirming before January.
+ * 'keep-streak' is the original game: he scores nothing, but the round still counts towards his
+ * multiplier, so he returns at 2x. 'start-fresh' makes rostering him pointless until the Divisional
+ * round. Kept a setting because it is the one rule most likely to be argued about.
  */
-export const EASTSIDE: Scoring = {
+export type ByeRule = 'keep-streak' | 'start-fresh';
+
+export interface ContestSettings {
+  scoring: Scoring;
+  slots: readonly Slot[];
+  byeRule: ByeRule;
+  /** How many decimals are shown. What is stored never loses precision. */
+  displayDecimals: number;
+}
+
+/** Eastside FFL scoring, copied from the league's own settings, plus the two values it never named. */
+export const EASTSIDE_SCORING: Scoring = {
   reception: 1,
   passingYardsPerPoint: 25,
   passingTouchdown: 6,
@@ -83,12 +119,14 @@ export const EASTSIDE: Scoring = {
   receivingTouchdown: 6,
   twoPointConversion: 2,
   fumbleLost: -2,
+
   extraPoint: 1,
   fieldGoalUnder40: 3,
   fieldGoal40To49: 4,
   fieldGoal50To59: 5,
   fieldGoal60Plus: 10,
-  fiveFieldGoalBonus: 5,
+  fieldGoalBonus: { atLeast: 5, points: 5 },
+
   sack: 2,
   defensiveInterception: 2,
   fumbleRecovery: 2,
@@ -96,6 +134,16 @@ export const EASTSIDE: Scoring = {
   blockedKick: 2,
   defensiveTouchdown: 6,
   returnYardsPerPoint: 25,
-  shutout: 10,
-  oneToThreePointsAllowed: 5,
+  pointsAllowed: [
+    { upTo: 0, points: 10 },
+    { upTo: 3, points: 5 },
+  ],
+};
+
+/** What a new contest starts as, and what the rules screen resets to. */
+export const EASTSIDE: ContestSettings = {
+  scoring: EASTSIDE_SCORING,
+  slots: EASTSIDE_SLOTS,
+  byeRule: 'keep-streak',
+  displayDecimals: 2,
 };

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { display, rawPoints } from '../src/domain/scoring.ts';
 import type { StatLine } from '../src/domain/scoring.ts';
+import { EASTSIDE } from '../src/domain/rules.ts';
+import type { ContestSettings, Scoring } from '../src/domain/rules.ts';
 
 /**
  * Floating point makes 282/25 + 6 - 2 + 4.2 land a hair off 19.48, so points are compared for
@@ -97,5 +99,76 @@ describe('the rules that decide games', () => {
     const points = rawPoints('QB', { pass_yd: 267 });
     assert.equal(points, 267 / 25, 'stored to full precision');
     assert.equal(display(points), 10.68);
+  });
+});
+
+/**
+ * The commissioner's screen is only as good as this block.
+ *
+ * A rule that looks configurable but is really a literal somewhere in the engine would pass every
+ * test above, because every test above uses Eastside's numbers. These use somebody else's.
+ */
+describe('rules the commissioner can change', () => {
+  const under = (changes: Partial<Scoring>, rest: Partial<ContestSettings> = {}): ContestSettings => ({
+    ...EASTSIDE,
+    ...rest,
+    scoring: { ...EASTSIDE.scoring, ...changes },
+  });
+
+  it('pays touchdowns at whatever the league says', () => {
+    const line = { pass_td: 2 };
+    assert.equal(rawPoints('QB', line), 12, 'Eastside pays six');
+    assert.equal(rawPoints('QB', line, under({ passingTouchdown: 4 })), 8, 'a four point league pays four');
+  });
+
+  it('handles half PPR and no PPR', () => {
+    const line = { rec: 6, rec_yd: 60 };
+    assert.equal(rawPoints('WR', line), 12, 'full PPR');
+    assert.equal(rawPoints('WR', line, under({ reception: 0.5 })), 9, 'half');
+    assert.equal(rawPoints('WR', line, under({ reception: 0 })), 6, 'none');
+  });
+
+  it('takes any number of points allowed tiers, not just Eastside two', () => {
+    // The six band ladder most leagues use, which Eastside does not have.
+    const ladder = under({
+      pointsAllowed: [
+        { upTo: 0, points: 10 },
+        { upTo: 6, points: 7 },
+        { upTo: 13, points: 4 },
+        { upTo: 20, points: 1 },
+        { upTo: 27, points: 0 },
+        { upTo: 34, points: -1 },
+        { upTo: Infinity, points: -4 },
+      ],
+    });
+    assert.equal(rawPoints('DEF', { pts_allow: 0 }, ladder), 10);
+    assert.equal(rawPoints('DEF', { pts_allow: 6 }, ladder), 7, 'a band Eastside does not have');
+    assert.equal(rawPoints('DEF', { pts_allow: 21 }, ladder), 0);
+    assert.equal(rawPoints('DEF', { pts_allow: 41 }, ladder), -4, 'and a losing one');
+    assert.equal(rawPoints('DEF', { pts_allow: 6 }), 0, 'while Eastside still pays nothing for six');
+  });
+
+  it('lets the kicker bonus move', () => {
+    const four = under({ fieldGoalBonus: { atLeast: 4, points: 3 } });
+    assert.equal(rawPoints('K', { fgm: 4, fgm_30_39: 4 }, four), 12 + 3);
+    assert.equal(rawPoints('K', { fgm: 4, fgm_30_39: 4 }), 12, 'Eastside wants five before it pays');
+  });
+
+  it('shows as many decimals as the league asked for', () => {
+    const points = rawPoints('QB', { pass_yd: 267 });
+    assert.equal(display(points), 10.68);
+    assert.equal(display(points, { ...EASTSIDE, displayDecimals: 1 }), 10.7);
+    assert.equal(display(points, { ...EASTSIDE, displayDecimals: 0 }), 11);
+  });
+
+  it('describes slots as data, so Superflex is a setting and not a rewrite', () => {
+    const flex = EASTSIDE.slots.find((slot) => slot.id === 'FLEX');
+    assert.deepEqual(flex?.eligible, ['RB', 'WR', 'TE']);
+    const superflex: ContestSettings = {
+      ...EASTSIDE,
+      slots: EASTSIDE.slots.map((slot) => (slot.id === 'FLEX' ? { ...slot, eligible: ['QB', 'RB', 'WR', 'TE'] } : slot)),
+    };
+    assert.ok(superflex.slots.find((slot) => slot.id === 'FLEX')?.eligible.includes('QB'));
+    assert.equal(superflex.slots.length, 9, 'and it is still nine slots');
   });
 });

@@ -1,5 +1,5 @@
 import { EASTSIDE } from './rules.ts';
-import type { Position, Scoring } from './rules.ts';
+import type { ContestSettings, Position, Scoring } from './rules.ts';
 
 /**
  * Raw fantasy points from one player's stat line for one round.
@@ -7,6 +7,9 @@ import type { Position, Scoring } from './rules.ts';
  * Deliberately knows nothing about multipliers, rosters or rounds. The whole game is built on the
  * promise that raw points are settled before anything is multiplied — keeping that promise is
  * easier if this file has no way to break it.
+ *
+ * Every value it applies arrives in the settings it is handed, so a commissioner changing a rule
+ * changes the result here without a line of this file knowing.
  *
  * The stat line is Sleeper's, which omits any field a player did not record. So every read goes
  * through `stat`, and a missing field means zero rather than a crash.
@@ -43,15 +46,15 @@ function offence(line: StatLine, rules: Scoring): number {
  *
  * It always reports `fgm_50p` for everything from fifty out, and only sometimes breaks out
  * `fgm_60p`. Eastside pays 60+ at double the 50s, so the two have to be told apart: take the
- * explicit figure when it is there, and otherwise everything beyond the 50–59 bucket.
+ * explicit figure when it is there, and otherwise everything beyond the 50-59 bucket.
  */
 function kicking(line: StatLine, rules: Scoring): number {
   const under40 = stat(line, 'fgm_0_19') + stat(line, 'fgm_20_29') + stat(line, 'fgm_30_39');
   const fiftyToFiftyNine = stat(line, 'fgm_50_59');
   const sixtyPlus = line.fgm_60p ?? Math.max(0, stat(line, 'fgm_50p') - fiftyToFiftyNine);
 
-  // Paid once, however many he makes beyond the fifth.
-  const bonus = stat(line, 'fgm') >= 5 ? rules.fiveFieldGoalBonus : 0;
+  // Paid once, however many he makes beyond the threshold.
+  const bonus = stat(line, 'fgm') >= rules.fieldGoalBonus.atLeast ? rules.fieldGoalBonus.points : 0;
 
   return (
     under40 * rules.fieldGoalUnder40 +
@@ -69,14 +72,14 @@ function kicking(line: StatLine, rules: Scoring): number {
  * `pts_allow` is read rather than defaulted, because zero is a real and valuable answer here. A
  * missing field would otherwise be indistinguishable from a shutout, and would quietly hand ten
  * points to a defence that never took the field.
+ *
+ * Tiers are searched in order and the first that fits wins, so they must be listed cheapest first —
+ * which is also the only order anyone would write them in.
  */
 function defence(line: StatLine, rules: Scoring): number {
   const allowed = line.pts_allow;
   const allowanceBonus =
-    allowed === undefined ? 0
-    : allowed === 0 ? rules.shutout
-    : allowed <= 3 ? rules.oneToThreePointsAllowed
-    : 0;
+    allowed === undefined ? 0 : (rules.pointsAllowed.find((tier) => allowed <= tier.upTo)?.points ?? 0);
 
   return (
     stat(line, 'sack') * rules.sack +
@@ -101,11 +104,19 @@ function defence(line: StatLine, rules: Scoring): number {
  * A player whose team did not play — eliminated, or resting during a bye — has no stat line at all,
  * and scores nothing. That is the whole implementation of both rules.
  */
-export function rawPoints(position: Position, line: StatLine | undefined, rules: Scoring = EASTSIDE): number {
+export function rawPoints(
+  position: Position,
+  line: StatLine | undefined,
+  settings: ContestSettings = EASTSIDE,
+): number {
   if (!line) return 0;
+  const rules = settings.scoring;
   if (position === 'DEF') return defence(line, rules);
   return offence(line, rules) + (position === 'K' ? kicking(line, rules) : 0);
 }
 
 /** Points as they are shown. Kept apart from the figure that is stored, which never loses precision. */
-export const display = (points: number): number => Math.round(points * 100) / 100;
+export function display(points: number, settings: ContestSettings = EASTSIDE): number {
+  const factor = 10 ** settings.displayDecimals;
+  return Math.round(points * factor) / factor;
+}
