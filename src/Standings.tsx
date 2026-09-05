@@ -68,7 +68,6 @@ export function Standings({ uid }: { uid: string }) {
           for (const id of uids) histories[id]!.push(rosters[id] ?? []);
         }
 
-        setManagers(new Map(people.map((person) => [person.uid, person])));
         const entries: Entry[] = people.map((person) => ({
           entryId: person.uid,
           name: person.teamName,
