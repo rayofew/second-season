@@ -12,12 +12,12 @@ import { getFirestore } from 'firebase/firestore';
  * would hide it from the repository and from nobody else.
  */
 export const app = initializeApp({
-  apiKey: 'AIzaSyCoM5nsfV9a5dAu-SmBWyLZxs_OKUbnkWY',
-  authDomain: 'second-season-ffl.firebaseapp.com',
-  projectId: 'second-season-ffl',
-  storageBucket: 'second-season-ffl.firebasestorage.app',
-  messagingSenderId: '826305811324',
-  appId: '1:826305811324:web:f08b105f523b8aad594af9',
+  apiKey: 'AIzaSyCRvAGyL6whH0dZqZC2_kwpUOiZWAfFLU0',
+  authDomain: 'second-season-app-2cf68.firebaseapp.com',
+  projectId: 'second-season-app-2cf68',
+  storageBucket: 'second-season-app-2cf68.firebasestorage.app',
+  messagingSenderId: '348732258481',
+  appId: '1:348732258481:web:4da40449068ed0c82a0a90',
 });
 
 export const auth = getAuth(app);
