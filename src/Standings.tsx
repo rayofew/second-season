@@ -28,6 +28,7 @@ export function Standings({ uid }: { uid: string }) {
   const [roundNames, setRoundNames] = useState<string[]>([]);
   const [open, setOpen] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  const [nextLock, setNextLock] = useState<Date | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -38,6 +39,7 @@ export function Standings({ uid }: { uid: string }) {
         const now = new Date();
         const locked = contest.rounds.filter((round) => (contest.locks[String(round.round)] ?? now) <= now);
         setRoundNames(locked.map((round) => round.name));
+        setNextLock(contest.locks[String(contest.currentRound)] ?? null);
 
         if (locked.length === 0) {
           setPlacings([]);
@@ -77,8 +79,24 @@ export function Standings({ uid }: { uid: string }) {
   if (placings.length === 0) {
     return (
       <div className="card gate">
-        <h2>Nothing to show yet</h2>
-        <p>The first round has not locked. Standings appear once Wild Card weekend is under way.</p>
+        <h2>Everyone's team is hidden</h2>
+        <p>
+          Nobody sees anybody else's picks until the round locks — otherwise the last manager to
+          submit would simply copy the best team.
+          {nextLock && (
+            <>
+              <br />
+              <br />
+              Teams and standings appear{' '}
+              <strong>
+                {nextLock.toLocaleString(undefined, {
+                  weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+                })}
+              </strong>
+              , at the first kickoff.
+            </>
+          )}
+        </p>
       </div>
     );
   }
