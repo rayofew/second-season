@@ -6,6 +6,7 @@ import type { Entry, Placing } from './domain/standings.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
 import type { StatLine } from './domain/scoring.ts';
 import { readAllRosters, readContest, readEntries, readPool, readScores } from './store/firestore.ts';
+import { PlayerRow } from './PlayerRow.tsx';
 import type { PoolPlayer } from './store/firestore.ts';
 
 /**
@@ -121,18 +122,23 @@ export function Standings({ uid }: { uid: string }) {
                             <h3>{roundNames[round.round]} — {points(round.credited)} points</h3>
                             {[...round.players]
                               .sort((first, second) => second.credited - first.credited)
-                              .map((player) => (
-                                <div className="line" key={player.slot}>
-                                  <span className="slot">{player.slot}</span>
-                                  <span>{names.get(player.playerId)?.name ?? player.playerId}</span>
-                                  <span className="team">{names.get(player.playerId)?.team ?? ''}</span>
-                                  <span className={`mult mult-${player.multiplier}`}>{player.multiplier}x</span>
-                                  <span className="math">
-                                    <span className={player.raw === 0 ? 'zero' : undefined}>{points(player.raw)}</span>
-                                    {' × '}{player.multiplier}{' = '}<b>{points(player.credited)}</b>
-                                  </span>
-                                </div>
-                              ))}
+                              .map((player) => {
+                                const person = names.get(player.playerId);
+                                return (
+                                  <PlayerRow
+                                    key={player.slot}
+                                    slot={player.slot}
+                                    player={person ?? { id: player.playerId, name: player.playerId, position: player.position, team: '' }}
+                                    multiplier={player.multiplier}
+                                    right={
+                                      <span className="math">
+                                        <span className={player.raw === 0 ? 'zero' : undefined}>{points(player.raw)}</span>
+                                        {' × '}{player.multiplier}{' = '}<b>{points(player.credited)}</b>
+                                      </span>
+                                    }
+                                  />
+                                );
+                              })}
                           </div>
                         ))}
                       </div>

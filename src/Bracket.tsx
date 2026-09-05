@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { readContest, readTeams } from './store/firestore.ts';
+import { colourOf, crest } from './domain/clubs.ts';
 import type { Contest, RoundTeams } from './store/firestore.ts';
 
 /**
@@ -16,7 +17,8 @@ function Side({ club, seed, won }: { club: string; seed: number; won: boolean | 
   return (
     <div className={`side ${won === true ? 'won' : ''} ${won === false ? 'out' : ''}`}>
       <span className="seed">{seed}</span>
-      <span className="club">{club}</span>
+      <img className="clubcrest" src={crest(club)} alt="" width="26" height="26" loading="lazy" />
+      <span className="club" style={won === false ? undefined : { color: colourOf(club) }}>{club}</span>
     </div>
   );
 }

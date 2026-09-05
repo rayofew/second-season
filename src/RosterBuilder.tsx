@@ -4,6 +4,7 @@ import type { Position } from './domain/rules.ts';
 import { standingsFor } from './domain/multiplier.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
 import { readContest, readHistory, readPool, readTeams, saveRoster } from './store/firestore.ts';
+import { PlayerRow } from './PlayerRow.tsx';
 import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
 
 /**
@@ -125,6 +126,7 @@ export function RosterBuilder({ uid }: { uid: string }) {
     }
   }
 
+
   return (
     <div>
       <div className="card roundbar">
@@ -154,20 +156,19 @@ export function RosterBuilder({ uid }: { uid: string }) {
           const resting = person ? byes.has(person.team) : false;
 
           return (
-            <div key={slot.id}>
-              <div className={`pick ${open ? 'open' : ''}`} onClick={() => !locked && setPicking(open ? null : slot.id)}>
-                <span className="slot">{slot.id}</span>
-                <span className={person ? 'who' : 'who empty'}>{person?.name ?? 'Empty'}</span>
-                <span className="team">{person?.team ?? ''}</span>
-                <span className={`mult mult-${standing?.multiplier ?? 1}`}>{standing?.multiplier ?? 1}x</span>
-                <span className="hint">
-                  {!person
-                    ? locked ? '—' : 'choose someone'
-                    : resting ? 'resting — nothing now, 2x next'
-                    : standing?.retained ? 'kept — climbing'
-                    : 'new — starts over'}
-                </span>
-              </div>
+            <div key={slot.id} className={open ? 'opened' : undefined}>
+              <PlayerRow
+                slot={slot.id}
+                player={person ?? null}
+                multiplier={standing?.multiplier ?? 1}
+                hint={
+                  !person ? (locked ? undefined : 'choose someone')
+                    : resting ? 'resting, then 2x'
+                    : standing?.retained ? 'kept'
+                    : 'new'
+                }
+                onClick={() => !locked && setPicking(open ? null : slot.id)}
+              />
 
               {open && !locked && (
                 <div className="picker">
@@ -182,17 +183,13 @@ export function RosterBuilder({ uid }: { uid: string }) {
                     {candidatesFor(slot.id).map((candidate) => {
                       const incumbent = previous.some((entry) => entry.playerId === candidate.id);
                       return (
-                        <div className="option" key={candidate.id} onClick={() => choose(slot.id, candidate)}>
-                          <span className="who">{candidate.name}</span>
-                          <span className="team">
-                            {candidate.position} · {candidate.team}
-                            {byes.has(candidate.team) ? ' · resting' : ''}
-                          </span>
-                          <span className="form">{candidate.form.toFixed(1)}</span>
-                          <span className={incumbent ? 'keeps' : 'resets'}>
-                            {incumbent ? 'keeps his streak' : '1x'}
-                          </span>
-                        </div>
+                        <PlayerRow
+                          key={candidate.id}
+                          player={candidate}
+                          hint={`${candidate.form.toFixed(1)} a game${byes.has(candidate.team) ? ' · resting' : ''}`}
+                          right={<span className={incumbent ? 'keeps' : 'resets'}>{incumbent ? 'keeps streak' : '1x'}</span>}
+                          onClick={() => choose(slot.id, candidate)}
+                        />
                       );
                     })}
                   </div>
