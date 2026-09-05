@@ -22,3 +22,6 @@ ui-debug.log
 
 # Full-resolution artwork, kept out of the bundle and out of git.
 design/
+
+# Firebase CLI deploy cache
+.firebase/
