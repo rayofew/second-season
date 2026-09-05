@@ -164,3 +164,25 @@ nav button[aria-current="true"] { background: var(--panel); color: var(--ink); b
   cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 2px;
 }
 .topline { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+
+/* Bracket */
+.roundbar { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 14px; font-size: 14px; }
+.confhead {
+  padding: 9px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--dim); border-bottom: 1px solid var(--line); background: #101728;
+}
+.tie, .bye { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.tie:last-child, .bye:last-child { border-bottom: 0; }
+.bye { background: #12182b; }
+.side { display: flex; align-items: center; gap: 8px; flex: 1; }
+.side .seed {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 5px; font-size: 11px; font-weight: 700;
+  background: #1e2740; color: var(--dim); flex: none;
+}
+.side .club { font-weight: 600; letter-spacing: 0.01em; }
+.side.won .club { color: var(--live); }
+.side.won .seed { background: #14361f; color: var(--live); }
+.side.out .club { color: var(--dim); text-decoration: line-through; }
+.at { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; flex: none; }
+.footnote { color: var(--dim); font-size: 12px; line-height: 1.6; margin: 4px 2px 0; }

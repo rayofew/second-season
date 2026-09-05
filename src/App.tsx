@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
 import { RosterBuilder } from './RosterBuilder.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
+import { Bracket } from './Bracket.tsx';
 import snapshot from './data/playthrough-2024.json';
 import { EASTSIDE } from './domain/rules.ts';
 import { display } from './domain/scoring.ts';
@@ -126,7 +127,7 @@ function Standings() {
 }
 
 export function App() {
-  const [tab, setTab] = useState<'team' | 'standings'>('team');
+  const [tab, setTab] = useState<'team' | 'bracket' | 'standings'>('team');
   const { user, checking } = useUser();
 
   return (
@@ -144,10 +145,11 @@ export function App() {
       {checking ? null : !user ? <SignIn /> : <>
       <nav>
         <button aria-current={tab === 'team'} onClick={() => setTab('team')}>My Team</button>
+        <button aria-current={tab === 'bracket'} onClick={() => setTab('bracket')}>Bracket</button>
         <button aria-current={tab === 'standings'} onClick={() => setTab('standings')}>Standings</button>
       </nav>
 
-      {tab === 'team' ? <RosterBuilder /> : <Standings />}
+      {tab === 'team' ? <RosterBuilder /> : tab === 'bracket' ? <Bracket /> : <Standings />}
       </>}
     </div>
   );
