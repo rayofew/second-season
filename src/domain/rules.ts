@@ -71,6 +71,8 @@ export interface Scoring {
   receivingTouchdown: number;
   twoPointConversion: number;
   fumbleLost: number;
+  /** A kick or punt returned for a score, credited to the man who ran it back. */
+  returnTouchdown: number;
 
   extraPoint: number;
   fieldGoalUnder40: number;
@@ -144,6 +146,7 @@ export const EASTSIDE_SCORING: Scoring = {
   receivingTouchdown: 6,
   twoPointConversion: 2,
   fumbleLost: -2,
+  returnTouchdown: 6,
 
   extraPoint: 1,
   fieldGoalUnder40: 3,

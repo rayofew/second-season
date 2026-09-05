@@ -37,6 +37,9 @@ function offence(line: StatLine, rules: Scoring): number {
     stat(line, 'rec_yd') / rules.receivingYardsPerPoint +
     stat(line, 'rec_td') * rules.receivingTouchdown +
     stat(line, 'fum_lost') * rules.fumbleLost +
+    // Only ever reached by an outfield player: a defence's return scores are counted with the rest
+    // of its work below, so nobody is paid twice for the same touchdown.
+    stat(line, 'st_td') * rules.returnTouchdown +
     (stat(line, 'pass_2pt') + stat(line, 'rush_2pt') + stat(line, 'rec_2pt')) * rules.twoPointConversion
   );
 }

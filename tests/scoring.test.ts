@@ -172,3 +172,23 @@ describe('rules the commissioner can change', () => {
     assert.equal(superflex.slots.length, 9, 'and it is still nine slots');
   });
 });
+
+describe('return touchdowns', () => {
+  it('pays the man who ran it back', () => {
+    // Found by checking our totals against Sleeper's own: two players were six points light,
+    // both of whom had returned a kick. Sleeper credits the returner and so does every platform.
+    assert.equal(rawPoints('WR', { st_td: 1 }), 6);
+    assert.equal(rawPoints('RB', { rush_yd: 40, st_td: 1 }), 4 + 6);
+  });
+
+  it('does not pay a defence twice for the same score', () => {
+    // A defence's return touchdowns are counted with the rest of its work, never through the
+    // outfield path, so the two can't both land on one stat line.
+    assert.equal(rawPoints('DEF', { def_st_td: 1, st_td: 1 }), 6);
+  });
+
+  it('is a setting like everything else', () => {
+    const noReturns = { ...EASTSIDE, scoring: { ...EASTSIDE.scoring, returnTouchdown: 0 } };
+    assert.equal(rawPoints('WR', { st_td: 1 }, noReturns), 0);
+  });
+});
