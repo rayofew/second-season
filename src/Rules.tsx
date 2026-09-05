@@ -71,8 +71,9 @@ export function Rules() {
           which is the whole gamble.
         </p>
         <p>
-          Rounds are decided on Monday nights, once every club has played. Losing clubs are out;
-          their players stay on your roster scoring nothing until you replace them.
+          Rounds are decided on Monday nights, once every club has played. Losing clubs are out,
+          and <strong>their players come off your roster for you</strong> — you will find those
+          slots empty, waiting to be filled from the clubs still in.
         </p>
       </div>
 
@@ -112,8 +113,9 @@ export function Rules() {
         </p>
         <p>
           <strong>You can drop anyone, any time.</strong> But whoever replaces him starts back at
-          1x, and so does he if you sign him again later. In practice you will only drop a man whose
-          club is out, or who is hurt.
+          1x, and so does he if you sign him again later. Knocked-out players leave on their own, so
+          the only man you will ever choose to drop is one who is hurt — and even then, think twice
+          about what his multiplier is worth.
         </p>
         <p>
           <strong>Doing nothing is a perfectly good way to play a round.</strong> Everyone still in
