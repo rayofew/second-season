@@ -133,6 +133,8 @@ export function App() {
   const { user, checking } = useUser();
   const [contest, setContest] = useState<Contest | null>(null);
   const [managers, setManagers] = useState(0);
+  // null while we find out; false means signed in but not in this league.
+  const [member, setMember] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -140,7 +142,11 @@ export function App() {
       try {
         setContest(await readContest('rehearsal-2026'));
         setManagers((await readEntries('rehearsal-2026')).length);
-      } catch { /* the header is not worth an error message */ }
+        setMember(true);
+      } catch (cause) {
+        // The rules refuse anyone without an entry, which is how we learn they are not in yet.
+        setMember((cause as { code?: string }).code === 'permission-denied' ? false : true);
+      }
     })();
   }, [user]);
 
@@ -162,7 +168,17 @@ export function App() {
         </p>
       </header>
 
-      {checking ? null : !user ? <SignIn /> : <>
+      {checking ? null : !user ? <SignIn /> : member === false ? (
+        <div className="card gate">
+          <h2>You are signed in, but not in this league yet</h2>
+          <p>
+            Ray has to add you before you can pick a team. Send him the address you used:
+            <br />
+            <strong>{user.email}</strong>
+          </p>
+        </div>
+      ) : (
+      <>
       <nav>
         <button aria-current={tab === 'team'} onClick={() => setTab('team')}>My Team</button>
         <button aria-current={tab === 'bracket'} onClick={() => setTab('bracket')}>Bracket</button>
@@ -170,7 +186,8 @@ export function App() {
       </nav>
 
       {tab === 'team' ? <RosterBuilder uid={user.uid} /> : tab === 'bracket' ? <Bracket /> : <Standings />}
-      </>}
+      </>
+      )}
     </div>
   );
 }
