@@ -108,6 +108,27 @@ service cloud.firestore {
         allow write: if isOwner(uid) && beforeLock(contestId, '0');
       }
 
+      /**
+       * What everybody did, in the order they did it.
+       *
+       * Append only: a manager may write his own entries and can never edit or delete one, so the
+       * record of a change survives the change being undone. He writes his own because only his
+       * browser knows he pressed submit — which means he could in principle lie about it. In a
+       * league of people who know each other that is a fair trade for not needing a server, and
+       * the roster documents remain the authority on what was actually played.
+       *
+       * Readable by the league only once the round has locked, for the same reason rosters are:
+       * seeing that somebody has just taken Barkley is seeing their team.
+       */
+      match /log/{entryId} {
+        allow read: if isCommissioner(contestId)
+                    || (isMember(contestId) && request.time >= lockFor(contestId, string(resource.data.round)));
+        allow create: if isMember(contestId)
+                      && request.resource.data.uid == request.auth.uid
+                      && request.resource.data.round == contest(contestId).currentRound;
+        allow update, delete: if false;
+      }
+
       // Written by the scoring job through the Admin SDK, which bypasses these rules entirely.
       // No client may write them, including the commissioner's browser.
       match /scores/{roundId} {

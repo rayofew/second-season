@@ -83,10 +83,10 @@ export function Register({ user }: { user: User }) {
   if (state === 'sent') {
     return (
       <div className="card gate">
-        <h2>Sent to Ray</h2>
+        <h2>You're on the list</h2>
         <p>
-          He lets people in by hand, so nobody wanders in off a forwarded link. He will text you
-          once you are in.
+          Ray adds everyone himself, so give him a bit. He'll text you the moment you're in and you
+          can pick your team.
         </p>
         <p className="footnote">Signed in as {user.email}</p>
       </div>
@@ -96,9 +96,7 @@ export function Register({ user }: { user: User }) {
   return (
     <div className="card prose register">
       <h2>Join the league</h2>
-      <p>
-        Ray approves everyone by hand, so a forwarded link gets somebody no further than this form.
-      </p>
+      <p>Tell Ray who you are and he'll add you to the league.</p>
 
       <label>
         <span>Your name</span>

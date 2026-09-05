@@ -93,7 +93,7 @@ export function Preview() {
       <header>
         <div className="topline">
           <div className="brand">
-            <img src="/crest-96.png" alt="" width="40" height="40" />
+            <img src="/crest-96.png" alt="" width="56" height="56" />
             <h1>Second Season</h1>
           </div>
         </div>

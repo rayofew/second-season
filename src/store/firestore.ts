@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, limit, orderBy, query, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { HeldPlayer } from '../domain/multiplier.ts';
 import type { StatLine } from '../domain/scoring.ts';
 import type { ContestSettings } from '../domain/rules.ts';
@@ -228,4 +228,43 @@ export async function readSubmitted(contestId: string, uids: string[], round: nu
     if (snapshot.exists() && ((snapshot.data().players as unknown[]) ?? []).length > 0) submitted.add(uid);
   });
   return submitted;
+}
+
+export interface Move {
+  uid: string;
+  round: number;
+  /** 'in' and 'out' are the two halves of a swap; 'submitted' marks the roster being sent. */
+  action: 'in' | 'out' | 'submitted';
+  playerId: string;
+  playerName: string;
+  slot: string;
+  at: Date;
+}
+
+/**
+ * Recording what somebody did, in the order they did it.
+ *
+ * Append only, and written from the browser because only the browser knows a manager pressed
+ * submit. The roster documents remain the authority on what was actually played; this is the story
+ * of how it got that way, which the rosters alone cannot tell you — a man signed and dropped again
+ * before the lock leaves no trace in them at all.
+ */
+export async function recordMoves(
+  contestId: string,
+  moves: Omit<Move, 'at'>[],
+): Promise<void> {
+  await Promise.all(
+    moves.map((move) =>
+      addDoc(collection(db, 'contests', contestId, 'log'), { ...move, at: serverTimestamp() }),
+    ),
+  );
+}
+
+/** Everything that has happened, newest first. Refused for rounds that have not locked. */
+export async function readMoves(contestId: string): Promise<Move[]> {
+  const snapshot = await getDocs(query(collection(db, 'contests', contestId, 'log'), orderBy('at', 'desc'), limit(300)));
+  return snapshot.docs.map((entry) => {
+    const data = entry.data();
+    return { ...data, at: (data.at as { toDate(): Date } | null)?.toDate() ?? new Date() } as Move;
+  });
 }

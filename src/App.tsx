@@ -5,13 +5,14 @@ import { Standings } from './Standings.tsx';
 import { Rules } from './Rules.tsx';
 import { Register } from './Register.tsx';
 import { Commissioner } from './Commissioner.tsx';
+import { Moves } from './Moves.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
 import { readContest, readEntries } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
 
 const CONTEST = 'rehearsal-2026';
 
-type Tab = 'team' | 'bracket' | 'standings' | 'rules' | 'commish';
+type Tab = 'team' | 'bracket' | 'standings' | 'moves' | 'rules' | 'commish';
 
 export function App() {
   const [tab, setTab] = useState<Tab>('team');
@@ -42,7 +43,7 @@ export function App() {
       <header>
         <div className="topline">
           <div className="brand">
-            <img src="/crest-96.png" alt="" width="40" height="40" />
+            <img src="/crest-96.png" alt="" width="56" height="56" />
             <h1>Second Season</h1>
           </div>
           {user && <SignOut user={user} />}
@@ -64,6 +65,7 @@ export function App() {
             <button aria-current={tab === 'team'} onClick={() => setTab('team')}>My Team</button>
             <button aria-current={tab === 'bracket'} onClick={() => setTab('bracket')}>Bracket</button>
             <button aria-current={tab === 'standings'} onClick={() => setTab('standings')}>Standings</button>
+            <button aria-current={tab === 'moves'} onClick={() => setTab('moves')}>Moves</button>
             <button aria-current={tab === 'rules'} onClick={() => setTab('rules')}>Rules</button>
             {commissioner && (
               <button aria-current={tab === 'commish'} onClick={() => setTab('commish')}>Commish</button>
@@ -72,6 +74,7 @@ export function App() {
 
           {tab === 'team' ? <RosterBuilder uid={user.uid} />
             : tab === 'bracket' ? <Bracket />
+            : tab === 'moves' ? <Moves />
             : tab === 'rules' ? <Rules />
             : tab === 'commish' && commissioner ? <Commissioner uid={user.uid} />
             : <Standings uid={user.uid} />}

@@ -3,7 +3,8 @@ import { EASTSIDE } from './domain/rules.ts';
 import type { Position } from './domain/rules.ts';
 import { standingsFor } from './domain/multiplier.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
-import { readContest, readHistory, readPool, readTeams, saveRoster } from './store/firestore.ts';
+import { readContest, readHistory, readPool, readTeams, recordMoves, saveRoster } from './store/firestore.ts';
+import type { Move } from './store/firestore.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
 
@@ -30,6 +31,8 @@ export function RosterBuilder({ uid }: { uid: string }) {
   const [picking, setPicking] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+  // What the roster looked like when it was last saved, so a submission can say what changed.
+  const [baseline, setBaseline] = useState<HeldPlayer[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
 
   useEffect(() => {
@@ -53,11 +56,11 @@ export function RosterBuilder({ uid }: { uid: string }) {
         const alive = new Set(roundTeams?.alive ?? []);
         const teamOf = new Map(board.map((p) => [p.id, p.team]));
         const submitted = past[round] ?? [];
-        setRoster(
-          submitted.length > 0
-            ? submitted
-            : (past[round - 1] ?? []).filter((held) => alive.has(teamOf.get(held.playerId) ?? '')),
-        );
+        const opening = submitted.length > 0
+          ? submitted
+          : (past[round - 1] ?? []).filter((held) => alive.has(teamOf.get(held.playerId) ?? ''));
+        setRoster(opening);
+        setBaseline(opening);
       } catch (cause) {
         setProblem((cause as Error).message);
       }
@@ -114,6 +117,28 @@ export function RosterBuilder({ uid }: { uid: string }) {
     setSaving('saving');
     try {
       await saveRoster(CONTEST, uid, round, roster);
+
+      // What changed, so the league can see the story afterwards. The roster document is the
+      // authority on what was played; this is how it got that way, which it cannot tell you.
+      const before = new Set(baseline.map((held) => held.playerId));
+      const after = new Set(roster.map((held) => held.playerId));
+      const moves: Omit<Move, 'at'>[] = [
+        ...roster.filter((held) => !before.has(held.playerId)).map((held) => ({
+          uid, round, action: 'in' as const, playerId: held.playerId,
+          playerName: byId.get(held.playerId)?.name ?? held.playerId, slot: held.slot,
+        })),
+        ...baseline.filter((held) => !after.has(held.playerId)).map((held) => ({
+          uid, round, action: 'out' as const, playerId: held.playerId,
+          playerName: byId.get(held.playerId)?.name ?? held.playerId, slot: held.slot,
+        })),
+      ];
+      if (moves.length > 0 || baseline.length === 0) {
+        moves.push({ uid, round, action: 'submitted', playerId: '', playerName: '', slot: '' });
+        // A failure here must not look like a failed submission: the roster is already saved.
+        await recordMoves(CONTEST, moves).catch(() => undefined);
+      }
+
+      setBaseline(roster);
       setSaving('saved');
     } catch (cause) {
       setSaving('failed');
