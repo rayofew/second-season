@@ -1,0 +1,126 @@
+rules_version = '2';
+
+/**
+ * Who may read and write what, and — more importantly — when.
+ *
+ * The lock is enforced here rather than in the app, because the app runs on the manager's phone and
+ * cannot be trusted about the time. `request.time` is the server's clock, so a roster submitted a
+ * minute after kickoff is refused by the database itself. No server of our own is needed to make
+ * the deadline real.
+ *
+ * An entry's document id is the manager's uid. That makes ownership a comparison rather than a
+ * lookup, and a lookup in rules is a billed read on every single write.
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function contest(contestId) {
+      return get(/databases/$(database)/documents/contests/$(contestId)).data;
+    }
+
+    function isCommissioner(contestId) {
+      return signedIn() && request.auth.uid in contest(contestId).commissioners;
+    }
+
+    // Anyone with an entry is in the league. Managers are added by redeeming an invite, so the
+    // existence of the document is the membership.
+    function isMember(contestId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/contests/$(contestId)/entries/$(request.auth.uid));
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Locks are a map keyed by round, not a list, so a round can be looked up by its id without
+    // any index arithmetic inside a rule.
+    function lockFor(contestId, roundId) {
+      return contest(contestId).locks[roundId];
+    }
+
+    function beforeLock(contestId, roundId) {
+      return request.time < lockFor(contestId, roundId);
+    }
+
+    function isCurrentRound(contestId, roundId) {
+      return contest(contestId).status == 'open' && contest(contestId).currentRound == roundId;
+    }
+
+    match /contests/{contestId} {
+      allow read: if isMember(contestId) || isCommissioner(contestId);
+      allow write: if isCommissioner(contestId);
+
+      // A manager's entry. He may set his own name; everything else about him is the
+      // commissioner's, so that nobody can promote himself by writing a field.
+      match /entries/{uid} {
+        allow read: if isMember(contestId) || isCommissioner(contestId);
+        allow create: if isOwner(uid) && request.resource.data.keys().hasOnly(['name', 'joinedAt']);
+        allow update: if (isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name']))
+                      || isCommissioner(contestId);
+        allow delete: if isCommissioner(contestId);
+
+        /**
+         * One roster per round, and the only thing a manager ever writes.
+         *
+         * Readable by the whole league only once the round has locked, so nobody can see what
+         * anyone else is doing while there is still time to copy it. The owner sees his own always.
+         */
+        match /rounds/{roundId} {
+          allow read: if isOwner(uid)
+                      || isCommissioner(contestId)
+                      || (isMember(contestId) && request.time >= lockFor(contestId, roundId));
+
+          allow write: if (isOwner(uid) && isCurrentRound(contestId, roundId) && beforeLock(contestId, roundId))
+                       || isCommissioner(contestId);
+        }
+      }
+
+      /**
+       * The tiebreaker guess, kept apart from the entry because rules cannot hide a field.
+       *
+       * Secret until the contest is over: a guess everyone can see before Wild Card weekend is not
+       * a tiebreaker, it is a copying exercise.
+       */
+      match /predictions/{uid} {
+        allow read: if isOwner(uid) || isCommissioner(contestId) || contest(contestId).status == 'final';
+        allow write: if isOwner(uid) && beforeLock(contestId, '0');
+      }
+
+      // Written by the scoring job through the Admin SDK, which bypasses these rules entirely.
+      // No client may write them, including the commissioner's browser.
+      match /scores/{roundId} {
+        allow read: if isMember(contestId) || isCommissioner(contestId);
+        allow write: if false;
+      }
+
+      match /teams/{roundId} {
+        allow read: if isMember(contestId) || isCommissioner(contestId);
+        allow write: if isCommissioner(contestId);
+      }
+
+      // Append only, and never from a browser. History that can be edited is not history.
+      match /audit/{entryId} {
+        allow read: if isCommissioner(contestId);
+        allow write: if false;
+      }
+    }
+
+    /**
+     * Invitations. A code is readable by anyone signed in — that is how it is redeemed — but only
+     * the commissioner can mint one, and redeeming is a write to your own entry rather than to this.
+     */
+    match /invites/{code} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
