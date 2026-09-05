@@ -3,6 +3,7 @@ import { RosterBuilder } from './RosterBuilder.tsx';
 import { Bracket } from './Bracket.tsx';
 import { Standings } from './Standings.tsx';
 import { Rules } from './Rules.tsx';
+import { Register } from './Register.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
 import { readContest, readEntries } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
@@ -53,14 +54,7 @@ export function App() {
       {checking ? null : !user ? (
         <SignIn />
       ) : member === false ? (
-        <div className="card gate">
-          <h2>You are signed in, but not in this league yet</h2>
-          <p>
-            Ray has to add you before you can pick a team. Send him the address you used:
-            <br />
-            <strong>{user.email}</strong>
-          </p>
-        </div>
+        <Register user={user} />
       ) : (
         <>
           <nav>

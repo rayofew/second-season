@@ -354,3 +354,29 @@ td { font-variant-numeric: tabular-nums; }
 .ruleline:last-child { border-bottom: 0; }
 .ruleline span:first-child { color: var(--dim); }
 .rulevalue { font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ---- Registration ----------------------------------------------------- */
+
+.register label { display: block; margin: 14px 0 0; }
+.register label > span {
+  display: block; font-size: 12px; font-weight: 650; color: var(--dim);
+  margin-bottom: 6px; letter-spacing: 0.01em;
+}
+.register label > span em { font-style: normal; font-weight: 400; color: var(--faint); margin-left: 6px; }
+.register input[type='text'], .register input[type='tel'], .register input:not([type]) {
+  width: 100%; padding: 11px 12px; border-radius: 10px; font-size: 16px;
+  border: 1px solid var(--line); background: var(--ground); color: var(--ink);
+}
+.register .submit { margin-top: 20px; width: 100%; }
+
+.badgerow { display: flex; align-items: center; gap: 12px; }
+.badge {
+  width: 52px; height: 52px; border-radius: 12px; object-fit: cover;
+  border: 1px solid var(--line); flex: none; background: var(--ground);
+}
+.badge.empty { border-style: dashed; }
+.register input[type='file'] { font-size: 12px; color: var(--dim); min-width: 0; flex: 1; }
+
+.manager { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.badge.small { width: 26px; height: 26px; border-radius: 7px; }
+.managername { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

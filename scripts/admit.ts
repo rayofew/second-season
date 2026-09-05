@@ -1,14 +1,16 @@
 /**
- * Lets somebody into the league.
+ * Letting people in.
  *
- * They sign in first — that is what creates the Firebase account — and then this attaches an entry
- * to their uid, which is what the security rules read as membership. Deliberately a script rather
- * than a screen: for a private contest among people you know, the commissioner knowing who is in it
- * is the whole access control system, and an invitation flow is a lot of machinery to reimplement
- * a text message.
+ * Signing in with Google proves who somebody is; it does not prove they were invited. So joining is
+ * two steps: they fill in the form, which writes an application, and the commissioner turns that
+ * into an entry. A stranger who finds the link can knock and get no further.
  *
- *   node scripts/admit.ts someone@example.com "Their Name"
+ * Deliberately a script rather than a screen. For a private contest among people you know, the
+ * commissioner knowing who is in it is the whole access control system, and an approvals UI is a
+ * lot of machinery to reimplement a decision that takes one glance.
+ *
  *   node scripts/admit.ts --list
+ *   node scripts/admit.ts someone@example.com
  */
 import { getAuth } from 'firebase-admin/auth';
 import { admin } from './admin.ts';
@@ -17,33 +19,57 @@ const CONTEST = 'rehearsal-2026';
 const db = admin();
 const auth = getAuth();
 
-if (process.argv[2] === '--list') {
-  const [entries, users] = await Promise.all([
-    db.collection(`contests/${CONTEST}/entries`).get(),
-    auth.listUsers(200),
-  ]);
-  const members = new Map(entries.docs.map((doc) => [doc.id, doc.data().name as string]));
+interface Application {
+  name: string;
+  teamName: string;
+  phone: string;
+  logo: string;
+}
 
-  console.log('In the league:');
-  for (const [uid, name] of members) {
-    const user = users.users.find((candidate) => candidate.uid === uid);
-    console.log(`  ${name.padEnd(16)} ${user?.email ?? uid}`);
+const [entries, applications, users] = await Promise.all([
+  db.collection(`contests/${CONTEST}/entries`).get(),
+  db.collection(`contests/${CONTEST}/applications`).get(),
+  auth.listUsers(500),
+]);
+
+const emailOf = new Map(users.users.map((user) => [user.uid, user.email ?? user.uid]));
+const members = new Set(entries.docs.map((entry) => entry.id));
+
+if (process.argv[2] === '--list' || !process.argv[2]) {
+  console.log(`In the league (${entries.size}):`);
+  for (const entry of entries.docs) {
+    const data = entry.data();
+    const team = data.teamName && data.teamName !== data.name ? ` "${data.teamName}"` : '';
+    console.log(`  ${String(data.name).padEnd(18)}${team.padEnd(22)} ${emailOf.get(entry.id) ?? entry.id}`);
   }
-  const waiting = users.users.filter((user) => !members.has(user.uid));
-  console.log(waiting.length ? '\nSigned in but not yet admitted:' : '\nNobody waiting.');
-  for (const user of waiting) console.log(`  ${user.email} — node scripts/admit.ts ${user.email} "Name"`);
+
+  const waiting = applications.docs.filter((application) => !members.has(application.id));
+  console.log(waiting.length ? `\nWaiting (${waiting.length}):` : '\nNobody waiting.');
+  for (const application of waiting) {
+    const data = application.data() as Application;
+    console.log(`  ${data.name} — "${data.teamName}"`);
+    console.log(`     ${emailOf.get(application.id) ?? application.id}   ${data.phone || 'no phone given'}   ${data.logo ? 'badge uploaded' : 'no badge'}`);
+    console.log(`     node scripts/admit.ts ${emailOf.get(application.id)}`);
+  }
 } else {
   const email = process.argv[2];
-  const name = process.argv[3];
-  if (!email || !name) throw new Error('Usage: node scripts/admit.ts <email> "<name>"');
+  const user = users.users.find((candidate) => candidate.email === email);
+  if (!user) throw new Error(`${email} has not signed in, so there is no account to admit.`);
 
-  // They must have signed in already: we attach to the account Google made, never invent one.
-  const user = await auth.getUserByEmail(email).catch(() => null);
-  if (!user) throw new Error(`${email} has not signed in yet, so there is no account to admit.`);
+  const application = await db.doc(`contests/${CONTEST}/applications/${user.uid}`).get();
+  const data = application.data() as Application | undefined;
+  const name = data?.name ?? user.displayName ?? email;
 
-  await db.doc(`contests/${CONTEST}/entries/${user.uid}`).set({ name, joinedAt: new Date() }, { merge: true });
+  // The phone number stays on the application. An entry is readable by the whole league, and a
+  // number given to the commissioner was not given to everybody.
+  await db.doc(`contests/${CONTEST}/entries/${user.uid}`).set(
+    { name, teamName: data?.teamName || name, logo: data?.logo ?? '', joinedAt: new Date() },
+    { merge: true },
+  );
   await db.collection(`contests/${CONTEST}/audit`).add({
     at: new Date(), actor: 'commissioner', action: 'manager admitted', detail: `${name} <${email}>`,
   });
-  console.log(`${name} <${email}> is in. uid ${user.uid}`);
+
+  console.log(`${name} is in.`);
+  if (data?.phone) console.log(`Text them: ${data.phone}`);
 }

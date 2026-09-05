@@ -114,10 +114,23 @@ export async function saveRoster(
   });
 }
 
-/** Who is in the league. Readable by any member, so the header can say how many are playing. */
-export async function readEntries(contestId: string): Promise<{ uid: string; name: string }[]> {
+export interface Manager {
+  uid: string;
+  name: string;
+  /** What they called their team. Falls back to their own name, so nobody is nameless in the table. */
+  teamName: string;
+  /** A small square, stored as a data URL because Cloud Storage needs the paid plan. */
+  logo: string;
+}
+
+/** Who is in the league. Readable by any member — but never their phone number, which stays on the application. */
+export async function readEntries(contestId: string): Promise<Manager[]> {
   const snapshot = await getDocs(collection(db, 'contests', contestId, 'entries'));
-  return snapshot.docs.map((entry) => ({ uid: entry.id, name: (entry.data().name as string) ?? entry.id }));
+  return snapshot.docs.map((entry) => {
+    const data = entry.data();
+    const name = (data.name as string) ?? entry.id;
+    return { uid: entry.id, name, teamName: (data.teamName as string) || name, logo: (data.logo as string) ?? '' };
+  });
 }
 
 /**

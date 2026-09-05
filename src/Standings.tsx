@@ -7,7 +7,7 @@ import type { HeldPlayer } from './domain/multiplier.ts';
 import type { StatLine } from './domain/scoring.ts';
 import { readAllRosters, readContest, readEntries, readPool, readScores } from './store/firestore.ts';
 import { PlayerRow } from './PlayerRow.tsx';
-import type { PoolPlayer } from './store/firestore.ts';
+import type { Manager, PoolPlayer } from './store/firestore.ts';
 
 /**
  * The table, and the arithmetic behind every number in it.
@@ -29,6 +29,7 @@ export function Standings({ uid }: { uid: string }) {
   const [open, setOpen] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [nextLock, setNextLock] = useState<Date | null>(null);
+  const [managers, setManagers] = useState<Map<string, Manager>>(new Map());
 
   useEffect(() => {
     void (async () => {
@@ -62,9 +63,10 @@ export function Standings({ uid }: { uid: string }) {
           for (const id of uids) histories[id]!.push(rosters[id] ?? []);
         }
 
+        setManagers(new Map(people.map((person) => [person.uid, person])));
         const entries: Entry[] = people.map((person) => ({
           entryId: person.uid,
-          name: person.name,
+          name: person.teamName,
           history: histories[person.uid]!,
         }));
         setPlacings(table(entries, { statsByRound }, EASTSIDE));
@@ -125,8 +127,15 @@ export function Standings({ uid }: { uid: string }) {
                 >
                   <td className="rank">{placing.rank}</td>
                   <td>
-                    {placing.name}
-                    {placing.entryId === uid && <span className="tag">you</span>}
+                    <span className="manager">
+                      {managers.get(placing.entryId)?.logo
+                        ? <img className="badge small" src={managers.get(placing.entryId)!.logo} alt="" />
+                        : <span className="badge small empty" />}
+                      <span className="managername">
+                        {placing.name}
+                        {placing.entryId === uid && <span className="tag">you</span>}
+                      </span>
+                    </span>
                   </td>
                   {placing.rounds.map((round) => <td key={round.round}>{points(round.credited)}</td>)}
                   <td className="total">{points(placing.credited)}</td>
