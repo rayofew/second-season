@@ -51,9 +51,24 @@ service cloud.firestore {
       return contest(contestId).status == 'open' && contest(contestId).currentRound == roundId;
     }
 
+    /**
+     * Whoever set the contest up cannot be removed from it.
+     *
+     * A commissioner may appoint others and stand them down again, but every update must still
+     * leave the owner on the list — otherwise two commissioners could remove each other and leave a
+     * contest nobody can administer, and a co-commissioner could quietly take the whole thing.
+     * Written here rather than merely hidden from the screen, because a screen is not a rule.
+     */
+    function OWNER() {
+      return 'YmGUiqlUSudC5CEW5UYcsLYhnuE3';
+    }
+
     match /contests/{contestId} {
       allow read: if isMember(contestId) || isCommissioner(contestId);
-      allow write: if isCommissioner(contestId);
+      allow create: if isCommissioner(contestId);
+      allow update: if isCommissioner(contestId)
+                    && request.resource.data.commissioners.hasAll([OWNER()]);
+      allow delete: if false;
 
       // A manager's entry. He may set his own name; everything else about him is the
       // commissioner's, so that nobody can promote himself by writing a field.

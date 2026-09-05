@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
 import type { HeldPlayer } from '../domain/multiplier.ts';
 import type { StatLine } from '../domain/scoring.ts';
 import type { ContestSettings } from '../domain/rules.ts';
@@ -290,4 +290,53 @@ export async function declineApplication(contestId: string, uid: string): Promis
  */
 export async function removeManager(contestId: string, uid: string): Promise<void> {
   await deleteDoc(doc(db, 'contests', contestId, 'entries', uid));
+}
+
+/**
+ * Appointing or standing down a co-commissioner.
+ *
+ * The rules refuse any update that drops the owner from the list, so the man who set the contest up
+ * keeps it whatever anybody presses. This function does not need to know that, and deliberately
+ * does not check: a guard that lives only in the client is not a guard.
+ */
+export async function setCommissioners(contestId: string, commissioners: string[]): Promise<void> {
+  await updateDoc(doc(db, 'contests', contestId), { commissioners });
+}
+
+/**
+ * Finalising a round and opening the next.
+ *
+ * Three writes that belong together: the decided matchups, the next round's draw, and the contest
+ * moving on. Firestore batches them, so a round cannot end up decided with nothing following it —
+ * which on a Monday night, with one chance to get it right, is worth the extra few lines.
+ */
+export async function advanceRound(
+  contestId: string,
+  round: number,
+  decided: { home: string; away: string; winner: string }[],
+  through: string[],
+  pairings: { home: string; away: string; winner: string | null }[],
+): Promise<void> {
+  const contestRef = doc(db, 'contests', contestId);
+  const snapshot = await getDoc(contestRef);
+  const rounds = (snapshot.data()?.rounds ?? []) as { round: number; status: string }[];
+  const next = round + 1;
+  const hasNext = rounds.some((entry) => entry.round === next);
+
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'contests', contestId, 'teams', String(round)), { matchups: decided });
+  if (hasNext) {
+    batch.set(doc(db, 'contests', contestId, 'teams', String(next)), { alive: through, byes: [], matchups: pairings });
+    batch.update(contestRef, {
+      currentRound: next,
+      rounds: rounds.map((entry) =>
+        entry.round === round ? { ...entry, status: 'final' }
+        : entry.round === next ? { ...entry, status: 'open' }
+        : entry,
+      ),
+    });
+  } else {
+    batch.update(contestRef, { status: 'final' });
+  }
+  await batch.commit();
 }

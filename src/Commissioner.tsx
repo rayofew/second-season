@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { admitManager, declineApplication, readApplications, readContest, readEntries, readSubmitted, removeManager } from './store/firestore.ts';
+import { admitManager, declineApplication, readApplications, readContest, readEntries, readSubmitted, removeManager, setCommissioners } from './store/firestore.ts';
 import type { Application, Contest, Manager } from './store/firestore.ts';
 import { dialable, formatPhone } from './domain/phone.ts';
+import { Advance } from './Advance.tsx';
 
 /**
  * The commissioner's tab: who wants in, and who has not picked yet.
@@ -64,6 +65,10 @@ export function Commissioner({ uid }: { uid: string }) {
   if (!contest) return <div className="card gate"><p>Loading…</p></div>;
 
   const round = contest.rounds[contest.currentRound];
+  const commissioners = contest.commissioners ?? [];
+  // Whoever set the contest up. The rules refuse any update that drops him, so this only decides
+  // what the screen offers.
+  const owner = commissioners[0];
   const missing = managers.filter((manager) => !submitted.has(manager.uid));
 
   return (
@@ -111,6 +116,8 @@ export function Commissioner({ uid }: { uid: string }) {
         )}
       </div>
 
+      <Advance contest={contest} onDone={() => void load()} />
+
       <div className="card">
         <div className="confhead">
           {round?.name} — {submitted.size} of {managers.length} submitted
@@ -129,6 +136,26 @@ export function Commissioner({ uid }: { uid: string }) {
               <span className={submitted.has(manager.uid) ? 'keeps' : 'resets'}>
                 {submitted.has(manager.uid) ? 'in' : 'not yet'}
               </span>
+              {manager.uid === owner ? (
+                <span className="tag">owner</span>
+              ) : (
+                <button
+                  className={commissioners.includes(manager.uid) ? 'submit small' : 'ghost small'}
+                  disabled={busy === manager.uid}
+                  onClick={() =>
+                    void act(manager.uid, () =>
+                      setCommissioners(
+                        CONTEST,
+                        commissioners.includes(manager.uid)
+                          ? commissioners.filter((id) => id !== manager.uid)
+                          : [...commissioners, manager.uid],
+                      ),
+                    )
+                  }
+                >
+                  {commissioners.includes(manager.uid) ? 'Commish' : 'Make commish'}
+                </button>
+              )}
               {manager.uid !== uid && (
                 <button
                   className="danger small"

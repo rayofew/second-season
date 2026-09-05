@@ -14,6 +14,8 @@
  * Always worth a dry run first: it prints what would happen and writes nothing.
  */
 import { admin } from './admin.ts';
+import { decide, reseed } from '../src/domain/advance.ts';
+import type { Field } from '../src/domain/advance.ts';
 import type { StatLine } from '../src/domain/scoring.ts';
 
 const CONTEST = 'rehearsal-2026';
@@ -33,7 +35,7 @@ if (!config) throw new Error(`No round ${round}`);
 
 const teamsDoc = await db.doc(`contests/${CONTEST}/teams/${round}`).get();
 const teams = teamsDoc.data() as { alive: string[]; byes: string[]; matchups: { home: string; away: string; winner: string | null }[] };
-const field = contest.field as Record<string, { conference: string; seed: number }>;
+const field = contest.field as Field;
 
 /** What every club scored in its own real fixture that week. */
 const season = argSeason ? Number(argSeason.split('=')[1]) : contest.season;
@@ -58,15 +60,6 @@ const stats = (await (await fetch(`https://api.sleeper.app/v1/stats/nfl/regular/
 const passingYards = (club: string) =>
   Math.max(0, ...pool.filter((p) => p.team === club && p.position === 'QB').map((p) => stats[p.id]?.pass_yd ?? 0));
 
-function decide(home: string, away: string): { winner: string; why: string } {
-  const [hp, ap] = [scored.get(home) ?? 0, scored.get(away) ?? 0];
-  if (hp !== ap) return { winner: hp > ap ? home : away, why: `${away} ${ap}, ${home} ${hp}` };
-  const [hy, ay] = [passingYards(home), passingYards(away)];
-  if (hy !== ay) return { winner: hy > ay ? home : away, why: `both ${hp}; passing yards ${away} ${ay}, ${home} ${hy}` };
-  const better = field[home]!.seed < field[away]!.seed ? home : away;
-  return { winner: better, why: `level on both; ${better} is the better seed` };
-}
-
 const unplayed = teams.matchups.flatMap((m) => [m.home, m.away]).filter((club) => !finished.get(club));
 if (unplayed.length) {
   console.log(`Not everybody has finished: ${[...new Set(unplayed)].join(', ')}`);
@@ -74,43 +67,34 @@ if (unplayed.length) {
 }
 
 const decided = teams.matchups.map((matchup) => {
-  const { winner, why } = decide(matchup.home, matchup.away);
-  console.log(`${matchup.away.padEnd(4)} at ${matchup.home.padEnd(4)} -> ${winner.padEnd(4)}  (${why})`);
-  return { ...matchup, winner };
+  const result = decide(matchup, (club) => scored.get(club) ?? 0, passingYards, field);
+  console.log(`${matchup.away.padEnd(4)} at ${matchup.home.padEnd(4)} -> ${result.winner.padEnd(4)}  (${result.why})`);
+  return result;
 });
 
 // The winners, plus anybody who was resting, carry into the next round.
 const through = [...decided.map((m) => m.winner!), ...teams.byes];
 const next = round + 1;
 
-// Reseeded the usual way: best surviving seed against worst, within each conference.
-const pairings: { home: string; away: string; winner: null }[] = [];
-for (const conference of ['AFC', 'NFC']) {
-  const survivors = through
-    .filter((club) => field[club]?.conference === conference)
-    .sort((a, b) => field[a]!.seed - field[b]!.seed);
-  for (let index = 0; index < Math.floor(survivors.length / 2); index += 1) {
-    pairings.push({ home: survivors[index]!, away: survivors[survivors.length - 1 - index]!, winner: null });
-  }
-}
-// The final is the last two standing, whatever conference they came from.
-if (pairings.length === 0 && through.length === 2) {
-  pairings.push({ home: through[0]!, away: through[1]!, winner: null });
-}
+const pairings = reseed(through, field);
 
-console.log(`\nThrough to ${contest.rounds[next]?.name ?? 'the end'}: ${through.sort().join(', ')}`);
-for (const p of pairings) console.log(`  ${p.away} at ${p.home}`);
+
+
+console.log(`\nThrough to ${contest.rounds[next]?.name ?? 'the end'}: ${[...through].sort().join(', ')}`);
+for (const pairing of pairings) console.log(`  ${pairing.away} at ${pairing.home}`);
 
 if (dry || season !== contest.season || week !== config.week) {
-  console.log('\nDry run: nothing written.');
+  console.log('\nNothing written.');
 } else {
   await db.doc(`contests/${CONTEST}/teams/${round}`).set({ ...teams, matchups: decided });
   if (contest.rounds[next]) {
     await db.doc(`contests/${CONTEST}/teams/${next}`).set({ alive: through, byes: [], matchups: pairings });
     await db.doc(`contests/${CONTEST}`).update({
       currentRound: next,
-      rounds: contest.rounds.map((r: { round: number }) =>
-        r.round === round ? { ...r, status: 'final' } : r.round === next ? { ...r, status: 'open' } : r,
+      rounds: contest.rounds.map((entry: { round: number }) =>
+        entry.round === round ? { ...entry, status: 'final' }
+        : entry.round === next ? { ...entry, status: 'open' }
+        : entry,
       ),
     });
   } else {
