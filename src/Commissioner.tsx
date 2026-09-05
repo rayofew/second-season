@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { admitManager, readApplications, readContest, readEntries, readSubmitted } from './store/firestore.ts';
+import { admitManager, declineApplication, readApplications, readContest, readEntries, readSubmitted, removeManager } from './store/firestore.ts';
 import type { Application, Contest, Manager } from './store/firestore.ts';
 import { dialable, formatPhone } from './domain/phone.ts';
 
@@ -26,6 +26,7 @@ export function Commissioner({ uid }: { uid: string }) {
   const [managers, setManagers] = useState<Manager[]>([]);
   const [submitted, setSubmitted] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -45,16 +46,17 @@ export function Commissioner({ uid }: { uid: string }) {
 
   useEffect(() => { void load(); }, [load]);
 
-  async function admit(application: Application) {
-    setBusy(application.uid);
+  async function act(uid: string, work: () => Promise<void>) {
+    setBusy(uid);
     setProblem(null);
     try {
-      await admitManager(CONTEST, application);
+      await work();
       await load();
     } catch (cause) {
       setProblem((cause as Error).message);
     } finally {
       setBusy(null);
+      setConfirming(null);
     }
   }
 
@@ -84,9 +86,26 @@ export function Commissioner({ uid }: { uid: string }) {
                     <a href={`sms:${dialable(application.phone)}`}>{formatPhone(application.phone)}</a></>}
                 </span>
               </span>
-              <button className="submit small" disabled={busy === application.uid} onClick={() => void admit(application)}>
-                {busy === application.uid ? 'Letting in…' : 'Let in'}
-              </button>
+              <span className="actions">
+                <button
+                  className="submit small"
+                  disabled={busy === application.uid}
+                  onClick={() => void act(application.uid, () => admitManager(CONTEST, application))}
+                >
+                  {busy === application.uid ? '…' : 'Let in'}
+                </button>
+                <button
+                  className="danger small"
+                  disabled={busy === application.uid}
+                  onClick={() =>
+                    confirming === application.uid
+                      ? void act(application.uid, () => declineApplication(CONTEST, application.uid))
+                      : setConfirming(application.uid)
+                  }
+                >
+                  {confirming === application.uid ? 'Sure?' : 'No'}
+                </button>
+              </span>
             </div>
           ))
         )}
@@ -106,8 +125,23 @@ export function Commissioner({ uid }: { uid: string }) {
                 {manager.uid === uid && <><span className="dot">·</span>you</>}
               </span>
             </span>
-            <span className={submitted.has(manager.uid) ? 'keeps' : 'resets'}>
-              {submitted.has(manager.uid) ? 'in' : 'not yet'}
+            <span className="actions">
+              <span className={submitted.has(manager.uid) ? 'keeps' : 'resets'}>
+                {submitted.has(manager.uid) ? 'in' : 'not yet'}
+              </span>
+              {manager.uid !== uid && (
+                <button
+                  className="danger small"
+                  disabled={busy === manager.uid}
+                  onClick={() =>
+                    confirming === manager.uid
+                      ? void act(manager.uid, () => removeManager(CONTEST, manager.uid))
+                      : setConfirming(manager.uid)
+                  }
+                >
+                  {busy === manager.uid ? '…' : confirming === manager.uid ? 'Really remove?' : 'Remove'}
+                </button>
+              )}
             </span>
           </div>
         ))}

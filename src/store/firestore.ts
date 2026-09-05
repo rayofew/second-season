@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDoc, getDocs, limit, orderBy, query, setDoc, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { HeldPlayer } from '../domain/multiplier.ts';
 import type { StatLine } from '../domain/scoring.ts';
 import type { ContestSettings } from '../domain/rules.ts';
@@ -267,4 +267,27 @@ export async function readMoves(contestId: string): Promise<Move[]> {
     const data = entry.data();
     return { ...data, at: (data.at as { toDate(): Date } | null)?.toDate() ?? new Date() } as Move;
   });
+}
+
+/**
+ * Turning somebody away.
+ *
+ * Deletes the application, which clears the list — it does not bar them, and they could fill the
+ * form in again. Barring somebody would need a list of the barred, which is a lot of machinery for
+ * a league where the commissioner knows everyone by name.
+ */
+export async function declineApplication(contestId: string, uid: string): Promise<void> {
+  await deleteDoc(doc(db, 'contests', contestId, 'applications', uid));
+}
+
+/**
+ * Taking a manager out of the league.
+ *
+ * Removes the entry, which is what membership is, so they lose their place immediately and fall
+ * back to the join form. Their rosters are left where they are: Firestore does not delete a
+ * subcollection with its parent, and a roster that has already been scored is part of the record.
+ * If they are let back in, they find their old team waiting.
+ */
+export async function removeManager(contestId: string, uid: string): Promise<void> {
+  await deleteDoc(doc(db, 'contests', contestId, 'entries', uid));
 }
