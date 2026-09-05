@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { RosterBuilder } from './RosterBuilder.tsx';
 import { Bracket } from './Bracket.tsx';
 import { Standings } from './Standings.tsx';
+import { Rules } from './Rules.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
 import { readContest, readEntries } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
 
 const CONTEST = 'rehearsal-2026';
 
-type Tab = 'team' | 'bracket' | 'standings';
+type Tab = 'team' | 'bracket' | 'standings' | 'rules';
 
 export function App() {
   const [tab, setTab] = useState<Tab>('team');
@@ -66,10 +67,12 @@ export function App() {
             <button aria-current={tab === 'team'} onClick={() => setTab('team')}>My Team</button>
             <button aria-current={tab === 'bracket'} onClick={() => setTab('bracket')}>Bracket</button>
             <button aria-current={tab === 'standings'} onClick={() => setTab('standings')}>Standings</button>
+            <button aria-current={tab === 'rules'} onClick={() => setTab('rules')}>Rules</button>
           </nav>
 
           {tab === 'team' ? <RosterBuilder uid={user.uid} />
             : tab === 'bracket' ? <Bracket />
+            : tab === 'rules' ? <Rules />
             : <Standings uid={user.uid} />}
         </>
       )}

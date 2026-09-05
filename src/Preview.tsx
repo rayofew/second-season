@@ -1,7 +1,9 @@
 import { PlayerRow } from './PlayerRow.tsx';
 import type { RowPlayer } from './PlayerRow.tsx';
 import { BracketLadder } from './Bracket.tsx';
+import { Rules } from './Rules.tsx';
 import type { Contest, RoundTeams } from './store/firestore.ts';
+import { EASTSIDE } from './domain/rules.ts';
 
 /**
  * A design harness, reachable at ?preview and nothing else.
@@ -37,7 +39,7 @@ const FIELD = {
 };
 
 const CONTEST: Contest = {
-  name: 'Second Season — Rehearsal', season: 2026, currentRound: 1, status: 'open',
+  name: 'Second Season — Rehearsal', season: 2026, currentRound: 1, status: 'open', settings: EASTSIDE,
   commissioners: [], field: FIELD,
   rounds: [
     { round: 0, name: 'Wild Card', seasonType: 'regular', week: 2, status: 'final' },
@@ -125,6 +127,8 @@ export function Preview() {
       </div>
 
       <BracketLadder contest={CONTEST} rounds={LADDER} />
+
+      <Rules />
 
       <div className="card">
         <div className="confhead">Picker</div>

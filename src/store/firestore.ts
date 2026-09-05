@@ -1,6 +1,7 @@
 import { collection, doc, getDoc, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { HeldPlayer } from '../domain/multiplier.ts';
 import type { StatLine } from '../domain/scoring.ts';
+import type { ContestSettings } from '../domain/rules.ts';
 import { db } from '../firebase.ts';
 
 /**
@@ -32,6 +33,8 @@ export interface Seeding {
 
 export interface Contest {
   name: string;
+  /** Scoring, slots, the bye rule and tiebreakers, exactly as the engines read them. */
+  settings: ContestSettings;
   season: number;
   rounds: RoundConfig[];
   currentRound: number;
