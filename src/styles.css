@@ -380,3 +380,7 @@ td { font-variant-numeric: tabular-nums; }
 .manager { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .badge.small { width: 26px; height: 26px; border-radius: 7px; }
 .managername { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.submit.small { padding: 8px 14px; font-size: 13px; min-height: 38px; flex: none; }
+.row .badge { flex: none; }
+.rowmeta a { color: var(--dim); text-decoration: underline; text-underline-offset: 2px; }

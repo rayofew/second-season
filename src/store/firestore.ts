@@ -176,3 +176,56 @@ export async function readAllTeams(contestId: string, rounds: number): Promise<(
   );
   return docs.map((snapshot) => (snapshot.exists() ? (snapshot.data() as RoundTeams) : null));
 }
+
+export interface Application {
+  uid: string;
+  name: string;
+  teamName: string;
+  /** Only the commissioner and the applicant can read this. It never reaches an entry. */
+  phone: string;
+  logo: string;
+}
+
+/** Who has asked to join. Refused to anyone but the commissioner. */
+export async function readApplications(contestId: string): Promise<Application[]> {
+  const snapshot = await getDocs(collection(db, 'contests', contestId, 'applications'));
+  return snapshot.docs.map((application) => {
+    const data = application.data();
+    const name = (data.name as string) ?? application.id;
+    return {
+      uid: application.id,
+      name,
+      teamName: (data.teamName as string) || name,
+      phone: (data.phone as string) ?? '',
+      logo: (data.logo as string) ?? '',
+    };
+  });
+}
+
+/**
+ * Turning an application into a membership.
+ *
+ * The phone number is deliberately not copied. An entry is readable by the whole league, and a
+ * number given to the commissioner was not given to everybody.
+ */
+export async function admitManager(contestId: string, application: Application): Promise<void> {
+  await setDoc(doc(db, 'contests', contestId, 'entries', application.uid), {
+    name: application.name,
+    teamName: application.teamName,
+    logo: application.logo,
+    joinedAt: serverTimestamp(),
+  });
+}
+
+/** Which managers have a roster in for a round. Used to know who still needs chasing. */
+export async function readSubmitted(contestId: string, uids: string[], round: number): Promise<Set<string>> {
+  const docs = await Promise.all(
+    uids.map((uid) => getDoc(doc(db, 'contests', contestId, 'entries', uid, 'rounds', String(round)))),
+  );
+  const submitted = new Set<string>();
+  uids.forEach((uid, index) => {
+    const snapshot = docs[index]!;
+    if (snapshot.exists() && ((snapshot.data().players as unknown[]) ?? []).length > 0) submitted.add(uid);
+  });
+  return submitted;
+}
