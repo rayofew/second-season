@@ -13,7 +13,10 @@ import { getFirestore } from 'firebase/firestore';
  */
 export const app = initializeApp({
   apiKey: 'AIzaSyCRvAGyL6whH0dZqZC2_kwpUOiZWAfFLU0',
-  authDomain: 'second-season-app-2cf68.firebaseapp.com',
+  // Our own domain rather than the project's, so the Google consent screen says
+  // "continue to playoffs.spiteapps.app" instead of a project id nobody recognises. Firebase
+  // Hosting serves the auth handler at /__/auth on any custom domain, so nothing else changes.
+  authDomain: 'playoffs.spiteapps.app',
   projectId: 'second-season-app-2cf68',
   storageBucket: 'second-season-app-2cf68.firebasestorage.app',
   messagingSenderId: '348732258481',
