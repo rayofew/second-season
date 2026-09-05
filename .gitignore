@@ -19,3 +19,6 @@ serviceAccount*.json
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Full-resolution artwork, kept out of the bundle and out of git.
+design/

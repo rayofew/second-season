@@ -42,9 +42,9 @@ export function SignIn() {
   }
 
   return (
-    <div className="card gate">
-      <h2>Second Season</h2>
-      <p>A private playoff contest. Sign in to find your team.</p>
+    <div className="card gate welcome">
+      <img className="banner" src="/banner.jpg" alt="Eastside Second-Season Playoff Challenge" />
+      <p>A private contest for the Eastside league. Sign in to find your team.</p>
       <button className="submit" onClick={enter}>
         Continue with Google
       </button>

@@ -36,7 +36,10 @@ export function App() {
     <div className="wrap">
       <header>
         <div className="topline">
-          <h1>Second Season</h1>
+          <div className="brand">
+            <img src="/crest-96.png" alt="" width="40" height="40" />
+            <h1>Second Season</h1>
+          </div>
           {user && <SignOut user={user} />}
         </div>
         <p>
