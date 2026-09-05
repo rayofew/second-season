@@ -1,5 +1,6 @@
 import { collection, doc, getDoc, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { HeldPlayer } from '../domain/multiplier.ts';
+import type { StatLine } from '../domain/scoring.ts';
 import { db } from '../firebase.ts';
 
 /**
@@ -114,4 +115,40 @@ export async function saveRoster(
 export async function readEntries(contestId: string): Promise<{ uid: string; name: string }[]> {
   const snapshot = await getDocs(collection(db, 'contests', contestId, 'entries'));
   return snapshot.docs.map((entry) => ({ uid: entry.id, name: (entry.data().name as string) ?? entry.id }));
+}
+
+/**
+ * A round's statistics as the scoring job left them.
+ *
+ * The raw total is stored alongside, but the table recomputes from the stat lines rather than
+ * trusting it — same reason standings are derived rather than saved. If the two ever disagree, the
+ * stat line is the truth and the stored figure is a stale cache.
+ */
+export async function readScores(contestId: string, round: number): Promise<Record<string, StatLine>> {
+  const snapshot = await getDoc(doc(db, 'contests', contestId, 'scores', String(round)));
+  if (!snapshot.exists()) return {};
+  const players = (snapshot.data().players ?? {}) as Record<string, { raw: number; stats: StatLine }>;
+  return Object.fromEntries(Object.entries(players).map(([id, entry]) => [id, entry.stats]));
+}
+
+/**
+ * Everybody's roster for one round.
+ *
+ * Only ever called for rounds that have locked, because the rules refuse a manager another
+ * manager's roster until then — which is the point of the rule, not an obstacle to it.
+ */
+export async function readAllRosters(
+  contestId: string,
+  uids: string[],
+  round: number,
+): Promise<Record<string, HeldPlayer[]>> {
+  const docs = await Promise.all(
+    uids.map((uid) => getDoc(doc(db, 'contests', contestId, 'entries', uid, 'rounds', String(round)))),
+  );
+  const rosters: Record<string, HeldPlayer[]> = {};
+  uids.forEach((uid, index) => {
+    const snapshot = docs[index]!;
+    rosters[uid] = snapshot.exists() ? ((snapshot.data().players ?? []) as HeldPlayer[]) : [];
+  });
+  return rosters;
 }
