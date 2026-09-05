@@ -7,7 +7,8 @@ import type { HeldPlayer } from './domain/multiplier.ts';
 import type { StatLine } from './domain/scoring.ts';
 import { readAllRosters, readContest, readEntries, readPool, readScores } from './store/firestore.ts';
 import { PlayerRow } from './PlayerRow.tsx';
-import type { Manager, PoolPlayer } from './store/firestore.ts';
+import type { Contest, Manager, PoolPlayer } from './store/firestore.ts';
+import { Pool } from './Pool.tsx';
 
 /**
  * The table, and the arithmetic behind every number in it.
@@ -30,25 +31,29 @@ export function Standings({ uid }: { uid: string }) {
   const [problem, setProblem] = useState<string | null>(null);
   const [nextLock, setNextLock] = useState<Date | null>(null);
   const [managers, setManagers] = useState<Map<string, Manager>>(new Map());
+  const [contest, setContest] = useState<Contest | null>(null);
 
   useEffect(() => {
     void (async () => {
       try {
         const contest = await readContest(CONTEST);
         if (!contest) { setProblem('No contest found.'); return; }
+        setContest(contest);
 
         const now = new Date();
         const locked = contest.rounds.filter((round) => (contest.locks[String(round.round)] ?? now) <= now);
         setRoundNames(locked.map((round) => round.name));
         setNextLock(contest.locks[String(contest.currentRound)] ?? null);
 
+        const [people, board] = await Promise.all([readEntries(CONTEST), readPool(CONTEST)]);
+        setNames(new Map(board.map((player) => [player.id, player])));
+        setManagers(new Map(people.map((person) => [person.uid, person])));
+
+        // The pot is worth showing before anything has been played; the table is not.
         if (locked.length === 0) {
           setPlacings([]);
           return;
         }
-
-        const [people, board] = await Promise.all([readEntries(CONTEST), readPool(CONTEST)]);
-        setNames(new Map(board.map((player) => [player.id, player])));
 
         const uids = people.map((person) => person.uid);
         const statsByRound: Record<string, StatLine>[] = [];
@@ -80,6 +85,8 @@ export function Standings({ uid }: { uid: string }) {
   if (!placings) return <div className="card gate"><p>Working out the table…</p></div>;
   if (placings.length === 0) {
     return (
+      <>
+      {contest && <Pool contest={contest} managers={[...managers.values()]} commissioner={false} onChange={() => undefined} />}
       <div className="card gate">
         <h2>Everyone's team is hidden</h2>
         <p>
@@ -100,13 +107,19 @@ export function Standings({ uid }: { uid: string }) {
           )}
         </p>
       </div>
+      </>
     );
   }
 
   const points = (value: number) => display(value, EASTSIDE).toFixed(1);
 
+  const pool = contest
+    ? <Pool contest={contest} managers={[...managers.values()]} commissioner={false} onChange={() => undefined} />
+    : null;
+
   return (
     <>
+      {pool}
       <div className="card scroll">
         <table>
           <thead>

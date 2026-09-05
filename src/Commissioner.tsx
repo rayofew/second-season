@@ -3,6 +3,7 @@ import { admitManager, declineApplication, readApplications, readContest, readEn
 import type { Application, Contest, Manager } from './store/firestore.ts';
 import { dialable, formatPhone } from './domain/phone.ts';
 import { Advance } from './Advance.tsx';
+import { Pool } from './Pool.tsx';
 
 /**
  * The commissioner's tab: who wants in, and who has not picked yet.
@@ -115,6 +116,8 @@ export function Commissioner({ uid }: { uid: string }) {
           ))
         )}
       </div>
+
+      <Pool contest={contest} managers={managers} commissioner onChange={() => void load()} />
 
       <Advance contest={contest} onDone={() => void load()} />
 

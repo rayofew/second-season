@@ -43,6 +43,10 @@ export interface Contest {
   field: Record<string, Seeding>;
   /** Firestore returns timestamps; kept as dates so a countdown needs no conversion. */
   locks: Record<string, Date>;
+  /** What each manager puts in. Zero, or missing, means nobody is playing for anything. */
+  buyIn?: number;
+  /** How many places pay. Null lets the size of the field decide. */
+  payoutPlaces?: number | null;
 }
 
 export interface RoundTeams {
@@ -121,6 +125,8 @@ export interface Manager {
   teamName: string;
   /** A small square, stored as a data URL because Cloud Storage needs the paid plan. */
   logo: string;
+  /** Whether the commissioner has seen their money. Recorded here, settled between people. */
+  paid: boolean;
 }
 
 /** Who is in the league. Readable by any member — but never their phone number, which stays on the application. */
@@ -129,7 +135,13 @@ export async function readEntries(contestId: string): Promise<Manager[]> {
   return snapshot.docs.map((entry) => {
     const data = entry.data();
     const name = (data.name as string) ?? entry.id;
-    return { uid: entry.id, name, teamName: (data.teamName as string) || name, logo: (data.logo as string) ?? '' };
+    return {
+      uid: entry.id,
+      name,
+      teamName: (data.teamName as string) || name,
+      logo: (data.logo as string) ?? '',
+      paid: Boolean(data.paid),
+    };
   });
 }
 
@@ -339,4 +351,14 @@ export async function advanceRound(
     batch.update(contestRef, { status: 'final' });
   }
   await batch.commit();
+}
+
+/** What the buy-in is, and how many places pay. Nothing here handles money. */
+export async function setBuyIn(contestId: string, buyIn: number, places: number | null): Promise<void> {
+  await updateDoc(doc(db, 'contests', contestId), { buyIn, payoutPlaces: places });
+}
+
+/** Ticking somebody off as having paid. A note in a ledger, not a transaction. */
+export async function setPaid(contestId: string, uid: string, paid: boolean): Promise<void> {
+  await updateDoc(doc(db, 'contests', contestId, 'entries', uid), { paid });
 }
