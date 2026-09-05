@@ -151,3 +151,16 @@ nav button[aria-current="true"] { background: var(--panel); color: var(--ink); b
   .option { grid-template-columns: 1fr 80px 60px; }
   .option .form { display: none; }
 }
+
+/* Sign in */
+.gate { padding: 28px 22px; text-align: center; }
+.gate h2 { margin: 0 0 6px; font-size: 20px; }
+.gate p { margin: 0 0 18px; color: var(--dim); font-size: 14px; }
+.gate .submit { padding: 10px 20px; }
+.problem { margin-top: 14px !important; color: var(--gone) !important; font-size: 13px !important; }
+
+.signout {
+  background: transparent; border: 0; color: var(--dim); font: inherit; font-size: 12px;
+  cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 2px;
+}
+.topline { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }

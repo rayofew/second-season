@@ -8,3 +8,9 @@ coverage/
 tsconfig.tsbuildinfo
 .cache/
 .cache/
+
+# Service account keys. This repository is public: a key committed here is
+# harvested by bots within minutes. They belong in GitHub Secrets, nowhere else.
+serviceAccount*.json
+*-firebase-adminsdk-*.json
+*.key.json

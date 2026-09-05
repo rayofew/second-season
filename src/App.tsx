@@ -1,5 +1,6 @@
 import { Fragment, useState } from 'react';
 import { RosterBuilder } from './RosterBuilder.tsx';
+import { SignIn, SignOut, useUser } from './Auth.tsx';
 import snapshot from './data/playthrough-2024.json';
 import { EASTSIDE } from './domain/rules.ts';
 import { display } from './domain/scoring.ts';
@@ -126,22 +127,28 @@ function Standings() {
 
 export function App() {
   const [tab, setTab] = useState<'team' | 'standings'>('team');
+  const { user, checking } = useUser();
 
   return (
     <div className="wrap">
       <header>
-        <h1>Second Season</h1>
+        <div className="topline">
+          <h1>Second Season</h1>
+          {user && <SignOut user={user} />}
+        </div>
         <p>
           {snapshot.season} postseason · {PLACINGS.length} managers · byes {snapshot.byeTeams.join(', ')}
         </p>
       </header>
 
+      {checking ? null : !user ? <SignIn /> : <>
       <nav>
         <button aria-current={tab === 'team'} onClick={() => setTab('team')}>My Team</button>
         <button aria-current={tab === 'standings'} onClick={() => setTab('standings')}>Standings</button>
       </nav>
 
       {tab === 'team' ? <RosterBuilder /> : <Standings />}
+      </>}
     </div>
   );
 }
