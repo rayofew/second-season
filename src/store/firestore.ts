@@ -1,4 +1,5 @@
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import type { HeldPlayer } from '../domain/multiplier.ts';
 import { db } from '../firebase.ts';
 
 /**
@@ -61,4 +62,50 @@ export async function readContest(contestId: string): Promise<Contest | null> {
 export async function readTeams(contestId: string, round: number): Promise<RoundTeams | null> {
   const snapshot = await getDoc(doc(db, 'contests', contestId, 'teams', String(round)));
   return snapshot.exists() ? (snapshot.data() as RoundTeams) : null;
+}
+
+export interface PoolPlayer {
+  id: string;
+  name: string;
+  position: string;
+  team: string;
+  form: number;
+}
+
+/** The whole board in a single read, rather than a query a phone pays for repeatedly. */
+export async function readPool(contestId: string): Promise<PoolPlayer[]> {
+  const snapshot = await getDoc(doc(db, 'contests', contestId, 'pool', 'current'));
+  return snapshot.exists() ? ((snapshot.data().players ?? []) as PoolPlayer[]) : [];
+}
+
+/**
+ * Every roster this manager has submitted, in round order.
+ *
+ * Read in full rather than round by round because the multiplier is a property of the history: what
+ * a player is worth this week depends on every week before it.
+ */
+export async function readHistory(contestId: string, uid: string, upTo: number): Promise<HeldPlayer[][]> {
+  const rounds = await Promise.all(
+    Array.from({ length: upTo + 1 }, (_, round) => getDoc(doc(db, 'contests', contestId, 'entries', uid, 'rounds', String(round)))),
+  );
+  return rounds.map((snapshot) => (snapshot.exists() ? ((snapshot.data().players ?? []) as HeldPlayer[]) : []));
+}
+
+/**
+ * Submitting a roster.
+ *
+ * The lock is not checked here. It is checked by the security rules against the server's clock,
+ * because a check in this file runs on the manager's phone and believes whatever the phone says
+ * the time is. A late write fails, and it fails at the database.
+ */
+export async function saveRoster(
+  contestId: string,
+  uid: string,
+  round: number,
+  players: HeldPlayer[],
+): Promise<void> {
+  await setDoc(doc(db, 'contests', contestId, 'entries', uid, 'rounds', String(round)), {
+    players,
+    submittedAt: serverTimestamp(),
+  });
 }

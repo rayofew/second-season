@@ -149,7 +149,7 @@ export function App() {
         <button aria-current={tab === 'standings'} onClick={() => setTab('standings')}>Standings</button>
       </nav>
 
-      {tab === 'team' ? <RosterBuilder /> : tab === 'bracket' ? <Bracket /> : <Standings />}
+      {tab === 'team' ? <RosterBuilder uid={user.uid} /> : tab === 'bracket' ? <Bracket /> : <Standings />}
       </>}
     </div>
   );

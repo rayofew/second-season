@@ -98,6 +98,15 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      /**
+       * The board a manager picks from, written by the commissioner's scripts rather than typed.
+       * One document rather than a collection, because a phone should fetch it in a single read.
+       */
+      match /pool/{poolId} {
+        allow read: if isMember(contestId) || isCommissioner(contestId);
+        allow write: if false;
+      }
+
       match /teams/{roundId} {
         allow read: if isMember(contestId) || isCommissioner(contestId);
         allow write: if isCommissioner(contestId);
