@@ -52,19 +52,23 @@ export function Rules() {
       <div className="card prose">
         <h2>The four weeks</h2>
         <p>
-          This is a dry run. We have invented a fourteen-club playoff bracket and laid it over four
-          ordinary weeks of football{rounds.length ? `, NFL weeks ${rounds[0]?.week} to ${rounds[rounds.length - 1]?.week}` : ''}.
+          This is a test, to shake out the bugs before January. <strong>There is no winner at the
+          end</strong> — nothing here counts for anything except finding out what breaks.
+        </p>
+        <p>
+          I have invented a fourteen-club playoff bracket and laid it over four ordinary weeks of
+          football{rounds.length ? `, NFL weeks ${rounds[0]?.week} to ${rounds[rounds.length - 1]?.week}` : ''}.
         </p>
         <p>
           <strong>The clubs never actually play each other.</strong> Each plays whoever the real
-          schedule gave them, and whichever of two bracket opponents scores more in its own fixture
-          goes through. Level on points, the quarterback with more passing yards; level again, the
-          better seed.
+          schedule gave them, and whichever of your two bracket clubs scores more in its own game
+          goes through. Tied on points, the quarterback with more passing yards wins it. Still tied,
+          the better seed.
         </p>
         <p>
-          Denver and Seattle have first-round byes. Their players score{' '}
-          <strong>nothing</strong> in the Wild Card round — but hold one and he is worth{' '}
-          <strong>2x</strong> in the Divisional, which is the whole gamble.
+          Denver and Seattle have first-round byes. Their players score <strong>nothing</strong> in
+          the Wild Card round — but hold one and he is worth <strong>2x</strong> in the Divisional,
+          which is the whole gamble.
         </p>
         <p>
           Rounds are decided on Monday nights, once every club has played. Losing clubs are out;
@@ -80,26 +84,46 @@ export function Rules() {
           bench.
         </p>
         <p>
-          <strong>Hold a player and he is worth more.</strong> His first round with you pays face
-          value, his second doubles, his third triples, his fourth quadruples. A quiet game from a
-          man you have held all the way beats a loud one from somebody you just signed.
+          <strong>Hold a player and he is worth more every round.</strong> Say the same man scores
+          twenty points every week:
+        </p>
+      </div>
+
+      <div className="card">
+        <div className="confhead">The same twenty points, four weeks running</div>
+        {['Wild Card', 'Divisional', 'Conference', 'Super Bowl'].map((name, index) => (
+          <div className="ruleline" key={name}>
+            <span>{name}</span>
+            <span className="rulevalue">
+              20 × <span className={`mult mult-${index + 1}`}>{index + 1}x</span> = {20 * (index + 1)}
+            </span>
+          </div>
+        ))}
+        <div className="ruleline total">
+          <span>Held all four rounds</span>
+          <span className="rulevalue">200 points</span>
+        </div>
+      </div>
+
+      <div className="card prose">
+        <p>
+          The same player, the same performance every week — worth two hundred if you keep him, or
+          eighty if you sign somebody new each round. That is the game.
         </p>
         <p>
-          You may drop anyone at any time — but whoever replaces him starts again at 1x, and so does
-          he if you sign him back later. That reset is the only brake on transfers, and it is
-          enough: to justify dropping a living player in round <em>N</em>, he has to be worth less
-          than <em>1/N</em> of the man replacing him.
+          <strong>You can drop anyone, any time.</strong> But whoever replaces him starts back at
+          1x, and so does he if you sign him again later. In practice you will only drop a man whose
+          club is out, or who is hurt.
         </p>
         <p>
-          <strong>Doing nothing is a legitimate way to play a round.</strong> Everyone who survived
+          <strong>Doing nothing is a perfectly good way to play a round.</strong> Everyone still in
           carries over and climbs.
         </p>
         <p>
-          Rosters lock at the first kickoff of each round, enforced by the database rather than by
-          the page. Nobody sees anybody else's picks until then — otherwise the last person to
-          submit would simply copy the best team.
+          Rosters lock at the first kickoff of the week. Nobody sees anybody else's team until then.
         </p>
       </div>
+
       <Table
         title="Passing"
         rows={[

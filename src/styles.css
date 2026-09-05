@@ -401,3 +401,7 @@ td { font-variant-numeric: tabular-nums; }
 .arrow.out { color: var(--gone); background: #3a1620; }
 .movewho { flex: none; text-align: right; line-height: 1.4; }
 .movewhen { color: var(--faint); font-size: 11px; }
+
+.ruleline.total { border-top: 1px solid var(--line); background: #101728; }
+.ruleline.total .rulevalue { color: var(--gold); }
+.ruleline .mult { margin: 0 2px; vertical-align: -3px; }
