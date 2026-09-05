@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { admitManager, readApplications, readContest, readEntries, readSubmitted } from './store/firestore.ts';
 import type { Application, Contest, Manager } from './store/firestore.ts';
+import { dialable, formatPhone } from './domain/phone.ts';
 
 /**
  * The commissioner's tab: who wants in, and who has not picked yet.
@@ -80,7 +81,7 @@ export function Commissioner({ uid }: { uid: string }) {
                 <span className="rowmeta">
                   {application.name}
                   {application.phone && <><span className="dot">·</span>
-                    <a href={`sms:${application.phone.replace(/[^\d+]/g, '')}`}>{application.phone}</a></>}
+                    <a href={`sms:${dialable(application.phone)}`}>{formatPhone(application.phone)}</a></>}
                 </span>
               </span>
               <button className="submit small" disabled={busy === application.uid} onClick={() => void admit(application)}>

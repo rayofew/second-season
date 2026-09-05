@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import { db } from './firebase.ts';
+import { typingPhone } from './domain/phone.ts';
 
 /**
  * Asking to join, which is not the same as being in.
@@ -118,8 +119,8 @@ export function Register({ user }: { user: User }) {
         <input
           type="tel"
           value={phone}
-          onChange={(event) => setPhone(event.target.value)}
-          placeholder="So he can text you when you are in"
+          onChange={(event) => setPhone(typingPhone(event.target.value))}
+          placeholder="(425) 471-4580"
         />
       </label>
 
