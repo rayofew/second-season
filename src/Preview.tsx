@@ -1,5 +1,7 @@
 import { PlayerRow } from './PlayerRow.tsx';
 import type { RowPlayer } from './PlayerRow.tsx';
+import { BracketLadder } from './Bracket.tsx';
+import type { Contest, RoundTeams } from './store/firestore.ts';
 
 /**
  * A design harness, reachable at ?preview and nothing else.
@@ -21,6 +23,55 @@ const MOCK: Record<string, RowPlayer> = {
   myers: { id: '2747', name: 'Jason Myers', position: 'K', team: 'SEA' },
   seahawks: { id: 'SEA', name: 'Seahawks', position: 'DEF', team: 'SEA' },
 };
+
+
+const FIELD = {
+  DEN: { conference: 'AFC', seed: 1 }, NE: { conference: 'AFC', seed: 2 },
+  JAX: { conference: 'AFC', seed: 3 }, PIT: { conference: 'AFC', seed: 4 },
+  BUF: { conference: 'AFC', seed: 5 }, HOU: { conference: 'AFC', seed: 6 },
+  LAC: { conference: 'AFC', seed: 7 },
+  SEA: { conference: 'NFC', seed: 1 }, PHI: { conference: 'NFC', seed: 2 },
+  CHI: { conference: 'NFC', seed: 3 }, TB: { conference: 'NFC', seed: 4 },
+  LAR: { conference: 'NFC', seed: 5 }, SF: { conference: 'NFC', seed: 6 },
+  GB: { conference: 'NFC', seed: 7 },
+};
+
+const CONTEST: Contest = {
+  name: 'Second Season — Rehearsal', season: 2026, currentRound: 1, status: 'open',
+  commissioners: [], field: FIELD,
+  rounds: [
+    { round: 0, name: 'Wild Card', seasonType: 'regular', week: 2, status: 'final' },
+    { round: 1, name: 'Divisional', seasonType: 'regular', week: 3, status: 'open' },
+    { round: 2, name: 'Conference', seasonType: 'regular', week: 4, status: 'upcoming' },
+    { round: 3, name: 'Super Bowl', seasonType: 'regular', week: 5, status: 'upcoming' },
+  ],
+  locks: { '0': new Date(Date.now() - 8.64e7), '1': new Date(Date.now() + 8.64e7), '2': new Date(), '3': new Date() },
+};
+
+const LADDER: (RoundTeams | null)[] = [
+  {
+    alive: Object.keys(FIELD), byes: ['DEN', 'SEA'],
+    matchups: [
+      { home: 'NE', away: 'LAC', winner: 'NE' },
+      { home: 'JAX', away: 'HOU', winner: 'JAX' },
+      { home: 'PIT', away: 'BUF', winner: 'BUF' },
+      { home: 'PHI', away: 'GB', winner: 'GB' },
+      { home: 'CHI', away: 'SF', winner: 'SF' },
+      { home: 'TB', away: 'LAR', winner: 'LAR' },
+    ],
+  },
+  {
+    alive: ['DEN', 'NE', 'JAX', 'BUF', 'SEA', 'GB', 'SF', 'LAR'], byes: [],
+    matchups: [
+      { home: 'DEN', away: 'BUF', winner: null },
+      { home: 'NE', away: 'JAX', winner: null },
+      { home: 'SEA', away: 'GB', winner: null },
+      { home: 'LAR', away: 'SF', winner: null },
+    ],
+  },
+  null,
+  null,
+];
 
 const ROSTER = [
   { slot: 'QB', player: MOCK.purdy!, multiplier: 2, hint: 'kept' },
@@ -72,6 +123,8 @@ export function Preview() {
         </span>
         <button className="submit">Submit</button>
       </div>
+
+      <BracketLadder contest={CONTEST} rounds={LADDER} />
 
       <div className="card">
         <div className="confhead">Picker</div>

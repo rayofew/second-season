@@ -13,10 +13,12 @@ import { getFirestore } from 'firebase/firestore';
  */
 export const app = initializeApp({
   apiKey: 'AIzaSyCRvAGyL6whH0dZqZC2_kwpUOiZWAfFLU0',
-  // Our own domain rather than the project's, so the Google consent screen says
-  // "continue to playoffs.spiteapps.app" instead of a project id nobody recognises. Firebase
-  // Hosting serves the auth handler at /__/auth on any custom domain, so nothing else changes.
-  authDomain: 'playoffs.spiteapps.app',
+  // Deliberately the project's own domain, not playoffs.spiteapps.app. Pointing this at the
+  // custom domain moves the OAuth redirect to /__/auth/handler there, which Google rejects with
+  // redirect_uri_mismatch until that exact URI is registered on the OAuth client by hand. The
+  // only thing gained is a prettier consent screen; the cost of getting it wrong is nobody can
+  // sign in at all.
+  authDomain: 'second-season-app-2cf68.firebaseapp.com',
   projectId: 'second-season-app-2cf68',
   storageBucket: 'second-season-app-2cf68.firebasestorage.app',
   messagingSenderId: '348732258481',

@@ -303,3 +303,37 @@ td { font-variant-numeric: tabular-nums; }
 .clubcrest { flex: none; object-fit: contain; }
 .side.out .clubcrest { filter: grayscale(1); opacity: 0.45; }
 .opened { background: var(--raised); }
+
+/* ---- Bracket ladder --------------------------------------------------- */
+
+/* One column on a phone. Four side by side on anything wider, which read left to right is a
+   bracket — the same markup, no second component to drift out of step with this one. */
+.ladder { display: grid; gap: var(--gap); }
+
+.rung { margin-bottom: 0; }
+.rung.current { border-color: #3d4c72; }
+
+.roundhead {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+  padding: 12px 15px; border-bottom: 1px solid var(--line);
+}
+.roundhead strong { font-weight: 650; }
+
+.state {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--faint); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px;
+  white-space: nowrap;
+}
+.state.now { color: var(--gold); border-color: #6a5220; }
+.state.done { color: var(--live); border-color: #245239; }
+
+.pending { padding: 18px 15px; color: var(--faint); font-size: 13px; }
+
+@media (min-width: 780px) {
+  .ladder { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; }
+  .ladder .tie, .ladder .bye { padding: 10px 12px; min-height: 46px; gap: 8px; flex-wrap: wrap; }
+  .ladder .side { gap: 7px; }
+  .ladder .at { display: none; }
+  .ladder .bye .hint { font-size: 11px; }
+  .ladder .roundhead { flex-direction: column; align-items: flex-start; gap: 4px; }
+}

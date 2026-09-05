@@ -152,3 +152,11 @@ export async function readAllRosters(
   });
   return rosters;
 }
+
+/** Every round's bracket at once. Rounds that have not been drawn yet come back null. */
+export async function readAllTeams(contestId: string, rounds: number): Promise<(RoundTeams | null)[]> {
+  const docs = await Promise.all(
+    Array.from({ length: rounds }, (_, round) => getDoc(doc(db, 'contests', contestId, 'teams', String(round)))),
+  );
+  return docs.map((snapshot) => (snapshot.exists() ? (snapshot.data() as RoundTeams) : null));
+}
