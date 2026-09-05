@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
 import type { HeldPlayer } from '../domain/multiplier.ts';
 import { db } from '../firebase.ts';
 
@@ -108,4 +108,10 @@ export async function saveRoster(
     players,
     submittedAt: serverTimestamp(),
   });
+}
+
+/** Who is in the league. Readable by any member, so the header can say how many are playing. */
+export async function readEntries(contestId: string): Promise<{ uid: string; name: string }[]> {
+  const snapshot = await getDocs(collection(db, 'contests', contestId, 'entries'));
+  return snapshot.docs.map((entry) => ({ uid: entry.id, name: (entry.data().name as string) ?? entry.id }));
 }

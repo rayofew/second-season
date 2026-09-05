@@ -1,7 +1,9 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { RosterBuilder } from './RosterBuilder.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
 import { Bracket } from './Bracket.tsx';
+import { readContest, readEntries } from './store/firestore.ts';
+import type { Contest } from './store/firestore.ts';
 import snapshot from './data/playthrough-2024.json';
 import { EASTSIDE } from './domain/rules.ts';
 import { display } from './domain/scoring.ts';
@@ -129,6 +131,18 @@ function Standings() {
 export function App() {
   const [tab, setTab] = useState<'team' | 'bracket' | 'standings'>('team');
   const { user, checking } = useUser();
+  const [contest, setContest] = useState<Contest | null>(null);
+  const [managers, setManagers] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    void (async () => {
+      try {
+        setContest(await readContest('rehearsal-2026'));
+        setManagers((await readEntries('rehearsal-2026')).length);
+      } catch { /* the header is not worth an error message */ }
+    })();
+  }, [user]);
 
   return (
     <div className="wrap">
@@ -138,7 +152,13 @@ export function App() {
           {user && <SignOut user={user} />}
         </div>
         <p>
-          {snapshot.season} postseason · {PLACINGS.length} managers · byes {snapshot.byeTeams.join(', ')}
+          {contest ? (
+            <>
+              {contest.name} · {contest.season} · {managers} manager{managers === 1 ? null : 's'}
+            </>
+          ) : (
+            'A private playoff contest'
+          )}
         </p>
       </header>
 
