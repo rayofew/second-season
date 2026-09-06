@@ -68,7 +68,7 @@ export function Rules() {
   return (
     <>
       <div className="card prose">
-        <h2>The four weeks</h2>
+        <h2>The practice playoffs</h2>
         <p>
           This is a test, to shake out the bugs before January. <strong>There is no winner at the
           end</strong> — nothing here counts for anything except finding out what breaks.
