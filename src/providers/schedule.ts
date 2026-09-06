@@ -1,16 +1,21 @@
+import type { ClubState } from '../domain/live.ts';
+
 /**
- * What each club scored, and whether it has finished.
+ * What each club scored, and where its game has got to.
  *
- * ESPN answers cross-origin requests, so the commissioner's browser can ask directly and no server
- * is needed to decide a round. Whether a game has finished matters as much as the score: our clubs
- * play on different days, so on a Sunday night half the bracket may still be undecided, and saying
- * so is better than quietly counting nothing as nought.
+ * ESPN answers cross-origin requests, so the browser can ask directly and no server is needed to
+ * decide a round or to show a live score.
+ *
+ * Three states rather than two, because "has not kicked off" and "is playing" want different things
+ * on screen: the first is carried at a projection, the second at whatever has actually happened.
  */
 
 export interface ClubResult {
   points: number;
-  finished: boolean;
+  state: ClubState;
 }
+
+const STATES: Record<string, ClubState> = { pre: 'upcoming', in: 'playing', post: 'final' };
 
 export async function clubScores(season: number, week: number): Promise<Map<string, ClubResult>> {
   const url = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${season}&seasontype=2&week=${week}`;
@@ -19,9 +24,9 @@ export async function clubScores(season: number, week: number): Promise<Map<stri
   const results = new Map<string, ClubResult>();
   for (const event of payload.events ?? []) {
     const competition = event.competitions?.[0];
-    const finished = competition?.status?.type?.completed === true;
+    const state = STATES[competition?.status?.type?.state as string] ?? 'upcoming';
     for (const side of competition?.competitors ?? []) {
-      results.set(side.team.abbreviation, { points: Number(side.score) || 0, finished });
+      results.set(side.team.abbreviation, { points: Number(side.score) || 0, state });
     }
   }
   return results;

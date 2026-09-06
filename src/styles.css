@@ -472,3 +472,9 @@ td { font-variant-numeric: tabular-nums; }
 .countdown .submit { margin-top: 16px; width: 100%; max-width: 320px; }
 .cdcounts { display: inline-flex; gap: 6px; margin-left: 10px; }
 .confhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
+.livepts { flex: none; text-align: right; line-height: 1.3; display: flex; flex-direction: column; }
+.livepts b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.liveraw { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.livepts.upcoming b { color: var(--faint); font-weight: 500; }
+.livepts.playing b { color: var(--gold); }

@@ -73,3 +73,13 @@ export async function directory(): Promise<Map<string, SleeperPlayer>> {
 export function teamsPlaying(roundStats: Record<string, StatLine>): Set<string> {
   return new Set(Object.keys(roundStats).filter((key) => /^[A-Z]{2,3}$/.test(key)));
 }
+
+/**
+ * What everybody is expected to do this week.
+ *
+ * Comes as component statistics rather than a total, so the same scoring engine turns it into
+ * Eastside points — a projection under our own rules rather than somebody else's PPR guess.
+ */
+export async function projections(season: number, type: SeasonType, week: number): Promise<Record<string, StatLine>> {
+  return get(`projections/nfl/${type}/${season}/${week}`);
+}

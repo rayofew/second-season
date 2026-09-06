@@ -53,7 +53,7 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
         ));
         setUnfinished([...new Set(
           roundTeams.matchups.flatMap((matchup) => [matchup.home, matchup.away])
-            .filter((club) => !results.get(club)?.finished),
+            .filter((club) => results.get(club)?.state !== 'final'),
         )]);
       } catch (cause) {
         setProblem((cause as Error).message);
