@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { readContest } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
 import { EASTSIDE } from './domain/rules.ts';
+import { pot } from './domain/pool.ts';
 import type { Scoring } from './domain/rules.ts';
 
 /**
@@ -58,6 +59,10 @@ export function Rules() {
   }, []);
 
   const scoring: Scoring = contest?.settings?.scoring ?? EASTSIDE.scoring;
+
+  // A worked example, run through the same function that works out the real pot, so the numbers
+  // here can never disagree with what the app would actually pay.
+  const example = pot(10, { buyIn: 50, places: 3, shares: [50, 30, 20], weekly: 10 }, 4);
   const rounds = contest?.rounds ?? [];
 
   return (
@@ -165,6 +170,59 @@ export function Rules() {
         </p>
         <p>
           Rosters lock at the first kickoff of the week. Nobody sees anybody else's team until then.
+        </p>
+      </div>
+
+      <div className="card prose">
+        <h2>The money, as an example</h2>
+        <p>
+          Nothing below is settled — the buy-in and the split are mine to set, and whatever they end
+          up being will show on the Home screen. This is only to explain how it divides.
+        </p>
+        <p>
+          <strong>Assuming ten teams, a $50 buy-in, $10 a week for the best raw score, and
+          paying first through third:</strong>
+        </p>
+      </div>
+
+      <div className="card">
+        <div className="confhead">Assuming 10 teams at $50</div>
+        <div className="ruleline">
+          <span>The pot · 10 × $50</span>
+          <span className="rulevalue">${example.total}</span>
+        </div>
+        <div className="ruleline">
+          <span>Best week · $10 × 4 rounds</span>
+          <span className="rulevalue">−${example.weekly}</span>
+        </div>
+        <div className="ruleline total">
+          <span>Left for the places</span>
+          <span className="rulevalue">${example.places}</span>
+        </div>
+        {example.payouts.map((payout) => (
+          <div className="ruleline" key={payout.place}>
+            <span>
+              {['Winner', '2nd', '3rd', '4th', '5th'][payout.place - 1]}
+              <span className="dot"> · </span>
+              {payout.share}% of ${example.places}
+            </span>
+            <span className="rulevalue">${payout.amount}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="card prose">
+        <p>
+          So the winner takes <strong>${example.payouts[0]?.amount}</strong>, second{' '}
+          <strong>${example.payouts[1]?.amount}</strong>, third{' '}
+          <strong>${example.payouts[2]?.amount}</strong>, and ${example.weekly} goes out across the four
+          weeks in $10 lots. It adds up to the ${example.total} that went in — nothing is kept back.
+        </p>
+        <p>
+          The weekly prize is <strong>raw points, multipliers ignored</strong>, so it stays winnable
+          by somebody whose contest is already over. Ties go to the better quarterback; still level,
+          the quarterback and the first running back together; and on down the roster until somebody
+          is ahead.
         </p>
       </div>
 
