@@ -6,10 +6,12 @@ import { useEffect, useState } from 'react';
  * "In 11 days" is true and useless: it says the same thing for a day and a half and then jumps. A
  * deadline people are meant to act on should show the parts that are actually moving.
  *
- * So it counts down in three units, and which three depends on how close it is. A fortnight out
- * nobody cares about seconds; twenty minutes out, seconds are the only thing anybody is looking at.
- * The tick follows the same logic, because a page that re-renders every second for a week is a
- * page draining somebody's battery to tell them nothing.
+ * Four units, seconds included, because a clock whose smallest hand never moves does not read as a
+ * clock — and the second that is ticking is what tells somebody the page is live rather than a
+ * screenshot of a deadline.
+ *
+ * Days drop away once there are none left, so the last day counts hours, minutes and seconds across
+ * three larger cells rather than leading with a nought nobody needs.
  */
 
 interface Parts {
@@ -35,32 +37,24 @@ export function Countdown({ until, locked }: { until: Date | undefined; locked: 
   const [now, setNow] = useState(() => new Date());
 
   const left = until ? remaining(until, now) : null;
-  const closeIn = left !== null && left.days === 0;
 
   useEffect(() => {
     if (locked || !until) return;
-    // Every second once it is down to hours; otherwise a minute is plenty and costs nothing.
-    const every = closeIn ? 1000 : 30_000;
-    const timer = setInterval(() => setNow(new Date()), every);
+    const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
-  }, [locked, until, closeIn]);
+  }, [locked, until]);
 
   if (locked || !until || !left) {
     return <div className="clock shut">Locked</div>;
   }
 
-  // A fortnight out nobody is counting seconds; twenty minutes out they are counting nothing else.
-  const cells = left.days > 0
-    ? [
-        { value: left.days, label: left.days === 1 ? 'day' : 'days' },
-        { value: left.hours, label: 'hrs' },
-        { value: left.minutes, label: 'min' },
-      ]
-    : [
-        { value: left.hours, label: 'hrs' },
-        { value: left.minutes, label: 'min' },
-        { value: left.seconds, label: 'sec' },
-      ];
+  // Days only while there are any: on the last day, three larger cells beat a leading nought.
+  const cells = [
+    ...(left.days > 0 ? [{ value: left.days, label: left.days === 1 ? 'day' : 'days' }] : []),
+    { value: left.hours, label: 'hrs' },
+    { value: left.minutes, label: 'min' },
+    { value: left.seconds, label: 'sec' },
+  ];
 
   const urgent = left.days === 0 && left.hours < 6;
 
