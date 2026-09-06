@@ -42,7 +42,7 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
           stats(contest.season, config.seasonType, config.week),
         ]);
 
-        // Passing yards from the club's busiest quarterback, needed only when the points are level.
+        // Passing yards from the club's busiest quarterback, needed only when the points are tied.
         const passingYards = (club: string) =>
           Math.max(0, ...board
             .filter((player) => player.team === club && player.position === 'QB')

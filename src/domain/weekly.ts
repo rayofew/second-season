@@ -5,7 +5,7 @@
  * manager whose roster died in the first round is finished on the main prize by week two, and a
  * prize he cannot win is a prize that does not reach him.
  *
- * Ties are broken by walking down the roster: the better quarterback takes it; still level, the
+ * Ties are broken by walking down the roster: the better quarterback takes it; still tied, the
  * quarterback and the first running back together; and so on until somebody is ahead. Two managers
  * can only share it by having scored identically in every slot, which is a result worth sharing.
  */

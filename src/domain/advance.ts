@@ -50,7 +50,7 @@ export function decide(
   }
 
   const better = (field[home]?.seed ?? 99) < (field[away]?.seed ?? 99) ? home : away;
-  return { ...matchup, winner: better, why: `level on both; ${better} is the better seed` };
+  return { ...matchup, winner: better, why: `tied on both; ${better} is the better seed` };
 }
 
 /**

@@ -6,7 +6,7 @@ import { rawPoints } from './scoring.ts';
 import type { StatLine } from './scoring.ts';
 
 /**
- * The table, and what to do when two managers finish level.
+ * The table, and what to do when two managers finish tied.
  *
  * Everything here is derived. Nothing is stored and later trusted: give it the rosters and the stat
  * lines and it recomputes the whole contest from the beginning. That is what makes a scoring
@@ -106,7 +106,7 @@ export function scoreEntry(
 }
 
 /**
- * Compares two level entries by one rule, positive when the first should place higher.
+ * Compares two tied entries by one rule, positive when the first should place higher.
  *
  * A rule nobody can answer separates nobody: an entry with no prediction does not beat an entry
  * that also has none, and neither of them beats anyone by default.

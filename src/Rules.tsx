@@ -220,7 +220,7 @@ export function Rules() {
         </p>
         <p>
           The weekly prize is <strong>raw points, multipliers ignored</strong>, so it stays winnable
-          by somebody whose contest is already over. Ties go to the better quarterback; still level,
+          by somebody whose contest is already over. Ties go to the better quarterback; still tied,
           the quarterback and the first running back together; and on down the roster until somebody
           is ahead.
         </p>

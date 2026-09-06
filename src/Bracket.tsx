@@ -114,7 +114,7 @@ export function BracketLadder({ contest, rounds }: { contest: Contest; rounds: (
 
       <p className="footnote">
         Clubs never actually meet. Whichever of the two scores more in its own real fixture goes
-        through; level on points, the quarterback with more passing yards; level again, the better seed.
+        through; tied on points, the quarterback with more passing yards; tied again, the better seed.
       </p>
     </>
   );
