@@ -18,6 +18,19 @@ import { colorOf, crest } from './domain/clubs.ts';
 
 const CONTEST = 'rehearsal-2026';
 
+const lockDate = (when: Date) =>
+  when.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+/** The Monday after a round's games, which is when it gets decided. */
+function mondayAfter(lock: Date): Date {
+  const monday = new Date(lock);
+  monday.setDate(monday.getDate() + ((8 - monday.getDay()) % 7 || 7));
+  return monday;
+}
+
+const shortDay = (when: Date) =>
+  when.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+
 function Side({ club, seed, won }: { club: string; seed: number; won: boolean | null }) {
   return (
     <div className={`side ${won === true ? 'won' : ''} ${won === false ? 'out' : ''}`}>
@@ -47,6 +60,11 @@ export function BracketLadder({ contest, rounds }: { contest: Contest; rounds: (
                 <div>
                   <strong>{round.name}</strong>
                   <span className="team"> · week {round.week}</span>
+                  {lock && (
+                    <div className="rounddate">
+                      {decided ? `Decided ${shortDay(mondayAfter(lock))}` : `Locks ${lockDate(lock)}`}
+                    </div>
+                  )}
                 </div>
                 <span className={`state ${current ? 'now' : decided ? 'done' : ''}`}>
                   {decided ? 'decided' : current ? (lock && lock > new Date() ? 'open' : 'in play') : 'to come'}
