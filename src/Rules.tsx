@@ -85,8 +85,14 @@ export function Rules() {
         </p>
         <p>
           Denver and Seattle have first-round byes. Their players score <strong>nothing</strong> in
-          the Wild Card round — but hold one and he is worth <strong>2x</strong> in the Divisional,
-          which is the whole gamble.
+          the Wild Card round — but the round still counts towards holding them. Keep one and he is{' '}
+          <strong>2x</strong> in the Divisional, <strong>3x</strong> in the Conference and{' '}
+          <strong>4x</strong> in the Super Bowl, exactly like anybody you picked in week one.
+        </p>
+        <p>
+          So you give up a round of scoring to back a club you think goes all the way. That is the
+          whole gamble, and it is the only decision in the Wild Card round that is really about
+          anything.
         </p>
         <p>
           Rounds are decided on Monday nights, once every club has played. Losing clubs are out,
