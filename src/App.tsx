@@ -6,6 +6,7 @@ import { Rules } from './Rules.tsx';
 import { Register } from './Register.tsx';
 import { Commissioner } from './Commissioner.tsx';
 import { Moves } from './Moves.tsx';
+import { Version } from './Version.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
 import { readContest, readEntries } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
@@ -40,6 +41,7 @@ export function App() {
 
   return (
     <div className="wrap">
+      <Version />
       <header>
         <div className="topline">
           <div className="brand">
