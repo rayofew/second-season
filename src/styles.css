@@ -90,7 +90,7 @@ nav button[aria-current="true"] {
 
 .footnote { color: var(--faint); font-size: 12px; line-height: 1.6; margin: 2px 4px 0; }
 
-/* Never colour alone: every badge carries its own number. */
+/* Never color alone: every badge carries its own number. */
 .mult {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 30px; height: 22px; padding: 0 7px;
@@ -278,7 +278,7 @@ td { font-variant-numeric: tabular-nums; }
   text-transform: uppercase; color: var(--faint);
 }
 
-/* The club's colour rings the face, so nothing else on the row has to shout it. */
+/* The club's color rings the face, so nothing else on the row has to shout it. */
 .face {
   display: block; border-radius: 50%; overflow: hidden;
   border: 2px solid var(--faint); background: #0e1424; flex: none;

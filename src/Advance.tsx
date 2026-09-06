@@ -5,7 +5,7 @@ import { clubScores } from './providers/schedule.ts';
 import { stats } from './providers/sleeper.ts';
 import { advanceRound, readPool, readTeams } from './store/firestore.ts';
 import type { Contest, RoundTeams } from './store/firestore.ts';
-import { colourOf, crest } from './domain/clubs.ts';
+import { colorOf, crest } from './domain/clubs.ts';
 
 /**
  * Deciding a round from the commissioner's phone.
@@ -95,7 +95,7 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
         <div className="tie" key={`${decision.home}-${decision.away}`}>
           <span className="side">
             <img className="clubcrest" src={crest(decision.winner)} alt="" width="24" height="24" />
-            <span className="club" style={{ color: colourOf(decision.winner) }}>{decision.winner}</span>
+            <span className="club" style={{ color: colorOf(decision.winner) }}>{decision.winner}</span>
           </span>
           <span className="why">{decision.why}</span>
         </div>

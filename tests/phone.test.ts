@@ -10,7 +10,7 @@ describe('phone numbers', () => {
     assert.equal(formatPhone('14254714580'), '(425) 471-4580', 'a leading one is a country code');
   });
 
-  it('leaves anything it does not recognise alone', () => {
+  it('leaves anything it does not recognize alone', () => {
     // Better an unfamiliar number shown as typed than one mangled into a shape it does not have.
     assert.equal(formatPhone('+44 7700 900123'), '+44 7700 900123');
     assert.equal(formatPhone('12345'), '12345');

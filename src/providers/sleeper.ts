@@ -29,7 +29,7 @@ async function get<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-/** Stat lines for one scoring period, by player id. Team defences are keyed by abbreviation. */
+/** Stat lines for one scoring period, by player id. Team defenses are keyed by abbreviation. */
 export async function stats(season: number, type: SeasonType, week: number): Promise<Record<string, StatLine>> {
   return get(`stats/nfl/${type}/${season}/${week}`);
 }
@@ -55,7 +55,7 @@ export async function directory(): Promise<Map<string, SleeperPlayer>> {
       id,
       name: entry.full_name ?? entry.last_name ?? id,
       position,
-      // A team defence is its own club, and Sleeper leaves the field empty for them.
+      // A team defense is its own club, and Sleeper leaves the field empty for them.
       team: position === 'DEF' ? id : (entry.team ?? null),
     });
   }
@@ -64,7 +64,7 @@ export async function directory(): Promise<Map<string, SleeperPlayer>> {
 }
 
 /**
- * Which clubs took the field in a round, read from who has a defence in the data.
+ * Which clubs took the field in a round, read from who has a defense in the data.
  *
  * The bracket is not published anywhere free, but it does not need to be: a team that played has a
  * stat line and a team that did not has nothing. Wild Card weekend returns twelve clubs, and the

@@ -1,7 +1,7 @@
 /**
- * Club colours and crests.
+ * Club colors and crests.
  *
- * The colours are typed out because nobody publishes them as an API worth depending on, and there
+ * The colors are typed out because nobody publishes them as an API worth depending on, and there
  * are only thirty-two. Each is the club's primary, chosen to sit on a dark ground — a few real
  * primaries are almost black, so those use the secondary instead and the badge stays legible.
  *
@@ -10,7 +10,7 @@
  * nothing here does.
  */
 
-export const CLUB_COLOUR: Record<string, string> = {
+export const CLUB_COLOR: Record<string, string> = {
   ARI: '#97233f', ATL: '#a71930', BAL: '#7c5cbf', BUF: '#00338d', CAR: '#0085ca',
   CHI: '#e64100', CIN: '#fb4f14', CLE: '#ff3c00', DAL: '#7f9695', DEN: '#fb4f14',
   DET: '#0076b6', GB:  '#ffb612', HOU: '#a71930', IND: '#0058a8', JAX: '#12a2a8',
@@ -20,10 +20,10 @@ export const CLUB_COLOUR: Record<string, string> = {
   TEN: '#4b92db', WAS: '#ffb612',
 };
 
-export const colourOf = (club: string | null | undefined): string =>
-  (club && CLUB_COLOUR[club.toUpperCase()]) || '#5d6a86';
+export const colorOf = (club: string | null | undefined): string =>
+  (club && CLUB_COLOR[club.toUpperCase()]) || '#5d6a86';
 
-/** A player's face. Team defences have no headshot, so they show their crest instead. */
+/** A player's face. Team defenses have no headshot, so they show their crest instead. */
 export const headshot = (playerId: string, position: string): string =>
   position === 'DEF'
     ? `https://sleepercdn.com/images/team_logos/nfl/${playerId.toLowerCase()}.png`

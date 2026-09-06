@@ -1,13 +1,13 @@
-import { colourOf, crest, headshot } from './domain/clubs.ts';
+import { colorOf, crest, headshot } from './domain/clubs.ts';
 
 /**
  * One player, wherever he appears: on a roster, in the picker, in a scoring breakdown.
  *
- * A face on every row is the difference between a fantasy app and a spreadsheet — you recognise
- * Saquon Barkley before you have read his name. The club's colour does the identifying work in the
- * ring around the photo, so the row needs no coloured text to say which team he plays for.
+ * A face on every row is the difference between a fantasy app and a spreadsheet — you recognize
+ * Saquon Barkley before you have read his name. The club's color does the identifying work in the
+ * ring around the photo, so the row needs no colored text to say which team he plays for.
  *
- * Team defences have no face, so they show their crest, which is the honest answer rather than a
+ * Team defenses have no face, so they show their crest, which is the honest answer rather than a
  * grey silhouette pretending to be somebody.
  */
 
@@ -20,7 +20,7 @@ export interface RowPlayer {
 
 export function Face({ player, size = 44 }: { player: RowPlayer; size?: number }) {
   return (
-    <span className="face" style={{ width: size, height: size, borderColor: colourOf(player.team) }}>
+    <span className="face" style={{ width: size, height: size, borderColor: colorOf(player.team) }}>
       <img
         src={headshot(player.id, player.position)}
         alt=""
@@ -67,7 +67,7 @@ export function PlayerRow({
           <span className="rowmain">
             <span className="rowname">{player.name}</span>
             <span className="rowmeta">
-              <span className="pos" style={{ color: colourOf(player.team) }}>{player.position}</span>
+              <span className="pos" style={{ color: colorOf(player.team) }}>{player.position}</span>
               <span className="dot">·</span>
               {player.team}
               {hint && <><span className="dot">·</span>{hint}</>}

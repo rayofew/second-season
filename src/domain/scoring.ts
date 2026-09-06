@@ -26,7 +26,7 @@ const stat = (line: StatLine, field: string): number => line[field] ?? 0;
  * Kickers are included on purpose: a fake field goal is rare, but when it happens the yards are
  * real, and there is no cost to counting them.
  */
-function offence(line: StatLine, rules: Scoring): number {
+function offense(line: StatLine, rules: Scoring): number {
   return (
     stat(line, 'pass_yd') / rules.passingYardsPerPoint +
     stat(line, 'pass_td') * rules.passingTouchdown +
@@ -37,7 +37,7 @@ function offence(line: StatLine, rules: Scoring): number {
     stat(line, 'rec_yd') / rules.receivingYardsPerPoint +
     stat(line, 'rec_td') * rules.receivingTouchdown +
     stat(line, 'fum_lost') * rules.fumbleLost +
-    // Only ever reached by an outfield player: a defence's return scores are counted with the rest
+    // Only ever reached by an outfield player: a defense's return scores are counted with the rest
     // of its work below, so nobody is paid twice for the same touchdown.
     stat(line, 'st_td') * rules.returnTouchdown +
     (stat(line, 'pass_2pt') + stat(line, 'rush_2pt') + stat(line, 'rec_2pt')) * rules.twoPointConversion
@@ -70,16 +70,16 @@ function kicking(line: StatLine, rules: Scoring): number {
 }
 
 /**
- * Defence and special teams.
+ * Defense and special teams.
  *
  * `pts_allow` is read rather than defaulted, because zero is a real and valuable answer here. A
  * missing field would otherwise be indistinguishable from a shutout, and would quietly hand ten
- * points to a defence that never took the field.
+ * points to a defense that never took the field.
  *
  * Tiers are searched in order and the first that fits wins, so they must be listed cheapest first —
  * which is also the only order anyone would write them in.
  */
-function defence(line: StatLine, rules: Scoring): number {
+function defense(line: StatLine, rules: Scoring): number {
   const allowed = line.pts_allow;
   const allowanceBonus =
     allowed === undefined ? 0 : (rules.pointsAllowed.find((tier) => allowed <= tier.upTo)?.points ?? 0);
@@ -101,7 +101,7 @@ function defence(line: StatLine, rules: Scoring): number {
  *
  * Scoring is split by position rather than applied wholesale because several field names mean
  * different things depending on who recorded them — `int` is a quarterback's mistake and a
- * defence's takeaway. Today's data never mixes them, but nothing promises it will stay that way,
+ * defense's takeaway. Today's data never mixes them, but nothing promises it will stay that way,
  * and the cost of being careful is one comparison.
  *
  * A player whose team did not play — eliminated, or resting during a bye — has no stat line at all,
@@ -114,8 +114,8 @@ export function rawPoints(
 ): number {
   if (!line) return 0;
   const rules = settings.scoring;
-  if (position === 'DEF') return defence(line, rules);
-  return offence(line, rules) + (position === 'K' ? kicking(line, rules) : 0);
+  if (position === 'DEF') return defense(line, rules);
+  return offense(line, rules) + (position === 'K' ? kicking(line, rules) : 0);
 }
 
 /** Points as they are shown. Kept apart from the figure that is stored, which never loses precision. */

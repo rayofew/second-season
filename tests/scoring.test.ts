@@ -42,7 +42,7 @@ describe('raw points, against real Wild Card weekend stat lines', () => {
     close(rawPoints('K', line), 2 * 3 + 4 + 3, 'Fairbairn');
   });
 
-  it('scores a defence', () => {
+  it('scores a defense', () => {
     // Rams: 9 sacks, 1 INT, 1 fumble recovery, 1 defensive TD, 9 points allowed, 8 punt return yds.
     const line: StatLine = { sack: 9, int: 1, fum_rec: 1, def_td: 1, pts_allow: 9, def_pr_yd: 8 };
     close(rawPoints('DEF', line), 18 + 2 + 2 + 6 + 8 / 25, 'Rams');
@@ -80,7 +80,7 @@ describe('the rules that decide games', () => {
   });
 
   it('reads an interception as the position means it', () => {
-    // The same field name is a quarterback's mistake and a defence's takeaway.
+    // The same field name is a quarterback's mistake and a defense's takeaway.
     assert.equal(rawPoints('QB', { pass_int: 1 }), -2);
     assert.equal(rawPoints('DEF', { int: 1 }), 2);
   });
@@ -181,8 +181,8 @@ describe('return touchdowns', () => {
     assert.equal(rawPoints('RB', { rush_yd: 40, st_td: 1 }), 4 + 6);
   });
 
-  it('does not pay a defence twice for the same score', () => {
-    // A defence's return touchdowns are counted with the rest of its work, never through the
+  it('does not pay a defense twice for the same score', () => {
+    // A defense's return touchdowns are counted with the rest of its work, never through the
     // outfield path, so the two can't both land on one stat line.
     assert.equal(rawPoints('DEF', { def_st_td: 1, st_td: 1 }), 6);
   });

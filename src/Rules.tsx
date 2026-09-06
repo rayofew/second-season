@@ -123,7 +123,7 @@ export function Rules() {
         <h2>How the game works</h2>
         <p>
           Nine players: a quarterback, two running backs, two receivers, a tight end, a flex
-          (running back, receiver or tight end), a kicker and a defence. All nine score. There is no
+          (running back, receiver or tight end), a kicker and a defense. All nine score. There is no
           bench.
         </p>
         <p>
@@ -205,7 +205,7 @@ export function Rules() {
       />
 
       <Table
-        title="Defence and special teams"
+        title="Defense and special teams"
         rows={[
           ['Sack', signed(scoring.sack)],
           ['Interception', signed(scoring.defensiveInterception)],

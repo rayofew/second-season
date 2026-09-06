@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { readAllTeams, readContest } from './store/firestore.ts';
 import type { Contest, RoundTeams } from './store/firestore.ts';
-import { colourOf, crest } from './domain/clubs.ts';
+import { colorOf, crest } from './domain/clubs.ts';
 
 /**
  * The whole bracket, all four rounds.
@@ -23,7 +23,7 @@ function Side({ club, seed, won }: { club: string; seed: number; won: boolean | 
     <div className={`side ${won === true ? 'won' : ''} ${won === false ? 'out' : ''}`}>
       <span className="seed">{seed}</span>
       <img className="clubcrest" src={crest(club)} alt="" width="24" height="24" loading="lazy" />
-      <span className="club" style={won === false ? undefined : { color: colourOf(club) }}>{club}</span>
+      <span className="club" style={won === false ? undefined : { color: colorOf(club) }}>{club}</span>
     </div>
   );
 }

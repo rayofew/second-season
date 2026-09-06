@@ -1,7 +1,7 @@
 /**
  * What the contest is and how it scores.
  *
- * Everything here is data rather than behaviour, because all of it is a league setting: the
+ * Everything here is data rather than behavior, because all of it is a league setting: the
  * commissioner changes a value on the rules screen and every engine that reads it follows, with
  * nothing recompiled and no code aware that anything moved. Eastside FFL is only the default.
  *
@@ -41,14 +41,14 @@ export type Round = (typeof ROUNDS)[number];
 export const MAX_MULTIPLIER = ROUNDS.length;
 
 /**
- * What a defence earns for holding an offence down, cheapest tier first.
+ * What a defense earns for holding an offense down, cheapest tier first.
  *
  * A list rather than named fields because leagues disagree about how many tiers there are far more
  * than they disagree about what they pay. Eastside stops after two; a league wanting the usual six
  * bands adds them here and nothing else changes.
  */
 export interface PointsAllowedTier {
-  /** The most a defence may concede and still earn this. */
+  /** The most a defense may concede and still earn this. */
   upTo: number;
   points: number;
 }

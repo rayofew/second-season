@@ -30,7 +30,7 @@ const pool = [];
 for (const [id, entry] of Object.entries(directory)) {
   const position = entry.position as Position | undefined;
   if (!position || !WANTED.has(position)) continue;
-  // A defence is its own club and Sleeper leaves its team field empty.
+  // A defense is its own club and Sleeper leaves its team field empty.
   const team = position === 'DEF' ? id : entry.team;
   if (!team || !clubs.has(team)) continue;
 
