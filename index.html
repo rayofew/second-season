@@ -8,6 +8,13 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="apple-touch-icon" href="/crest-192.png" />
     <title>Eastside Second-Season Playoff Challenge</title>
+    <script>
+      // Before anything paints, so a reload never flashes the theme somebody turned off.
+      try {
+        var saved = localStorage.getItem('second-season.theme');
+        if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

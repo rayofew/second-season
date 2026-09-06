@@ -8,6 +8,7 @@ import { Commissioner } from './Commissioner.tsx';
 import { Moves } from './Moves.tsx';
 import { Version } from './Version.tsx';
 import { Home } from './Home.tsx';
+import { Theme } from './Theme.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
 import { readContest, readEntries } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
@@ -49,7 +50,10 @@ export function App() {
             <img src="/crest-96.png" alt="" width="56" height="56" />
             <h1>Second Season</h1>
           </div>
-          {user && <SignOut user={user} />}
+          <span className="headerside">
+            <Theme />
+            {user && <SignOut user={user} />}
+          </span>
         </div>
         <p>
           {contest
