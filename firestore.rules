@@ -144,6 +144,17 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
+      /**
+       * Raw points the commissioner has set by hand.
+       *
+       * Kept apart from the imported scores, which no client may touch, so re-running the import
+       * cannot quietly undo an edit and both figures survive to be compared.
+       */
+      match /corrections/{roundId} {
+        allow read: if isMember(contestId) || isCommissioner(contestId);
+        allow write: if isCommissioner(contestId);
+      }
+
       // Written by the scoring job through the Admin SDK, which bypasses these rules entirely.
       // No client may write them, including the commissioner's browser.
       match /scores/{roundId} {

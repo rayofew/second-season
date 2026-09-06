@@ -5,7 +5,7 @@ import { table } from './domain/standings.ts';
 import type { Entry, Placing } from './domain/standings.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
 import type { StatLine } from './domain/scoring.ts';
-import { readAllRosters, readContest, readEntries, readPool, readScores } from './store/firestore.ts';
+import { readAllRosters, readContest, readCorrections, readEntries, readPool, readScores } from './store/firestore.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import type { Contest, Manager, PoolPlayer } from './store/firestore.ts';
 import { Pool } from './Pool.tsx';
@@ -57,14 +57,19 @@ export function Standings({ uid }: { uid: string }) {
 
         const uids = people.map((person) => person.uid);
         const statsByRound: Record<string, StatLine>[] = [];
+        const correctionsByRound: Record<string, number>[] = [];
         const histories: Record<string, HeldPlayer[][]> = Object.fromEntries(uids.map((id) => [id, []]));
 
         for (const round of locked) {
-          const [scores, rosters] = await Promise.all([
+          const [scores, rosters, fixes] = await Promise.all([
             readScores(CONTEST, round.round),
             readAllRosters(CONTEST, uids, round.round),
+            readCorrections(CONTEST, round.round).catch(() => ({})),
           ]);
           statsByRound.push(scores);
+          correctionsByRound.push(
+            Object.fromEntries(Object.entries(fixes).map(([playerId, fix]) => [playerId, fix.raw])),
+          );
           for (const id of uids) histories[id]!.push(rosters[id] ?? []);
         }
 
@@ -73,7 +78,7 @@ export function Standings({ uid }: { uid: string }) {
           name: person.teamName,
           history: histories[person.uid]!,
         }));
-        setPlacings(table(entries, { statsByRound }, EASTSIDE));
+        setPlacings(table(entries, { statsByRound, correctionsByRound }, EASTSIDE));
       } catch (cause) {
         setProblem((cause as Error).message);
       }
@@ -172,6 +177,11 @@ export function Standings({ uid }: { uid: string }) {
                                     right={
                                       <span className="math">
                                         <span className={player.raw === 0 ? 'zero' : undefined}>{points(player.raw)}</span>
+                                        {player.corrected && (
+                                          <span className="fixed" title={`Imported as ${points(player.imported ?? 0)}`}>
+                                            {' '}corrected
+                                          </span>
+                                        )}
                                         {' × '}{player.multiplier}{' = '}<b>{points(player.credited)}</b>
                                       </span>
                                     }

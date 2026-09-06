@@ -514,3 +514,15 @@ td { font-variant-numeric: tabular-nums; }
 }
 
 .ghost.back { margin-bottom: var(--gap); text-align: left; }
+
+.fixed {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--gold); border: 1px solid #6a5220; border-radius: 4px; padding: 0 4px; margin-left: 4px;
+}
+
+.reasonlabel { display: block; font-size: 12px; font-weight: 650; color: var(--dim); margin-bottom: 6px; }
+.editor input:not([type='number']) {
+  width: 100%; padding: 11px 12px; border-radius: 10px; font-size: 16px;
+  border: 1px solid var(--line); background: var(--ground); color: var(--ink);
+}
+.editor .row { padding-left: 0; padding-right: 0; }

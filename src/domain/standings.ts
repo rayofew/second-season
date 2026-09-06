@@ -27,12 +27,24 @@ export interface Entry {
 export interface Contest {
   /** One stat file per round, in playing order. */
   statsByRound: readonly Record<string, StatLine>[];
+  /**
+   * Raw points the commissioner has set by hand, by round and then player.
+   *
+   * Kept apart from the statistics rather than written over them. Re-running the import would
+   * silently undo an edit, and "the provider said 12.4 and I made it 18.4" is a different fact from
+   * "it was always 18.4" — in February the difference is the whole argument.
+   */
+  correctionsByRound?: readonly Record<string, number>[];
   /** What the Super Bowl actually totalled, once it is known. */
   superBowlTotal?: number;
 }
 
 export interface PlayerScore {
   playerId: string;
+  /** True when the commissioner set this figure by hand. */
+  corrected?: boolean;
+  /** What the import said, kept beside the corrected figure rather than replaced by it. */
+  imported?: number;
   position: Position;
   slot: string;
   streak: number;
@@ -73,10 +85,17 @@ export function scoreEntry(
   const rounds = entry.history.map((_, round): RoundScore => {
     const lines = contest.statsByRound[round] ?? {};
 
+    const corrections = contest.correctionsByRound?.[round] ?? {};
+
     const players = standingsFor(entry.history, round, settings).map((standing): PlayerScore => {
-      // Raw first, always. The multiplier is applied to a figure that is already final.
-      const raw = rawPoints(standing.position, lines[standing.playerId], settings);
+      // Raw first, always. The multiplier is applied to a figure that is already final — and a
+      // correction, where one exists, is that figure.
+      const imported = rawPoints(standing.position, lines[standing.playerId], settings);
+      const corrected = corrections[standing.playerId];
+      const raw = corrected ?? imported;
       return {
+        corrected: corrected !== undefined,
+        imported,
         playerId: standing.playerId,
         position: standing.position,
         slot: standing.slot,

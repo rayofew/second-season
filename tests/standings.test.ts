@@ -173,3 +173,43 @@ describe('a scoring correction', () => {
     assert.equal(after[0]!.credited, 10 + 30 + 30 + 40, 'and so is the cumulative total');
   });
 });
+
+describe('a correction by hand', () => {
+  it('replaces the imported figure and moves the table', () => {
+    const { entries, contest } = contestOf([
+      { name: 'Wronged', raw: [10, 10, 10, 10] },
+      { name: 'Leader', raw: [10, 10, 10, 12] },
+    ]);
+    assert.deepEqual(names(table(entries, contest)), ['Leader', 'Wronged']);
+
+    // The commissioner finds the Divisional round short and sets it by hand.
+    const corrected: Contest = { ...contest, correctionsByRound: [{}, { Wronged: 30 }, {}, {}] };
+    const after = table(entries, corrected);
+    assert.deepEqual(names(after), ['Wronged', 'Leader'], 'the lead changes hands');
+    assert.equal(after[0]!.rounds[1]!.credited, 60, '30 raw at 2x');
+  });
+
+  it('keeps what the import said beside what it was changed to', () => {
+    // "The provider said 10 and I made it 30" is a different fact from "it was always 30".
+    const { entries, contest } = contestOf([{ name: 'A', raw: [10, 10, 10, 10] }]);
+    const score = scoreEntry(entries[0]!, { ...contest, correctionsByRound: [{ A: 30 }] });
+    assert.equal(score.rounds[0]!.players[0]!.raw, 30);
+    assert.equal(score.rounds[0]!.players[0]!.imported, 10);
+    assert.equal(score.rounds[0]!.players[0]!.corrected, true);
+  });
+
+  it('leaves everybody else alone', () => {
+    const { entries, contest } = contestOf([
+      { name: 'A', raw: [10, 10, 10, 10] },
+      { name: 'B', raw: [10, 10, 10, 10] },
+    ]);
+    const after = table(entries, { ...contest, correctionsByRound: [{ A: 25 }] });
+    assert.equal(after.find((placing) => placing.name === 'B')!.rounds[0]!.credited, 10);
+  });
+
+  it('can correct a figure downwards, including to nothing', () => {
+    const { entries, contest } = contestOf([{ name: 'A', raw: [20, 0, 0, 0] }]);
+    const score = scoreEntry(entries[0]!, { ...contest, correctionsByRound: [{ A: 0 }] });
+    assert.equal(score.rounds[0]!.credited, 0, 'zero is a correction, not a missing one');
+  });
+});

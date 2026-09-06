@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, query, setDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, deleteField, doc, getDoc, getDocs, limit, orderBy, query, setDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
 import type { HeldPlayer } from '../domain/multiplier.ts';
 import type { StatLine } from '../domain/scoring.ts';
 import type { ContestSettings } from '../domain/rules.ts';
@@ -360,4 +360,44 @@ export async function setPrizes(contestId: string, prizes: Prizes): Promise<void
 /** Ticking somebody off as having paid. A note in a ledger, not a transaction. */
 export async function setPaid(contestId: string, uid: string, paid: boolean): Promise<void> {
   await updateDoc(doc(db, 'contests', contestId, 'entries', uid), { paid });
+}
+
+export interface Correction {
+  raw: number;
+  reason: string;
+  by: string;
+  at: Date;
+}
+
+/** What the commissioner has set by hand for a round, by player. */
+export async function readCorrections(contestId: string, round: number): Promise<Record<string, Correction>> {
+  const snapshot = await getDoc(doc(db, 'contests', contestId, 'corrections', String(round)));
+  if (!snapshot.exists()) return {};
+  const data = snapshot.data() as Record<string, { raw: number; reason: string; by: string; at?: { toDate(): Date } }>;
+  return Object.fromEntries(
+    Object.entries(data).map(([playerId, entry]) => [
+      playerId,
+      { ...entry, at: entry.at?.toDate() ?? new Date() },
+    ]),
+  );
+}
+
+/**
+ * Setting a figure by hand, or taking the correction away again.
+ *
+ * A reason is required. A number somebody changed for a forgotten reason is worse than the number
+ * they changed it from, and in February it is the only thing anybody will ask about.
+ */
+export async function setCorrection(
+  contestId: string,
+  round: number,
+  playerId: string,
+  correction: { raw: number; reason: string; by: string } | null,
+): Promise<void> {
+  const ref = doc(db, 'contests', contestId, 'corrections', String(round));
+  await setDoc(
+    ref,
+    { [playerId]: correction ? { ...correction, at: new Date() } : deleteField() },
+    { merge: true },
+  );
 }
