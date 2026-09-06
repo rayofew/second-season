@@ -64,7 +64,8 @@ export function Pool({
     }
   }
 
-  if (saved.buyIn === 0 && !commissioner) return null;
+  // Shown even when nothing has been set: an empty pot is information too, and it saves people
+  // asking whether there is money in this.
 
   return (
     <>
@@ -72,7 +73,7 @@ export function Pool({
         <div className="confhead">Prize pool{table.total > 0 && ` — ${money(table.total)}`}</div>
 
         {table.total === 0 ? (
-          <div className="pending">Nobody is playing for anything yet.</div>
+          <div className="pending">No buy-in set — nobody is playing for money.</div>
         ) : (
           <>
             {table.payouts.map((payout) => (
