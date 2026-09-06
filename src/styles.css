@@ -478,3 +478,10 @@ td { font-variant-numeric: tabular-nums; }
 .liveraw { font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums; }
 .livepts.upcoming b { color: var(--faint); font-weight: 500; }
 .livepts.playing b { color: var(--gold); }
+
+.rowright { display: flex; align-items: center; gap: 10px; flex: none; }
+.proj { display: flex; flex-direction: column; text-align: right; line-height: 1.25; }
+.proj b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--dim); }
+
+.cdcounts.standalone { display: flex; justify-content: center; gap: 6px; margin: 14px 0 0; flex-wrap: wrap; }
+.ghost.wide { margin-top: 16px; width: 100%; max-width: 320px; }

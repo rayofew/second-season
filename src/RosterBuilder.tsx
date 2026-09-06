@@ -6,6 +6,8 @@ import type { HeldPlayer } from './domain/multiplier.ts';
 import { readContest, readHistory, readPool, readTeams, recordMoves, saveRoster } from './store/firestore.ts';
 import type { Move } from './store/firestore.ts';
 import { PlayerRow } from './PlayerRow.tsx';
+import { projections } from './providers/sleeper.ts';
+import { rawPoints, display } from './domain/scoring.ts';
 import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
 
 /**
@@ -33,6 +35,8 @@ export function RosterBuilder({ uid }: { uid: string }) {
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   // What the roster looked like when it was last saved, so a submission can say what changed.
   const [baseline, setBaseline] = useState<HeldPlayer[]>([]);
+  // What each man is expected to do this week, in our scoring. The reason to pick him.
+  const [projected, setProjected] = useState<Map<string, number>>(new Map());
   const [problem, setProblem] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,6 +65,17 @@ export function RosterBuilder({ uid }: { uid: string }) {
           : (past[round - 1] ?? []).filter((held) => alive.has(teamOf.get(held.playerId) ?? ''));
         setRoster(opening);
         setBaseline(opening);
+
+        // Projections are most use while somebody is still choosing, so they are fetched now
+        // rather than once the round has shut and nothing can be done about them.
+        const config = found.rounds[round];
+        if (config) {
+          const expected = await projections(found.season, config.seasonType, config.week).catch(() => ({}));
+          setProjected(new Map(board.map((player) => [
+            player.id,
+            rawPoints(player.position as Position, (expected as Record<string, Record<string, number>>)[player.id], EASTSIDE),
+          ])));
+        }
       } catch (cause) {
         setProblem((cause as Error).message);
       }
@@ -192,6 +207,24 @@ export function RosterBuilder({ uid }: { uid: string }) {
                     : standing?.retained ? 'kept'
                     : 'new'
                 }
+                right={
+                  <span className="rowright">
+                    {person && !resting && (
+                      <span className="proj">
+                        <b>{display(projected.get(person.id) ?? 0, EASTSIDE).toFixed(1)}</b>
+                        <span className="liveraw">proj</span>
+                      </span>
+                    )}
+                    {!locked && (
+                      <button className="ghost small" onClick={(event) => {
+                        event.stopPropagation();
+                        setPicking(open ? null : slot.id);
+                      }}>
+                        {person ? 'Change' : 'Choose'}
+                      </button>
+                    )}
+                  </span>
+                }
                 onClick={() => !locked && setPicking(open ? null : slot.id)}
               />
 
@@ -211,7 +244,11 @@ export function RosterBuilder({ uid }: { uid: string }) {
                         <PlayerRow
                           key={candidate.id}
                           player={candidate}
-                          hint={`${candidate.form.toFixed(1)} a game${byes.has(candidate.team) ? ' · resting' : ''}`}
+                          hint={
+                            byes.has(candidate.team)
+                              ? 'resting this round'
+                              : `${display(projected.get(candidate.id) ?? 0, EASTSIDE).toFixed(1)} projected · ${candidate.form.toFixed(1)} a game last year`
+                          }
                           right={<span className={incumbent ? 'keeps' : 'resets'}>{incumbent ? 'keeps streak' : '1x'}</span>}
                           onClick={() => choose(slot.id, candidate)}
                         />

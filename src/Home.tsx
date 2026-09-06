@@ -143,6 +143,20 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
             `Picks lock ${lock ? lock.toLocaleString(undefined, { weekday: 'long', hour: 'numeric', minute: '2-digit' }) : 'soon'}.`
           )}
         </div>
+        {!locked && counts.length > 0 && (
+          <div className="cdcounts standalone">
+            {counts.map((entry) => (
+              <span key={entry.level} className={`mult mult-${entry.level}`}>
+                {entry.count} at {entry.level}x
+              </span>
+            ))}
+          </div>
+        )}
+
+        {!locked && submitted && (
+          <button className="ghost wide" onClick={onGoToTeam}>Change your team</button>
+        )}
+
         {!locked && !submitted && (
           <button className="submit" onClick={onGoToTeam}>
             {roster.length === 0 ? 'Pick your nine' : `Finish your team — ${EASTSIDE.slots.length - roster.length} to go`}
@@ -158,7 +172,7 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
         </div>
       )}
 
-      {roster.length > 0 && (
+      {roster.length > 0 && locked && (
         <div className="card">
           <div className="confhead">
             Your team
