@@ -215,7 +215,10 @@ export function RosterBuilder({ uid }: { uid: string }) {
                 hint={
                   !person ? (locked ? undefined : 'choose someone')
                     : resting ? 'resting, then 2x'
-                    : `${fixtureLabel(games.get(person.team))} · ${standing?.retained ? 'kept' : 'new'}`
+                    // Nobody has been kept in the opening round, so saying "new" nine times says nothing.
+                    : round === 0
+                      ? fixtureLabel(games.get(person.team))
+                      : `${fixtureLabel(games.get(person.team))} · ${standing?.retained ? 'kept' : 'new'}`
                 }
                 right={
                   <span className="rowright">
