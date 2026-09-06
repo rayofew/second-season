@@ -3,6 +3,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import { db } from './firebase.ts';
 import { typingPhone } from './domain/phone.ts';
+import { ThemeChoice } from './Theme.tsx';
 
 /**
  * Asking to join, which is not the same as being in.
@@ -129,6 +130,8 @@ export function Register({ user }: { user: User }) {
           <input type="file" accept="image/*" onChange={(event) => void pick(event.target.files?.[0])} />
         </div>
       </label>
+
+      <ThemeChoice />
 
       {problem && <p className="problem">{problem}</p>}
 
