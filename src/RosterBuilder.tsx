@@ -137,6 +137,14 @@ export function RosterBuilder({
     setSaving('idle');
   }
 
+  function eligibleCount(slotId: string): number {
+    const slot = EASTSIDE.slots.find((entry) => entry.id === slotId)!;
+    const taken = new Set(roster.filter((held) => held.slot !== slotId).map((held) => held.playerId));
+    return pool.filter((player) =>
+      slot.eligible.includes(player.position as Position) && alive.has(player.team) && !taken.has(player.id),
+    ).length;
+  }
+
   function candidatesFor(slotId: string): PoolPlayer[] {
     const slot = EASTSIDE.slots.find((entry) => entry.id === slotId)!;
     const taken = new Set(roster.filter((held) => held.slot !== slotId).map((held) => held.playerId));
@@ -145,6 +153,7 @@ export function RosterBuilder({
       .filter((player) => slot.eligible.includes(player.position as Position))
       .filter((player) => alive.has(player.team) && !taken.has(player.id))
       .filter((player) => !query || player.name.toLowerCase().includes(query))
+      .sort((first, second) => (projected.get(second.id) ?? 0) - (projected.get(first.id) ?? 0))
       .slice(0, 40);
   }
 
@@ -260,14 +269,22 @@ export function RosterBuilder({
               />
 
               {open && !locked && (
-                <div className="picker">
+                <div className="picker" ref={(node) => node?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })}>
                   <input
-                    autoFocus
                     value={search}
                     placeholder={`Search ${slot.eligible.join(', ')}`}
                     onChange={(event) => setSearch(event.target.value)}
                     onClick={(event) => event.stopPropagation()}
                   />
+                  <div className="pickercount">
+                    {(() => {
+                      const shown = candidatesFor(slot.id).length;
+                      const all = eligibleCount(slot.id);
+                      return shown < all
+                        ? `Best ${shown} of ${all} — search to find anybody else`
+                        : `${all} available`;
+                    })()}
+                  </div>
                   <div className="options">
                     {candidatesFor(slot.id).map((candidate) => {
                       const incumbent = previous.some((entry) => entry.playerId === candidate.id);
