@@ -49,16 +49,16 @@
    down until they sit on light without shouting. */
 :root[data-theme='light'] {
   --ink: #131a2c;
-  --dim: #55617a;
-  --faint: #8791a6;
+  --dim: #414c63;
+  --faint: #616c83;
   --ground: #f4f6fb;
   --glow: #e4eaf6;
   --panel: #ffffff;
-  --raised: #eef2f9;
-  --sunk: #f7f9fd;
-  --line: #dde3ee;
-  --line-strong: #b9c4d8;
-  --hairline: #e8edf5;
+  --raised: #e3eaf5;
+  --sunk: #eef2f9;
+  --line: #ccd5e4;
+  --line-strong: #9dabc4;
+  --hairline: #dbe2ee;
   --chip: #e8edf7;
 
   --live: #16794a;
@@ -85,16 +85,16 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme='dark']) {
     --ink: #131a2c;
-    --dim: #55617a;
-    --faint: #8791a6;
+    --dim: #414c63;
+    --faint: #616c83;
     --ground: #f4f6fb;
     --glow: #e4eaf6;
     --panel: #ffffff;
-    --raised: #eef2f9;
-    --sunk: #f7f9fd;
-    --line: #dde3ee;
-    --line-strong: #b9c4d8;
-    --hairline: #e8edf5;
+    --raised: #e3eaf5;
+    --sunk: #eef2f9;
+    --line: #ccd5e4;
+    --line-strong: #9dabc4;
+    --hairline: #dbe2ee;
     --chip: #e8edf7;
 
     --live: #16794a;
