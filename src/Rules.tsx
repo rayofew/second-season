@@ -15,6 +15,19 @@ import type { Scoring } from './domain/rules.ts';
 const CONTEST = 'rehearsal-2026';
 
 const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
+
+/** The Monday after a round's games, which is when it gets decided. */
+function mondayAfter(lock: Date): Date {
+  const monday = new Date(lock);
+  monday.setDate(monday.getDate() + ((8 - monday.getDay()) % 7 || 7));
+  monday.setHours(20, 0, 0, 0);
+  return monday;
+}
+
+const dayAndTime = (when: Date) =>
+  when.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+const day = (when: Date) => when.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 const per = (yards: number) => `1 per ${yards} yds`;
 
 function Table({ title, rows }: { title: string; rows: [string, string][] }) {
@@ -75,6 +88,35 @@ export function Rules() {
           and <strong>their players come off your roster for you</strong> — you will find those
           slots empty, waiting to be filled from the clubs still in.
         </p>
+      </div>
+
+      <div className="card">
+        <div className="confhead">The schedule</div>
+        {rounds.map((round) => {
+          const lock = contest?.locks?.[String(round.round)];
+          return (
+            <div className="schedule" key={round.round}>
+              <span className="schedround">
+                <strong>{round.name}</strong>
+                <span className="rowmeta">NFL week {round.week}</span>
+              </span>
+              <span className="schedwhen">
+                {lock ? (
+                  <>
+                    <span>Picks lock <strong>{dayAndTime(lock)}</strong></span>
+                    <span className="rowmeta">Decided {day(mondayAfter(lock))}</span>
+                  </>
+                ) : (
+                  <span className="rowmeta">dates to come</span>
+                )}
+              </span>
+            </div>
+          );
+        })}
+        <div className="pending">
+          Pick any time before the lock; change your mind as often as you like until then. After it,
+          the round plays out and I decide it on the Monday night, once every club has finished.
+        </div>
       </div>
 
       <div className="card prose">

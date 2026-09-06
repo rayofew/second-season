@@ -2,6 +2,7 @@ import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, orderBy, qu
 import type { HeldPlayer } from '../domain/multiplier.ts';
 import type { StatLine } from '../domain/scoring.ts';
 import type { ContestSettings } from '../domain/rules.ts';
+import type { Prizes } from '../domain/pool.ts';
 import { db } from '../firebase.ts';
 
 /**
@@ -43,10 +44,8 @@ export interface Contest {
   field: Record<string, Seeding>;
   /** Firestore returns timestamps; kept as dates so a countdown needs no conversion. */
   locks: Record<string, Date>;
-  /** What each manager puts in. Zero, or missing, means nobody is playing for anything. */
-  buyIn?: number;
-  /** How many places pay. Null lets the size of the field decide. */
-  payoutPlaces?: number | null;
+  /** Buy-in, places, split and weekly prize. Missing means nobody is playing for anything. */
+  prizes?: Prizes;
 }
 
 export interface RoundTeams {
@@ -353,9 +352,9 @@ export async function advanceRound(
   await batch.commit();
 }
 
-/** What the buy-in is, and how many places pay. Nothing here handles money. */
-export async function setBuyIn(contestId: string, buyIn: number, places: number | null): Promise<void> {
-  await updateDoc(doc(db, 'contests', contestId), { buyIn, payoutPlaces: places });
+/** The whole prize arrangement. Nothing here handles money — it is a note of what was agreed. */
+export async function setPrizes(contestId: string, prizes: Prizes): Promise<void> {
+  await updateDoc(doc(db, 'contests', contestId), { prizes });
 }
 
 /** Ticking somebody off as having paid. A note in a ledger, not a transaction. */

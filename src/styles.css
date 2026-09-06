@@ -428,3 +428,18 @@ td { font-variant-numeric: tabular-nums; }
   padding: 8px 10px; border-radius: 8px; font-size: 15px;
   border: 1px solid var(--line); background: var(--ground); color: var(--ink);
 }
+
+.schedule {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 14px;
+  padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 14px;
+}
+.schedround, .schedwhen { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.schedwhen { text-align: right; flex: none; }
+
+.editor { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.editor .summary { padding: 4px 0 0; }
+.splitrow { display: flex; flex-wrap: wrap; gap: 10px 14px; }
+.inline select {
+  padding: 8px 10px; border-radius: 8px; font-size: 15px;
+  border: 1px solid var(--line); background: var(--ground); color: var(--ink);
+}
