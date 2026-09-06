@@ -46,6 +46,7 @@ export function PlayerRow({
   player,
   multiplier,
   hint,
+  trailing,
   right,
   onClick,
   dim,
@@ -54,6 +55,9 @@ export function PlayerRow({
   player: RowPlayer | null;
   multiplier?: number;
   hint?: string;
+  /** Stays on the first line, beside the multiplier. For a figure worth comparing at a glance. */
+  trailing?: React.ReactNode;
+  /** Drops to its own line on a phone. For controls. */
   right?: React.ReactNode;
   onClick?: () => void;
   dim?: boolean;
@@ -83,6 +87,7 @@ export function PlayerRow({
           </span>
         </>
       )}
+      {trailing}
       {multiplier !== undefined && <span className={`mult mult-${multiplier}`}>{multiplier}x</span>}
       {right}
     </div>

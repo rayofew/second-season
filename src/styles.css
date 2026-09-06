@@ -688,3 +688,9 @@ td { font-variant-numeric: tabular-nums; }
 }
 .clock.soon .digits { color: var(--gold); }
 .clock.soon .cell { border-color: var(--warn-line); }
+
+/* A little more air between the name and the numbers on a phone, where they are closest. */
+@media (max-width: 560px) {
+  .rowright { margin-top: 2px; }
+  .proj b { font-size: 18px; }
+}

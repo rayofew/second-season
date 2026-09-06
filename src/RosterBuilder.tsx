@@ -247,24 +247,22 @@ export function RosterBuilder({
                       ? fixtureLabel(games.get(person.team))
                       : `${fixtureLabel(games.get(person.team))} · ${standing?.retained ? 'kept' : 'new'}`
                 }
-                right={
-                  <span className="rowright">
-                    {person && !resting && (
-                      <span className="proj">
-                        <b>{display(projected.get(person.id) ?? 0, EASTSIDE).toFixed(1)}</b>
-                        <span className="liveraw">proj</span>
-                      </span>
-                    )}
-                    {!locked && (
-                      <button className="ghost small" onClick={(event) => {
-                        event.stopPropagation();
-                        setPicking(open ? null : slot.id);
-                      }}>
-                        {person ? 'Change' : 'Choose'}
-                      </button>
-                    )}
+                trailing={person && !resting ? (
+                  <span className="proj">
+                    <b>{display(projected.get(person.id) ?? 0, EASTSIDE).toFixed(1)}</b>
+                    <span className="projlabel">proj</span>
                   </span>
-                }
+                ) : undefined}
+                right={!locked ? (
+                  <span className="rowright">
+                    <button className="ghost small" onClick={(event) => {
+                      event.stopPropagation();
+                      setPicking(open ? null : slot.id);
+                    }}>
+                      {person ? 'Change' : 'Choose'}
+                    </button>
+                  </span>
+                ) : undefined}
                 onClick={() => !locked && setPicking(open ? null : slot.id)}
               />
 
@@ -295,7 +293,15 @@ export function RosterBuilder({
                           hint={
                             byes.has(candidate.team)
                               ? 'resting this round'
-                              : `${fixtureLabel(games.get(candidate.team))} · ${display(projected.get(candidate.id) ?? 0, EASTSIDE).toFixed(1)} projected`
+                              : fixtureLabel(games.get(candidate.team))
+                          }
+                          trailing={
+                            byes.has(candidate.team) ? undefined : (
+                              <span className="proj">
+                                <b>{display(projected.get(candidate.id) ?? 0, EASTSIDE).toFixed(1)}</b>
+                                <span className="projlabel">proj</span>
+                              </span>
+                            )
                           }
                           right={<span className={incumbent ? 'keeps' : 'resets'}>{incumbent ? 'keeps streak' : '1x'}</span>}
                           onClick={() => choose(slot.id, candidate)}
