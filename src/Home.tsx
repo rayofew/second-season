@@ -14,6 +14,7 @@ import { clubGames } from './providers/schedule.ts';
 import type { ClubGame } from './providers/schedule.ts';
 import { fixtureLabel } from './domain/fixture.ts';
 import { Pool } from './Pool.tsx';
+import { Countdown } from './Countdown.tsx';
 
 /**
  * The screen somebody opens on a Sunday, in the order they need it.
@@ -27,16 +28,6 @@ import { Pool } from './Pool.tsx';
  */
 
 const CONTEST = 'rehearsal-2026';
-
-/** "in 2 days", "in 5 hours", "in 43 minutes" — enough to know whether to act now. */
-function until(when: Date, now: Date): string {
-  const minutes = Math.round((when.getTime() - now.getTime()) / 60000);
-  if (minutes <= 0) return 'locked';
-  if (minutes < 60) return `in ${minutes} minute${minutes === 1 ? '' : 's'}`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 36) return `in ${hours} hour${hours === 1 ? '' : 's'}`;
-  return `in ${Math.round(hours / 24)} days`;
-}
 
 export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void }) {
   const [contest, setContest] = useState<Contest | null>(null);
@@ -137,9 +128,9 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
           <strong>{round?.name}</strong>
           <span className="team"> · NFL week {round?.week}</span>
         </div>
-        <div className="cdwhen">
-          {live ? display(live.running, EASTSIDE).toFixed(1) : lock ? until(lock, now) : ''}
-        </div>
+        {live
+          ? <div className="cdwhen">{display(live.running, EASTSIDE).toFixed(1)}</div>
+          : <Countdown until={lock} locked={locked} />}
         <div className="cdstate">
           {live ? (
             <>
