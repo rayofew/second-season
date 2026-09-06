@@ -18,7 +18,7 @@
     ],
     "headers": [
       {
-        "//": "Headers match the requested path, not the rewritten one, and a browser asks for \"/\" rather than \"/index.html\". So everything is no-cache by default and the hashed bundles opt back out below.",
+        "//": "Headers match the requested path, not the rewritten one, and a browser asks for \"/\" rather than \"/index.html\". So everything is no-cache by default and the things that can safely be kept opt back out below.",
         "source": "**",
         "headers": [
           {
@@ -34,6 +34,16 @@
           {
             "key": "Cache-Control",
             "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "//": "Artwork has no hash in its name, so it cannot be cached forever — replacing a logo would never reach anybody. A day of hard caching with a week of serving the old one while a new one is fetched behind it: repeat visits cost nothing, and a change still lands within a day.",
+        "source": "**/*.@(jpg|jpeg|png|svg|ico|webp)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, stale-while-revalidate=604800"
           }
         ]
       }
