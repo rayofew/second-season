@@ -485,3 +485,17 @@ td { font-variant-numeric: tabular-nums; }
 
 .cdcounts.standalone { display: flex; justify-content: center; gap: 6px; margin: 14px 0 0; flex-wrap: wrap; }
 .ghost.wide { margin-top: 16px; width: 100%; max-width: 320px; }
+
+.total { padding: 4px 0; }
+.totalline {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding: 11px 16px; border-bottom: 1px solid var(--line);
+}
+.totalline:last-child { border-bottom: 0; }
+.totallabel { color: var(--dim); font-size: 14px; }
+.totalvalue { font-size: 24px; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.totalline.sub { font-size: 13px; color: var(--faint); }
+.totalline.sub span { font-variant-numeric: tabular-nums; }
+
+.cdproj { font-size: 13.5px; color: var(--dim); margin-top: 10px; }
+.cdproj b { color: var(--gold); font-weight: 700; font-variant-numeric: tabular-nums; }

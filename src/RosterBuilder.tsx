@@ -7,6 +7,9 @@ import { readContest, readHistory, readPool, readTeams, recordMoves, saveRoster 
 import type { Move } from './store/firestore.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import { projections } from './providers/sleeper.ts';
+import { clubGames } from './providers/schedule.ts';
+import type { ClubGame } from './providers/schedule.ts';
+import { fixtureLabel } from './domain/fixture.ts';
 import { rawPoints, display } from './domain/scoring.ts';
 import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
 
@@ -37,6 +40,8 @@ export function RosterBuilder({ uid }: { uid: string }) {
   const [baseline, setBaseline] = useState<HeldPlayer[]>([]);
   // What each man is expected to do this week, in our scoring. The reason to pick him.
   const [projected, setProjected] = useState<Map<string, number>>(new Map());
+  // When each club plays, so nobody picks a man whose game is already over.
+  const [games, setGames] = useState<Map<string, ClubGame>>(new Map());
   const [problem, setProblem] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,6 +75,7 @@ export function RosterBuilder({ uid }: { uid: string }) {
         // rather than once the round has shut and nothing can be done about them.
         const config = found.rounds[round];
         if (config) {
+          void clubGames(found.season, config.week).then(setGames).catch(() => undefined);
           const expected = await projections(found.season, config.seasonType, config.week).catch(() => ({}));
           setProjected(new Map(board.map((player) => [
             player.id,
@@ -99,6 +105,11 @@ export function RosterBuilder({ uid }: { uid: string }) {
   const byes = new Set(teams.byes);
   const previous = history[round - 1] ?? [];
   const lost = previous.filter((held) => !alive.has(byId.get(held.playerId)?.team ?? ''));
+  const projectedRaw = roster.reduce((sum, held) => sum + (projected.get(held.playerId) ?? 0), 0);
+  const projectedCredited = roster.reduce(
+    (sum, held) => sum + (projected.get(held.playerId) ?? 0) * (standings.get(held.slot)?.multiplier ?? 1),
+    0,
+  );
   const filled = roster.length;
   const legal = filled === EASTSIDE.slots.length;
 
@@ -204,8 +215,7 @@ export function RosterBuilder({ uid }: { uid: string }) {
                 hint={
                   !person ? (locked ? undefined : 'choose someone')
                     : resting ? 'resting, then 2x'
-                    : standing?.retained ? 'kept'
-                    : 'new'
+                    : `${fixtureLabel(games.get(person.team))} · ${standing?.retained ? 'kept' : 'new'}`
                 }
                 right={
                   <span className="rowright">
@@ -247,7 +257,7 @@ export function RosterBuilder({ uid }: { uid: string }) {
                           hint={
                             byes.has(candidate.team)
                               ? 'resting this round'
-                              : `${display(projected.get(candidate.id) ?? 0, EASTSIDE).toFixed(1)} projected · ${candidate.form.toFixed(1)} a game last year`
+                              : `${fixtureLabel(games.get(candidate.team))} · ${display(projected.get(candidate.id) ?? 0, EASTSIDE).toFixed(1)} projected`
                           }
                           right={<span className={incumbent ? 'keeps' : 'resets'}>{incumbent ? 'keeps streak' : '1x'}</span>}
                           onClick={() => choose(slot.id, candidate)}
@@ -260,6 +270,17 @@ export function RosterBuilder({ uid }: { uid: string }) {
             </div>
           );
         })}
+      </div>
+
+      <div className="card total">
+        <span className="totalline">
+          <span className="totallabel">Projected this round</span>
+          <span className="totalvalue">{display(projectedCredited, EASTSIDE).toFixed(1)}</span>
+        </span>
+        <span className="totalline sub">
+          <span className="totallabel">Before multipliers</span>
+          <span>{display(projectedRaw, EASTSIDE).toFixed(1)}</span>
+        </span>
       </div>
 
       <div className="card summary">

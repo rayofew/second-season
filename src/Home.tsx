@@ -10,7 +10,9 @@ import type { LiveTotal } from './domain/live.ts';
 import { rawPoints, display } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
 import { projections, stats } from './providers/sleeper.ts';
-import { clubScores } from './providers/schedule.ts';
+import { clubGames } from './providers/schedule.ts';
+import type { ClubGame } from './providers/schedule.ts';
+import { fixtureLabel } from './domain/fixture.ts';
 import { Pool } from './Pool.tsx';
 
 /**
@@ -45,6 +47,8 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
   const [managers, setManagers] = useState<Manager[]>([]);
   const [now, setNow] = useState(new Date());
   const [live, setLive] = useState<LiveTotal | null>(null);
+  const [projectedTotal, setProjectedTotal] = useState<number | null>(null);
+  const [games, setGames] = useState<Map<string, ClubGame>>(new Map());
 
   useEffect(() => {
     // The countdown is the point of the screen, so it has to actually count.
@@ -71,29 +75,37 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
       const mine = past[round] ?? [];
       setRoster(mine);
 
-      // Nothing to watch until the round has shut and the teams are fixed.
-      const shut = (found.locks[String(round)] ?? new Date()) <= new Date();
-      if (!shut || mine.length === 0) return;
-
       const config = found.rounds[round];
-      if (!config) return;
+      if (!config || mine.length === 0) return;
       const byId = new Map(board.map((player) => [player.id, player]));
+      void clubGames(found.season, config.week).then(setGames).catch(() => undefined);
+      const standingNow = new Map(
+        standingsFor([...past.slice(0, round), mine], round, EASTSIDE).map((entry) => [entry.slot, entry]),
+      );
+
+      // Before the lock there is nothing to watch, but there is something to expect.
+      const shut = (found.locks[String(round)] ?? new Date()) <= new Date();
+      if (!shut) {
+        const expectedOnly = await projections(found.season, config.seasonType, config.week)
+          .catch(() => ({}) as Record<string, StatLine>);
+        setProjectedTotal(mine.reduce((sum, held) => {
+          const points = rawPoints(held.position, expectedOnly[held.playerId], EASTSIDE);
+          return sum + points * (standingNow.get(held.slot)?.multiplier ?? 1);
+        }, 0));
+        return;
+      }
       const [actual, expected, clubs] = await Promise.all([
         stats(found.season, config.seasonType, config.week).catch(() => ({}) as Record<string, StatLine>),
         projections(found.season, config.seasonType, config.week).catch(() => ({}) as Record<string, StatLine>),
-        clubScores(found.season, config.week).catch(() => new Map()),
+        clubGames(found.season, config.week).catch(() => new Map()),
       ]);
-
-      const standing = new Map(
-        standingsFor([...past.slice(0, round), mine], round, EASTSIDE).map((entry) => [entry.slot, entry]),
-      );
 
       setLive(liveRoster(mine.map((held) => {
         const person = byId.get(held.playerId);
         return {
           playerId: held.playerId,
           slot: held.slot,
-          multiplier: standing.get(held.slot)?.multiplier ?? 1,
+          multiplier: standingNow.get(held.slot)?.multiplier ?? 1,
           raw: rawPoints(held.position, actual[held.playerId], EASTSIDE),
           projected: rawPoints(held.position, expected[held.playerId], EASTSIDE),
           state: person ? (clubs.get(person.team)?.state ?? 'upcoming') : 'final',
@@ -143,6 +155,12 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
             `Picks lock ${lock ? lock.toLocaleString(undefined, { weekday: 'long', hour: 'numeric', minute: '2-digit' }) : 'soon'}.`
           )}
         </div>
+        {!locked && projectedTotal !== null && (
+          <div className="cdproj">
+            Projected <b>{display(projectedTotal, EASTSIDE).toFixed(1)}</b> this round
+          </div>
+        )}
+
         {!locked && counts.length > 0 && (
           <div className="cdcounts standalone">
             {counts.map((entry) => (
@@ -195,7 +213,7 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
                 slot={slot.id}
                 player={person ?? null}
                 multiplier={standings.get(slot.id)?.multiplier ?? 1}
-                hint={person ? undefined : locked ? undefined : 'still empty'}
+                hint={person ? fixtureLabel(games.get(person.team)) : locked ? undefined : 'still empty'}
                 right={(() => {
                   const entry = live?.players.find((candidate) => candidate.slot === slot.id);
                   if (!entry) return undefined;
