@@ -34,7 +34,10 @@ const per = (yards: number) => `1 per ${yards} yds`;
 function Table({ title, rows }: { title: string; rows: [string, string][] }) {
   return (
     <div className="card">
-      <div className="confhead">{title}</div>
+      <div className="confhead">
+        {title}
+        <span className="colhead">Points</span>
+      </div>
       {rows.map(([label, value]) => (
         <div className="ruleline" key={label}>
           <span>{label}</span>
@@ -232,6 +235,14 @@ export function Rules() {
         </p>
       </div>
 
+      <div className="card prose">
+        <h2>Scoring</h2>
+        <p>
+          Eastside rules, the same as the regular season. Every figure below is read from the
+          contest itself rather than typed here, so this page cannot drift from what actually pays.
+        </p>
+      </div>
+
       <Table
         title="Passing"
         rows={[
@@ -285,10 +296,6 @@ export function Rules() {
         ]}
       />
 
-      <p className="footnote">
-        Every figure above is read from the contest itself, not typed out here, so this page cannot
-        drift from the engine that actually pays people.
-      </p>
     </>
   );
 }
