@@ -52,12 +52,13 @@ header p { margin: 2px 0 18px; color: var(--dim); font-size: 13px; }
 .signout:hover { color: var(--dim); }
 
 nav {
-  display: flex; gap: 6px; margin-bottom: var(--gap);
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--gap);
   position: sticky; top: 0; z-index: 5;
-  padding: 8px 0; background: linear-gradient(var(--ground) 70%, transparent);
+  padding: 8px 0; background: linear-gradient(var(--ground) 92%, transparent);
 }
 nav button {
-  flex: 1; background: var(--panel); border: 1px solid var(--line); color: var(--dim);
+  flex: 1 1 auto; min-width: 88px;
+  background: var(--panel); border: 1px solid var(--line); color: var(--dim);
   padding: 10px 12px; border-radius: 10px; font-size: 13px; font-weight: 500; min-height: 42px;
 }
 nav button[aria-current="true"] {
@@ -452,3 +453,22 @@ td { font-variant-numeric: tabular-nums; }
 }
 
 .rounddate { font-size: 12px; color: var(--faint); margin-top: 3px; }
+
+/* ---- Home ------------------------------------------------------------- */
+
+.countdown { padding: 20px 16px; text-align: center; }
+.countdown.urgent { border-color: #6a5220; }
+.countdown.ready { border-color: #245239; }
+.cdround { font-size: 14px; color: var(--dim); }
+.cdround strong { color: var(--ink); font-weight: 650; }
+.cdwhen {
+  font-size: 30px; font-weight: 700; letter-spacing: -0.03em; margin: 6px 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+.countdown.urgent .cdwhen { color: var(--gold); }
+.countdown.ready .cdwhen { color: var(--live); }
+.countdown.shut .cdwhen { color: var(--faint); }
+.cdstate { font-size: 13.5px; color: var(--dim); line-height: 1.55; }
+.countdown .submit { margin-top: 16px; width: 100%; max-width: 320px; }
+.cdcounts { display: inline-flex; gap: 6px; margin-left: 10px; }
+.confhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }

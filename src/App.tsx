@@ -7,16 +7,17 @@ import { Register } from './Register.tsx';
 import { Commissioner } from './Commissioner.tsx';
 import { Moves } from './Moves.tsx';
 import { Version } from './Version.tsx';
+import { Home } from './Home.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
 import { readContest, readEntries } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
 
 const CONTEST = 'rehearsal-2026';
 
-type Tab = 'team' | 'bracket' | 'standings' | 'moves' | 'rules' | 'commish';
+type Tab = 'home' | 'team' | 'bracket' | 'standings' | 'moves' | 'rules' | 'commish';
 
 export function App() {
-  const [tab, setTab] = useState<Tab>('team');
+  const [tab, setTab] = useState<Tab>('home');
   const { user, checking } = useUser();
   const [contest, setContest] = useState<Contest | null>(null);
   const [managers, setManagers] = useState(0);
@@ -64,6 +65,7 @@ export function App() {
       ) : (
         <>
           <nav>
+            <button aria-current={tab === 'home'} onClick={() => setTab('home')}>Home</button>
             <button aria-current={tab === 'team'} onClick={() => setTab('team')}>My Team</button>
             <button aria-current={tab === 'bracket'} onClick={() => setTab('bracket')}>Bracket</button>
             <button aria-current={tab === 'standings'} onClick={() => setTab('standings')}>Standings</button>
@@ -74,7 +76,8 @@ export function App() {
             )}
           </nav>
 
-          {tab === 'team' ? <RosterBuilder uid={user.uid} />
+          {tab === 'home' ? <Home uid={user.uid} onGoToTeam={() => setTab('team')} />
+            : tab === 'team' ? <RosterBuilder uid={user.uid} />
             : tab === 'bracket' ? <Bracket />
             : tab === 'moves' ? <Moves />
             : tab === 'rules' ? <Rules />
