@@ -4,6 +4,7 @@ import type { Application, Contest, Manager } from './store/firestore.ts';
 import { dialable, formatPhone } from './domain/phone.ts';
 import { Advance } from './Advance.tsx';
 import { Pool } from './Pool.tsx';
+import { RosterBuilder } from './RosterBuilder.tsx';
 
 /**
  * The commissioner's tab: who wants in, and who has not picked yet.
@@ -29,6 +30,8 @@ export function Commissioner({ uid }: { uid: string }) {
   const [submitted, setSubmitted] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
+  // Whose team the commissioner is currently fixing, if any.
+  const [editing, setEditing] = useState<Manager | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -71,6 +74,22 @@ export function Commissioner({ uid }: { uid: string }) {
   // what the screen offers.
   const owner = commissioners[0];
   const missing = managers.filter((manager) => !submitted.has(manager.uid));
+
+  // While fixing somebody's team, that is the whole screen — no room to press the wrong thing.
+  if (editing) {
+    return (
+      <>
+        <button className="ghost wide back" onClick={() => { setEditing(null); void load(); }}>
+          ← Done with {editing.teamName}
+        </button>
+        <RosterBuilder
+          uid={editing.uid}
+          onBehalfOf={{ name: editing.teamName }}
+          onDone={() => { setEditing(null); void load(); }}
+        />
+      </>
+    );
+  }
 
   return (
     <>
@@ -139,6 +158,7 @@ export function Commissioner({ uid }: { uid: string }) {
               <span className={submitted.has(manager.uid) ? 'keeps' : 'resets'}>
                 {submitted.has(manager.uid) ? 'in' : 'not yet'}
               </span>
+              <button className="ghost small" onClick={() => setEditing(manager)}>Team</button>
               {manager.uid === owner ? (
                 <span className="tag">owner</span>
               ) : (

@@ -27,7 +27,16 @@ import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
 
 const CONTEST = 'rehearsal-2026';
 
-export function RosterBuilder({ uid }: { uid: string }) {
+export function RosterBuilder({
+  uid,
+  onBehalfOf,
+  onDone,
+}: {
+  uid: string;
+  /** Set when the commissioner is fixing somebody else's team, which ignores the lock. */
+  onBehalfOf?: { name: string };
+  onDone?: () => void;
+}) {
   const [contest, setContest] = useState<Contest | null>(null);
   const [teams, setTeams] = useState<RoundTeams | null>(null);
   const [pool, setPool] = useState<PoolPlayer[]>([]);
@@ -100,7 +109,7 @@ export function RosterBuilder({ uid }: { uid: string }) {
   if (!contest || !teams) return <div className="card gate"><p>Loading your team…</p></div>;
 
   const lock = contest.locks[String(round)];
-  const locked = lock ? lock <= new Date() : false;
+  const locked = onBehalfOf ? false : lock ? lock <= new Date() : false;
   const alive = new Set(teams.alive);
   const byes = new Set(teams.byes);
   const previous = history[round - 1] ?? [];
@@ -143,6 +152,7 @@ export function RosterBuilder({ uid }: { uid: string }) {
     setSaving('saving');
     try {
       await saveRoster(CONTEST, uid, round, roster);
+      if (onBehalfOf) { setSaving('saved'); onDone?.(); return; }
 
       // What changed, so the league can see the story afterwards. The roster document is the
       // authority on what was played; this is how it got that way, which it cannot tell you.
@@ -180,6 +190,14 @@ export function RosterBuilder({ uid }: { uid: string }) {
 
   return (
     <div>
+      {onBehalfOf && (
+        <div className="card notice">
+          <strong>Editing {onBehalfOf.name}'s team.</strong> The lock does not apply to you. Putting
+          a man back into a round he was already in restores his streak — it is worked out from the
+          rounds he has been held, not stored, so nothing needs repairing.
+        </div>
+      )}
+
       <div className="card roundbar">
         <div>
           <strong>{contest.rounds[round]?.name}</strong>

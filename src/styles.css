@@ -512,3 +512,5 @@ td { font-variant-numeric: tabular-nums; }
   .rowright .ghost { padding: 7px 14px; min-height: 34px; }
   .rowmeta { font-size: 11.5px; }
 }
+
+.ghost.back { margin-bottom: var(--gap); text-align: left; }
