@@ -259,7 +259,13 @@ td { font-variant-numeric: tabular-nums; }
 
 /* The banner carries the name and the tagline, so the sign-in card needs no heading. */
 .welcome { padding: 0 0 26px; }
-.banner { display: block; width: 100%; height: auto; margin-bottom: 20px; }
+/* The artwork is 3:1, which renders small on a phone. Cropped to 2:1 the sides come in about as
+   far as the brackets and everything in the middle grows by half again. */
+.banner {
+  display: block; width: 100%; aspect-ratio: 2 / 1;
+  object-fit: cover; object-position: center;
+  margin-bottom: 20px;
+}
 .welcome p { padding: 0 22px; }
 
 /* ---- Player rows ------------------------------------------------------ */
