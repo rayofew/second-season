@@ -225,7 +225,7 @@ export function RosterBuilder({
         </div>
       )}
 
-      <div className="card">
+      <div className="rowlist">
         {EASTSIDE.slots.map((slot) => {
           const held = roster.find((entry) => entry.slot === slot.id);
           const person = held ? byId.get(held.playerId) : undefined;

@@ -182,7 +182,7 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
       )}
 
       {roster.length > 0 && locked && (
-        <div className="card">
+        <div className="card teamcard">
           <div className="confhead">
             Your team
             {counts.length > 0 && (

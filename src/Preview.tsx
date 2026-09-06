@@ -105,7 +105,7 @@ export function Preview() {
         <div className="team">locks Thu 5:15 PM</div>
       </div>
 
-      <div className="card">
+      <div className="rowlist">
         {ROSTER.map((entry) => (
           <PlayerRow
             key={entry.slot}

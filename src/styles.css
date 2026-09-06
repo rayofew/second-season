@@ -189,10 +189,10 @@ nav button[aria-current="true"] {
 /* Never color alone: every badge carries its own number. */
 .mult {
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 30px; height: 22px; padding: 0 7px;
-  border-radius: 7px; font-size: 12px; font-weight: 700;
+  min-width: 44px; height: 32px; padding: 0 9px;
+  border-radius: 9px; font-size: 16px; font-weight: 800;
   border: 1px solid var(--line); color: var(--dim); flex: none;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
 }
 .mult-2 { color: var(--two-ink); border-color: var(--two-line); background: var(--two-bg); }
 .mult-3 { color: var(--three-ink); border-color: var(--three-line); background: var(--three-bg); }
@@ -365,19 +365,24 @@ td { font-variant-numeric: tabular-nums; }
 
 /* ---- Player rows ------------------------------------------------------ */
 
+/* Each player is his own block. Space between things separates them in a way a hairline on a
+   light ground never will — nine rows sharing one card read as one grey slab. */
 .row {
   display: flex; align-items: center; gap: 12px;
-  padding: 11px 14px; border-bottom: 1px solid var(--line);
-  min-height: 66px; cursor: pointer;
+  padding: 12px 14px; min-height: 66px; cursor: pointer;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  margin-bottom: 8px;
 }
-.row:last-child { border-bottom: 0; }
-.row:hover { background: var(--raised); }
+.row:last-child { margin-bottom: 0; }
+.row:hover { background: var(--raised); border-color: var(--line-strong); }
 .row.dim { opacity: 0.5; }
 
 .rowslot {
-  flex: none; width: 34px;
-  font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em;
-  text-transform: uppercase; color: var(--faint);
+  flex: none; width: 38px;
+  font-size: 13px; font-weight: 800; letter-spacing: 0.02em;
+  text-transform: uppercase; color: var(--ink);
 }
 
 /* The club's color rings the face, so nothing else on the row has to shout it. */
@@ -693,4 +698,19 @@ td { font-variant-numeric: tabular-nums; }
 @media (max-width: 560px) {
   .rowright { margin-top: 2px; }
   .proj b { font-size: 18px; }
+}
+
+/* A list of rows is not a card with lines in it. The wrapper disappears and the rows stand on the
+   page's own ground, each plainly a separate thing. */
+.rowlist { margin-bottom: var(--gap); }
+
+/* A row inside a card that is doing something else keeps its edges but pulls in from them. */
+.card > .row, .options > .row { margin-left: 10px; margin-right: 10px; }
+.card > .row:first-child { margin-top: 10px; }
+.options > .row:first-child { margin-top: 8px; }
+.options { padding-bottom: 2px; }
+
+/* Where a badge is only a tally rather than a player's own multiplier, it stays small. */
+.cdcounts .mult, .summary .mult, .ruleline .mult {
+  min-width: 0; height: 22px; font-size: 12px; font-weight: 700; padding: 0 7px;
 }
