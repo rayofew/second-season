@@ -401,17 +401,3 @@ export async function setCorrection(
     { merge: true },
   );
 }
-
-/** The clubs and their seeds. Changing it changes who is favoured in every later draw. */
-export async function setField(contestId: string, field: Record<string, Seeding>): Promise<void> {
-  await updateDoc(doc(db, 'contests', contestId), { field });
-}
-
-/** Redrawing a round: who is in it, who rests, and who meets whom. */
-export async function setRoundTeams(
-  contestId: string,
-  round: number,
-  teams: { alive: string[]; byes: string[]; matchups: { home: string; away: string; winner: string | null }[] },
-): Promise<void> {
-  await setDoc(doc(db, 'contests', contestId, 'teams', String(round)), teams);
-}

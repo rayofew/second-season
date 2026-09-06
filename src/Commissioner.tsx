@@ -6,7 +6,6 @@ import { Advance } from './Advance.tsx';
 import { Pool } from './Pool.tsx';
 import { RosterBuilder } from './RosterBuilder.tsx';
 import { Corrections } from './Corrections.tsx';
-import { Seeding } from './Seeding.tsx';
 
 /**
  * The commissioner's tab: who wants in, and who has not picked yet.
@@ -141,12 +140,6 @@ export function Commissioner({ uid }: { uid: string }) {
       <Pool contest={contest} managers={managers} commissioner onChange={() => void load()} />
 
       <Advance contest={contest} onDone={() => void load()} />
-
-      <Seeding
-        contest={contest}
-        locked={(contest.locks[String(contest.currentRound)] ?? new Date()) <= new Date()}
-        onChange={() => void load()}
-      />
 
       <Corrections contest={contest} by={uid} />
 
