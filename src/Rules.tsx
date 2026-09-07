@@ -241,6 +241,10 @@ export function Rules() {
           Eastside rules, the same as the regular season. Every figure below is read from the
           contest itself rather than typed here, so this page cannot drift from what actually pays.
         </p>
+        <p>
+          <strong>Yards pay whole points.</strong> 78 receiving yards is 7, and so is 79 — the
+          eighth arrives at 80. Nothing is ever rounded; the fraction simply never happens.
+        </p>
       </div>
 
       <Table

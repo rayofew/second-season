@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { creditedPoints, standingsFor } from '../src/domain/multiplier.ts';
 import type { HeldPlayer, RosterHistory } from '../src/domain/multiplier.ts';
-import { display, rawPoints } from '../src/domain/scoring.ts';
+import { rawPoints } from '../src/domain/scoring.ts';
 import { EASTSIDE } from '../src/domain/rules.ts';
 
 const held = (playerId: string, extra: Partial<HeldPlayer> = {}): HeldPlayer => ({
@@ -128,14 +128,13 @@ describe('raw points first, multiplier second', () => {
     // Derrick Henry's real Wild Card line. The same stats are the same points at every multiplier.
     const line = { rush_yd: 186, rush_td: 2 };
     const raw = rawPoints('RB', line);
-    assert.equal(raw, 30.6);
+    assert.equal(raw, 30, '186 rushing yards is 18 points, and two scores are 12');
 
     const atThree: RosterHistory = [[held('henry')], [held('henry')], [held('henry')]];
     const standing = worth(atThree, 'henry');
     assert.equal(standing.multiplier, 3);
     assert.equal(rawPoints('RB', line), raw, 'the streak cannot reach back and change what he scored');
-    // 30.6 x 3 lands at 91.80000000000001, so the stored figure keeps its precision and the eye gets a rounded one.
-    assert.equal(display(creditedPoints(raw, standing.multiplier)), 91.8);
+    assert.equal(creditedPoints(raw, standing.multiplier), 90);
   });
 
   it('lets a long held journeyman beat a fresh star', () => {

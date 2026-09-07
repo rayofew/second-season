@@ -64,7 +64,7 @@ describe('breaking a dead heat', () => {
   it('gives it to the bigger Super Bowl round', () => {
     const { entries, contest } = contestOf([
       { name: 'Faded', raw: [40, 10, 10, 5] },
-      { name: 'Finished', raw: [10, 10, 10, 12.5] },
+      { name: 'Finished', raw: [8, 10, 10, 13] },
     ]);
     const placings = table(entries, contest);
     assert.equal(placings[0]!.credited, placings[1]!.credited, 'level on points');
@@ -139,7 +139,7 @@ describe('breaking a dead heat, continued', () => {
   it('follows whatever order the league configured, not this one', () => {
     const { entries, contest } = contestOf([
       { name: 'Faded', raw: [40, 10, 10, 5] },
-      { name: 'Finished', raw: [10, 10, 10, 12.5] },
+      { name: 'Finished', raw: [8, 10, 10, 13] },
     ]);
     assert.deepEqual(names(table(entries, contest)), ['Finished', 'Faded'], 'Super Bowl first by default');
 

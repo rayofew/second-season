@@ -21,6 +21,14 @@ export type StatLine = Readonly<Record<string, number>>;
 const stat = (line: StatLine, field: string): number => line[field] ?? 0;
 
 /**
+ * Points for yards, which are earned a whole one at a time.
+ *
+ * Seventy-eight receiving yards is seven points and seventy-nine is still seven. The eightieth
+ * earns the eighth. Nothing is rounded at the end because no fraction is ever created.
+ */
+const perYard = (yards: number, each: number): number => Math.floor(yards / each);
+
+/**
  * Anything anyone can do with the ball, applied to every position.
  *
  * Kickers are included on purpose: a fake field goal is rare, but when it happens the yards are
@@ -28,13 +36,13 @@ const stat = (line: StatLine, field: string): number => line[field] ?? 0;
  */
 function offense(line: StatLine, rules: Scoring): number {
   return (
-    stat(line, 'pass_yd') / rules.passingYardsPerPoint +
+    perYard(stat(line, 'pass_yd'), rules.passingYardsPerPoint) +
     stat(line, 'pass_td') * rules.passingTouchdown +
     stat(line, 'pass_int') * rules.interception +
-    stat(line, 'rush_yd') / rules.rushingYardsPerPoint +
+    perYard(stat(line, 'rush_yd'), rules.rushingYardsPerPoint) +
     stat(line, 'rush_td') * rules.rushingTouchdown +
     stat(line, 'rec') * rules.reception +
-    stat(line, 'rec_yd') / rules.receivingYardsPerPoint +
+    perYard(stat(line, 'rec_yd'), rules.receivingYardsPerPoint) +
     stat(line, 'rec_td') * rules.receivingTouchdown +
     stat(line, 'fum_lost') * rules.fumbleLost +
     // Only ever reached by an outfield player: a defense's return scores are counted with the rest
@@ -91,7 +99,7 @@ function defense(line: StatLine, rules: Scoring): number {
     stat(line, 'safe') * rules.safety +
     stat(line, 'blk_kick') * rules.blockedKick +
     (stat(line, 'def_td') + stat(line, 'def_st_td')) * rules.defensiveTouchdown +
-    (stat(line, 'def_kr_yd') + stat(line, 'def_pr_yd')) / rules.returnYardsPerPoint +
+    perYard(stat(line, 'def_kr_yd') + stat(line, 'def_pr_yd'), rules.returnYardsPerPoint) +
     allowanceBonus
   );
 }
