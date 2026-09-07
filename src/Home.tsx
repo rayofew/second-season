@@ -7,7 +7,7 @@ import type { Contest, Manager, PoolPlayer, RoundTeams } from './store/firestore
 import { PlayerRow } from './PlayerRow.tsx';
 import { liveRoster } from './domain/live.ts';
 import type { LiveTotal } from './domain/live.ts';
-import { rawPoints, display } from './domain/scoring.ts';
+import { display, projectedPoints, rawPoints } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
 import { projections, stats } from './providers/sleeper.ts';
 import { clubGames } from './providers/schedule.ts';
@@ -80,7 +80,7 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
         const expectedOnly = await projections(found.season, config.seasonType, config.week)
           .catch(() => ({}) as Record<string, StatLine>);
         setProjectedTotal(mine.reduce((sum, held) => {
-          const points = rawPoints(held.position, expectedOnly[held.playerId], EASTSIDE);
+          const points = projectedPoints(held.position, expectedOnly[held.playerId], EASTSIDE);
           return sum + points * (standingNow.get(held.slot)?.multiplier ?? 1);
         }, 0));
         return;
@@ -98,7 +98,7 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
           slot: held.slot,
           multiplier: standingNow.get(held.slot)?.multiplier ?? 1,
           raw: rawPoints(held.position, actual[held.playerId], EASTSIDE),
-          projected: rawPoints(held.position, expected[held.playerId], EASTSIDE),
+          projected: projectedPoints(held.position, expected[held.playerId], EASTSIDE),
           state: person ? (clubs.get(person.team)?.state ?? 'upcoming') : 'final',
         };
       })));

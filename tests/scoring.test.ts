@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { display, rawPoints } from '../src/domain/scoring.ts';
+import { display, projectedPoints, rawPoints } from '../src/domain/scoring.ts';
 import type { StatLine } from '../src/domain/scoring.ts';
 import { EASTSIDE } from '../src/domain/rules.ts';
 import type { ContestSettings, Scoring } from '../src/domain/rules.ts';
@@ -224,5 +224,24 @@ describe('yards pay whole points', () => {
     // Drake London, 2025 week 18: four catches, 78 yards, a touchdown. Fleaflicker paid 17, and
     // this is the case that proved yards are whole rather than that scores are rounded at the end.
     assert.equal(rawPoints('WR', { rec: 4, rec_yd: 78, rec_td: 1 }), 17);
+  });
+});
+
+describe('projections', () => {
+  it('come back whole, because a real score always is', () => {
+    // A projected line holds fractions of things that cannot be fractional: 1.57 passing touchdowns
+    // is a sensible expectation and an impossible afternoon.
+    const line = { pass_yd: 250, pass_td: 1.57 };
+    assert.equal(rawPoints('QB', line), 10 + 9.42, 'the raw figure keeps the fraction');
+    assert.equal(projectedPoints('QB', line), 19, 'and the projection does not');
+  });
+
+  it('floor the yards before rounding anything else', () => {
+    // 78.9 projected yards is still seven points, not eight — the yardage rule comes first.
+    assert.equal(projectedPoints('WR', { rec_yd: 78.9 }), 7);
+  });
+
+  it('handle a man with no projection at all', () => {
+    assert.equal(projectedPoints('WR', undefined), 0);
   });
 });

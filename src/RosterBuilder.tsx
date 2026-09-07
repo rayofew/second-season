@@ -10,7 +10,7 @@ import { projections } from './providers/sleeper.ts';
 import { clubGames } from './providers/schedule.ts';
 import type { ClubGame } from './providers/schedule.ts';
 import { fixtureLabel } from './domain/fixture.ts';
-import { rawPoints, display } from './domain/scoring.ts';
+import { display, projectedPoints } from './domain/scoring.ts';
 import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
 
 /**
@@ -88,7 +88,7 @@ export function RosterBuilder({
           const expected = await projections(found.season, config.seasonType, config.week).catch(() => ({}));
           setProjected(new Map(board.map((player) => [
             player.id,
-            rawPoints(player.position as Position, (expected as Record<string, Record<string, number>>)[player.id], EASTSIDE),
+            projectedPoints(player.position as Position, (expected as Record<string, Record<string, number>>)[player.id], EASTSIDE),
           ])));
         }
       } catch (cause) {

@@ -126,6 +126,22 @@ export function rawPoints(
   return offense(line, rules) + (position === 'K' ? kicking(line, rules) : 0);
 }
 
+/**
+ * What a man is expected to score, as a whole number.
+ *
+ * A projected stat line holds fractions of things that cannot be fractional: 1.57 passing
+ * touchdowns is a sensible expectation and an impossible afternoon. Yards are already whole by
+ * the time they get here; this rounds off what is left, because a real score in this league is
+ * never fractional and a projection that looks unlike one invites the question of which is wrong.
+ */
+export function projectedPoints(
+  position: Position,
+  line: StatLine | undefined,
+  settings: ContestSettings = EASTSIDE,
+): number {
+  return Math.round(rawPoints(position, line, settings));
+}
+
 /** Points as they are shown. Kept apart from the figure that is stored, which never loses precision. */
 export function display(points: number, settings: ContestSettings = EASTSIDE): number {
   const factor = 10 ** settings.displayDecimals;
