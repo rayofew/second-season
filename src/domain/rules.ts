@@ -130,7 +130,13 @@ export interface ContestSettings {
   slots: readonly Slot[];
   byeRule: ByeRule;
   tiebreakers: readonly Tiebreaker[];
-  /** How many decimals are shown. What is stored never loses precision. */
+  /**
+   * How many decimals are shown. What is stored never loses precision.
+   *
+   * Zero, because nothing in this league can produce a fraction: every yardage category is whole
+   * before it is scored and everything else is counted in events. A trailing .0 on every figure
+   * would decorate the score with a precision the scoring does not have.
+   */
   displayDecimals: number;
 }
 
@@ -174,5 +180,5 @@ export const EASTSIDE: ContestSettings = {
   slots: EASTSIDE_SLOTS,
   byeRule: 'keep-streak',
   tiebreakers: EASTSIDE_TIEBREAKERS,
-  displayDecimals: 2,
+  displayDecimals: 0,
 };

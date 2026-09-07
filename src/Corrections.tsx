@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { readCorrections, readPool, readScores, setCorrection } from './store/firestore.ts';
 import type { Contest, Correction, PoolPlayer } from './store/firestore.ts';
 import { EASTSIDE } from './domain/rules.ts';
-import { display, rawPoints } from './domain/scoring.ts';
+import { display, points, rawPoints } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
 import type { Position } from './domain/rules.ts';
 import { Face } from './PlayerRow.tsx';
@@ -27,7 +27,7 @@ export function Corrections({ contest, by }: { contest: Contest; by: string }) {
   const [fixes, setFixes] = useState<Record<string, Correction>>({});
   const [search, setSearch] = useState('');
   const [chosen, setChosen] = useState<PoolPlayer | null>(null);
-  const [points, setPoints] = useState('');
+  const [typed, setTyped] = useState('');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -57,10 +57,10 @@ export function Corrections({ contest, by }: { contest: Contest; by: string }) {
     setBusy(true);
     setProblem(null);
     try {
-      const update = remove ? null : { raw: Number(points) || 0, reason: reason.trim(), by };
+      const update = remove ? null : { raw: Number(typed) || 0, reason: reason.trim(), by };
       await setCorrection(CONTEST, round, chosen.id, update);
       setChosen(null);
-      setPoints('');
+      setTyped('');
       setReason('');
       setSearch('');
       await load(round);
@@ -97,7 +97,7 @@ export function Corrections({ contest, by }: { contest: Contest; by: string }) {
                 <span className="rowname">{chosen.name}</span>
                 <span className="rowmeta">
                   {chosen.position} · {chosen.team} · imported{' '}
-                  {display(imported[chosen.id] ?? 0, EASTSIDE).toFixed(1)}
+                  {points(imported[chosen.id] ?? 0)}
                 </span>
               </span>
               <button className="ghost small" onClick={() => setChosen(null)}>Change</button>
@@ -107,8 +107,8 @@ export function Corrections({ contest, by }: { contest: Contest; by: string }) {
               Raw points
               <input
                 type="number" inputMode="decimal" style={{ width: 92 }}
-                value={points}
-                onChange={(event) => setPoints(event.target.value)}
+                value={typed}
+                onChange={(event) => setTyped(event.target.value)}
               />
             </label>
 
@@ -150,7 +150,7 @@ export function Corrections({ contest, by }: { contest: Contest; by: string }) {
                 key={player.id}
                 onClick={() => {
                   setChosen(player);
-                  setPoints(String(display(fixes[player.id]?.raw ?? imported[player.id] ?? 0, EASTSIDE)));
+                  setTyped(String(display(fixes[player.id]?.raw ?? imported[player.id] ?? 0, EASTSIDE)));
                   setReason(fixes[player.id]?.reason ?? '');
                 }}
               >
@@ -158,7 +158,7 @@ export function Corrections({ contest, by }: { contest: Contest; by: string }) {
                 <span className="rowmain">
                   <span className="rowname">{player.name}</span>
                   <span className="rowmeta">
-                    {player.position} · {player.team} · {display(imported[player.id] ?? 0, EASTSIDE).toFixed(1)}
+                    {player.position} · {player.team} · {points(imported[player.id] ?? 0)}
                     {fixes[player.id] && <span className="fixed">corrected</span>}
                   </span>
                 </span>
@@ -179,8 +179,8 @@ export function Corrections({ contest, by }: { contest: Contest; by: string }) {
                 <span className="rowmain">
                   <span className="rowname">{player?.name ?? playerId}</span>
                   <span className="rowmeta">
-                    {display(imported[playerId] ?? 0, EASTSIDE).toFixed(1)} →{' '}
-                    {display(fix.raw, EASTSIDE).toFixed(1)} · {fix.reason}
+                    {points(imported[playerId] ?? 0)} →{' '}
+                    {points(fix.raw)} · {fix.reason}
                   </span>
                 </span>
               </div>

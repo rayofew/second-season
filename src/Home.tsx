@@ -7,7 +7,7 @@ import type { Contest, Manager, PoolPlayer, RoundTeams } from './store/firestore
 import { PlayerRow } from './PlayerRow.tsx';
 import { liveRoster } from './domain/live.ts';
 import type { LiveTotal } from './domain/live.ts';
-import { display, projectedPoints, rawPoints } from './domain/scoring.ts';
+import { points, projectedPoints, rawPoints } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
 import { projections, stats } from './providers/sleeper.ts';
 import { clubGames } from './providers/schedule.ts';
@@ -80,8 +80,8 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
         const expectedOnly = await projections(found.season, config.seasonType, config.week)
           .catch(() => ({}) as Record<string, StatLine>);
         setProjectedTotal(mine.reduce((sum, held) => {
-          const points = projectedPoints(held.position, expectedOnly[held.playerId], EASTSIDE);
-          return sum + points * (standingNow.get(held.slot)?.multiplier ?? 1);
+          const expect = projectedPoints(held.position, expectedOnly[held.playerId], EASTSIDE);
+          return sum + expect * (standingNow.get(held.slot)?.multiplier ?? 1);
         }, 0));
         return;
       }
@@ -129,12 +129,12 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
           <span className="team"> · NFL week {round?.week}</span>
         </div>
         {live
-          ? <div className="cdwhen">{display(live.running, EASTSIDE).toFixed(1)}</div>
+          ? <div className="cdwhen">{points(live.running)}</div>
           : <Countdown until={lock} locked={locked} />}
         <div className="cdstate">
           {live ? (
             <>
-              {display(live.banked, EASTSIDE).toFixed(1)} banked
+              {points(live.banked)} banked
               {live.playing > 0 && ` · ${live.playing} playing now`}
               {live.yetToPlay > 0 && ` · ${live.yetToPlay} yet to kick off, carried at projection`}
             </>
@@ -148,7 +148,7 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
         </div>
         {!locked && projectedTotal !== null && (
           <div className="cdproj">
-            Projected <b>{display(projectedTotal, EASTSIDE).toFixed(1)}</b> this round
+            Projected <b>{points(projectedTotal)}</b> this round
           </div>
         )}
 
@@ -210,9 +210,9 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
                   if (!entry) return undefined;
                   return (
                     <span className={`livepts ${entry.state}`}>
-                      <b>{display(entry.credited, EASTSIDE).toFixed(1)}</b>
+                      <b>{points(entry.credited)}</b>
                       <span className="liveraw">
-                        {display(entry.counting, EASTSIDE).toFixed(1)}
+                        {points(entry.counting)}
                         {entry.state === 'upcoming' ? ' proj' : ''}
                       </span>
                     </span>

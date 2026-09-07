@@ -147,3 +147,14 @@ export function display(points: number, settings: ContestSettings = EASTSIDE): n
   const factor = 10 ** settings.displayDecimals;
   return Math.round(points * factor) / factor;
 }
+
+/**
+ * Points written out, the only way a figure should reach the screen.
+ *
+ * The decimals were a setting that nothing consulted: every screen called toFixed(1) itself, so
+ * changing the contest changed nothing and a whole-number league displayed a decimal point it can
+ * never fill. One formatter, asked once, is what makes the setting mean something.
+ */
+export function points(value: number, settings: ContestSettings = EASTSIDE): string {
+  return display(value, settings).toFixed(settings.displayDecimals);
+}

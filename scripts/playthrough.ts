@@ -11,7 +11,7 @@
  */
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { EASTSIDE } from '../src/domain/rules.ts';
-import { display, rawPoints } from '../src/domain/scoring.ts';
+import { points, rawPoints } from '../src/domain/scoring.ts';
 import { table } from '../src/domain/standings.ts';
 import type { Entry } from '../src/domain/standings.ts';
 import type { HeldPlayer } from '../src/domain/multiplier.ts';
@@ -135,8 +135,8 @@ const placings = table(entries, { statsByRound: rounds, superBowlTotal: 62 }, EA
 
 console.log(`\n${'Manager'.padEnd(14)}${ROUND_NAMES.map((n) => n.padStart(12)).join('')}${'TOTAL'.padStart(12)}`);
 for (const placing of placings) {
-  const cells = placing.rounds.map((round) => display(round.credited).toFixed(1).padStart(12)).join('');
-  console.log(`${placing.name.padEnd(14)}${cells}${display(placing.credited).toFixed(1).padStart(12)}`);
+  const cells = placing.rounds.map((round) => points(round.credited).padStart(12)).join('');
+  console.log(`${placing.name.padEnd(14)}${cells}${points(placing.credited).padStart(12)}`);
 }
 
 const champion = placings[0]!;
@@ -145,7 +145,7 @@ for (const player of [...champion.rounds[3]!.players].sort((a, b) => b.multiplie
   const who = pool.find((p) => p.id === player.playerId)!;
   console.log(
     `  ${player.slot.padEnd(5)} ${who.name.padEnd(22)} ${(who.team ?? '').padEnd(4)}${player.multiplier}x  ` +
-      `${display(player.raw).toFixed(1).padStart(6)} raw  ->${display(player.credited).toFixed(1).padStart(7)}`,
+      `${points(player.raw).padStart(6)} raw  ->${points(player.credited).padStart(7)}`,
   );
 }
 

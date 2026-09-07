@@ -10,7 +10,7 @@ import { projections } from './providers/sleeper.ts';
 import { clubGames } from './providers/schedule.ts';
 import type { ClubGame } from './providers/schedule.ts';
 import { fixtureLabel } from './domain/fixture.ts';
-import { display, projectedPoints } from './domain/scoring.ts';
+import { points, projectedPoints } from './domain/scoring.ts';
 import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
 
 /**
@@ -249,7 +249,7 @@ export function RosterBuilder({
                 }
                 trailing={person && !resting ? (
                   <span className="proj">
-                    <b>{display(projected.get(person.id) ?? 0, EASTSIDE).toFixed(1)}</b>
+                    <b>{points(projected.get(person.id) ?? 0)}</b>
                     <span className="projlabel">proj</span>
                   </span>
                 ) : undefined}
@@ -298,7 +298,7 @@ export function RosterBuilder({
                           trailing={
                             byes.has(candidate.team) ? undefined : (
                               <span className="proj">
-                                <b>{display(projected.get(candidate.id) ?? 0, EASTSIDE).toFixed(1)}</b>
+                                <b>{points(projected.get(candidate.id) ?? 0)}</b>
                                 <span className="projlabel">proj</span>
                               </span>
                             )
@@ -319,11 +319,11 @@ export function RosterBuilder({
       <div className="card total">
         <span className="totalline">
           <span className="totallabel">Projected this round</span>
-          <span className="totalvalue">{display(projectedCredited, EASTSIDE).toFixed(1)}</span>
+          <span className="totalvalue">{points(projectedCredited)}</span>
         </span>
         <span className="totalline sub">
           <span className="totallabel">Before multipliers</span>
-          <span>{display(projectedRaw, EASTSIDE).toFixed(1)}</span>
+          <span>{points(projectedRaw)}</span>
         </span>
       </div>
 

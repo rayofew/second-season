@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { display, projectedPoints, rawPoints } from '../src/domain/scoring.ts';
+import { display, points as shown, projectedPoints, rawPoints } from '../src/domain/scoring.ts';
 import type { StatLine } from '../src/domain/scoring.ts';
 import { EASTSIDE } from '../src/domain/rules.ts';
 import type { ContestSettings, Scoring } from '../src/domain/rules.ts';
@@ -161,6 +161,18 @@ describe('rules the commissioner can change', () => {
     const points = rawPoints('WR', { rec: 5, rec_yd: 44 }, half);
     assert.equal(points, 6.5, 'two and a half for the catches, four for the yards');
     assert.equal(display(points, { ...half, displayDecimals: 0 }), 7);
+  });
+
+  it('writes points with no decimal point at all, because none can be filled', () => {
+    assert.equal(EASTSIDE.displayDecimals, 0);
+    assert.equal(shown(rawPoints('WR', { rec: 5, rec_yd: 78 })), '12', 'no trailing .0');
+    assert.equal(shown(0), '0');
+  });
+
+  it('keeps the decimals when a league asks for them', () => {
+    // The formatter is what reads the setting, so a half-PPR league still gets its half.
+    const half = under({ reception: 0.5 });
+    assert.equal(shown(rawPoints('WR', { rec: 5, rec_yd: 44 }, half), { ...half, displayDecimals: 1 }), '6.5');
   });
 
   it('describes slots as data, so Superflex is a setting and not a rewrite', () => {

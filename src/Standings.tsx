@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import { EASTSIDE } from './domain/rules.ts';
-import { display } from './domain/scoring.ts';
+import { points } from './domain/scoring.ts';
 import { table } from './domain/standings.ts';
 import type { Entry, Placing } from './domain/standings.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
@@ -114,8 +114,6 @@ export function Standings({ uid }: { uid: string }) {
       </>
     );
   }
-
-  const points = (value: number) => display(value, EASTSIDE).toFixed(1);
 
   const pool = contest
     ? <Pool contest={contest} managers={[...managers.values()]} commissioner={false} onChange={() => undefined} />

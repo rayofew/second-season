@@ -15,7 +15,7 @@
  * a dry run before the season has started.
  */
 import { EASTSIDE } from '../src/domain/rules.ts';
-import { rawPoints } from '../src/domain/scoring.ts';
+import { points, rawPoints } from '../src/domain/scoring.ts';
 import type { Position } from '../src/domain/rules.ts';
 import type { StatLine } from '../src/domain/scoring.ts';
 import { admin } from './admin.ts';
@@ -83,5 +83,5 @@ if (!dryRun) {
 const nameOf = new Map(pool.map((p) => [p.id, `${p.name} (${p.position} ${p.team})`]));
 console.log('');
 for (const [id, entry] of Object.entries(players).sort((a, b) => b[1].raw - a[1].raw).slice(0, 8)) {
-  console.log(`  ${(nameOf.get(id) ?? id).padEnd(34)} ${entry.raw.toFixed(1)}`);
+  console.log(`  ${(nameOf.get(id) ?? id).padEnd(34)} ${points(entry.raw)}`);
 }
