@@ -402,6 +402,14 @@ td { font-variant-numeric: tabular-nums; }
   display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
 }
 .rowmeta .pos { font-weight: 700; letter-spacing: 0.03em; }
+/* What he actually did, on its own line.
+
+   On a Sunday this is the thing being read — the club beside his name is only there to place him,
+   and a stat line squeezed in after it as another dot-separated fragment would be skimmed past. */
+.rowstats {
+  font-size: 12.5px; color: var(--ink); font-weight: 550;
+  font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
+}
 .dot { color: var(--line); }
 
 .clubcrest { flex: none; object-fit: contain; }

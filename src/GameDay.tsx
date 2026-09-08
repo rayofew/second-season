@@ -3,6 +3,8 @@ import type { GameGroup } from './domain/gameday.ts';
 import type { Fixture } from './domain/gameday.ts';
 import type { LiveTotal } from './domain/live.ts';
 import { points } from './domain/scoring.ts';
+import { statLine } from './domain/statline.ts';
+import type { Position } from './domain/rules.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import type { PoolPlayer } from './store/firestore.ts';
 
@@ -89,6 +91,7 @@ export function GameDay({
                     slot={entry.slot}
                     player={person ?? null}
                     multiplier={entry.multiplier}
+                    stats={person ? statLine(person.position as Position, entry.line) : undefined}
                     onClick={onGoToTeam}
                     right={
                       <span className={`livepts ${entry.state}`}>

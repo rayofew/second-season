@@ -46,6 +46,7 @@ export function PlayerRow({
   player,
   multiplier,
   hint,
+  stats,
   trailing,
   right,
   onClick,
@@ -55,6 +56,8 @@ export function PlayerRow({
   player: RowPlayer | null;
   multiplier?: number;
   hint?: string;
+  /** What he did, in box-score words. Its own line, because it is the most read thing here. */
+  stats?: string;
   /** Stays on the first line, beside the multiplier. For a figure worth comparing at a glance. */
   trailing?: React.ReactNode;
   /** Drops to its own line on a phone. For controls. */
@@ -76,6 +79,7 @@ export function PlayerRow({
               {player.team}
               {hint && <><span className="dot">·</span>{hint}</>}
             </span>
+            {stats && <span className="rowstats">{stats}</span>}
           </span>
         </>
       ) : (

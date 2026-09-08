@@ -1,4 +1,5 @@
 import { creditedPoints } from './multiplier.ts';
+import type { StatLine } from './scoring.ts';
 
 /**
  * What a roster is worth while the football is still going on.
@@ -22,6 +23,13 @@ export interface LiveInput {
   /** What he was expected to score across the whole game. */
   projected: number;
   state: ClubState;
+  /**
+   * The stat line the counting figure came from, for showing what he actually did.
+   *
+   * Carried here rather than looked up again by whatever is drawing the row, so the line and the
+   * points beside it can never come from different fetches and disagree.
+   */
+  line?: StatLine;
 }
 
 export interface LivePlayer extends LiveInput {

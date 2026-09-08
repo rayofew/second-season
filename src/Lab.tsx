@@ -96,13 +96,15 @@ export function Lab() {
       const pick = rank(featured).find(fits) ?? rank(pool).find(fits);
       if (!pick) return;
       taken.add(pick.id);
+      const state = games.get(pick.team)?.state ?? 'upcoming';
       built.push({
         playerId: pick.id,
         slot: slot.id,
         multiplier: SPREAD[(index + offset) % SPREAD.length]!,
         raw: rawPoints(pick.position as Position, actual[pick.id], EASTSIDE),
         projected: projectedPoints(pick.position as Position, expected[pick.id], EASTSIDE),
-        state: games.get(pick.team)?.state ?? 'upcoming',
+        state,
+        line: state === 'upcoming' ? expected[pick.id] : actual[pick.id],
       });
     });
     return built;

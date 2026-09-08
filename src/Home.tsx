@@ -128,13 +128,15 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
       if (cancelled) return;
       setLive(liveRoster(roster.map((held) => {
         const person = pool.get(held.playerId);
+        const state = person ? (clubs.get(person.team)?.state ?? 'upcoming') : 'final';
         return {
           playerId: held.playerId,
           slot: held.slot,
           multiplier: standingNow.get(held.slot)?.multiplier ?? 1,
           raw: rawPoints(held.position, actual[held.playerId], EASTSIDE),
           projected: projectedPoints(held.position, expected[held.playerId], EASTSIDE),
-          state: person ? (clubs.get(person.team)?.state ?? 'upcoming') : 'final',
+          state,
+          line: state === 'upcoming' ? expected[held.playerId] : actual[held.playerId],
         };
       })));
     })();
