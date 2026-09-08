@@ -92,7 +92,7 @@ export function Rules() {
 
   return (
     <>
-      <div className="card prose">
+      <div className="card prose lead">
         <h2>The practice playoffs</h2>
         <p>
           This is a test, to shake out the bugs before January. <strong>There is no winner at the

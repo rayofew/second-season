@@ -446,6 +446,12 @@ td { font-variant-numeric: tabular-nums; }
 
 .prose { padding: 4px 16px 18px; }
 .prose h2 { font-size: 15px; font-weight: 700; margin: 18px 0 8px; letter-spacing: -0.01em; }
+/* The rules open with a title, not a section heading. At 15px it sat a single pixel above the
+   paragraph beneath it and read as neither. */
+.prose.lead h2 {
+  font-size: 24px; text-align: center; text-wrap: balance;
+  margin: 14px 0 14px; letter-spacing: -0.02em;
+}
 .prose p { margin: 0 0 11px; font-size: 14px; line-height: 1.65; color: var(--dim); }
 .prose p:last-child { margin-bottom: 0; }
 .prose strong { color: var(--ink); font-weight: 650; }
