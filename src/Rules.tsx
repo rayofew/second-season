@@ -213,7 +213,7 @@ export function Rules() {
         <p>
           <strong>The more of us who play, the more places pay.</strong> Paying only the top three
           out of twenty would leave most of the room with nothing to play for by the third round,
-          so the ladder widens as the field fills:
+          so the ladder widens as the field fills. Something like this:
         </p>
       </div>
 
@@ -228,6 +228,10 @@ export function Rules() {
             <span className="rulevalue">{band.places}</span>
           </div>
         ))}
+        <div className="pending">
+          An example, and adjustable. This is what the app falls back to if nobody says otherwise —
+          the places, the buy-in and the weekly prize can all be set before we start.
+        </div>
       </div>
 
       <div className="card prose">
