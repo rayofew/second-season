@@ -815,10 +815,29 @@ td { font-variant-numeric: tabular-nums; }
    The artwork gives up most of the difference, because a crest nobody scrolled past is worth less
    than a way in that nobody had to scroll for. */
 @media (max-height: 720px) {
-  .banner { margin-bottom: 10px; }
-  .signin label { margin-bottom: 8px; }
+  /* Scaled down rather than cropped: contain fits the whole 3:1 picture inside a shorter box, so
+     a small phone gets a smaller crest instead of a trimmed one. */
+  .banner { aspect-ratio: auto; max-height: 52px; object-fit: contain; margin-bottom: 10px; }
+  .newhere { margin-top: 8px; padding-top: 10px; }
+  .signin label { margin-bottom: 6px; }
   .signin input { padding: 9px 12px; }
   .or { margin-top: 12px; }
   .signinalts { padding-top: 4px; }
   .welcome { padding-bottom: 18px; }
 }
+
+/* Signing up, given its own footing.
+
+   Nobody in this league has an account yet, so this is the one thing on the screen most people
+   opening the link actually need. It was a text link beside a password reminder, which is where
+   you put the thing nobody is looking for. */
+.newhere {
+  display: flex; justify-content: center;
+  margin: 14px 22px 0; padding-top: 14px; border-top: 1px solid var(--hairline);
+}
+/* Gold edges and gold text: clearly a way forward, without becoming a second filled button
+   competing with the one that submits the form above it. */
+.welcome .ghost.wide.join {
+  margin: 0; border-color: var(--gold); color: var(--gold); font-weight: 650;
+}
+.welcome .ghost.wide.join:hover { background: var(--gold); color: var(--on-accent); border-color: var(--gold); }

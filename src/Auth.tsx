@@ -170,18 +170,22 @@ export function SignIn() {
         </button>
       </form>
 
-      <div className="signinalts">
-        {mode === 'in' && (
-          <>
-            <button className="linky" onClick={() => change('new')}>Create an account</button>
+      {mode === 'in' ? (
+        <>
+          <div className="newhere">
+            <button className="ghost wide join" disabled={busy} onClick={() => change('new')}>
+              Create an account
+            </button>
+          </div>
+          <div className="signinalts">
             <button className="linky" onClick={() => change('lost')}>Forgot password?</button>
-          </>
-        )}
-        {mode !== 'in' && (
+          </div>
+        </>
+      ) : (
+        <div className="signinalts">
           <button className="linky" onClick={() => change('in')}>Back to signing in</button>
-        )}
-      </div>
-
+        </div>
+      )}
     </div>
   );
 }
