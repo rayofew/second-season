@@ -783,3 +783,10 @@ td { font-variant-numeric: tabular-nums; }
 .gamehead.playing .gamestate { color: var(--live); font-weight: 700; }
 .gamehead.final .gameteams { color: var(--dim); }
 .gamehead.upcoming .gameteams { color: var(--dim); font-weight: 500; }
+
+/* The lab controls: the same field treatment as everywhere else, so a commissioner-only screen
+   does not look like it was bolted on. */
+.editor select, .editor input[type='number'] {
+  padding: 9px 10px; border-radius: 9px; font-size: 15px; min-width: 92px;
+  border: 1px solid var(--line); background: var(--ground); color: var(--ink);
+}
