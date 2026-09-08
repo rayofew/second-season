@@ -354,11 +354,11 @@ td { font-variant-numeric: tabular-nums; }
 
 /* The banner carries the name and the tagline, so the sign-in card needs no heading. */
 .welcome { padding: 0 0 26px; }
-/* The artwork is 1400x467 — exactly 3:1 — and it is shown at exactly that.
+/* The artwork is 1400x467 — exactly 3:1 — and it is shown whole, at exactly that, at full width.
 
-   It used to be cropped to 2:1 to make the middle bigger on a phone, which quietly took a third of
-   the width off the brackets at either end. Whole is better, and it is shorter into the bargain:
-   the way in fits on one screen without the picture giving anything up. */
+   It is the first thing anybody sees and the only thing on the screen that says what this is, so
+   it is not asked to give up height for the buttons below it. Those can be scrolled to; a crest
+   with its brackets trimmed off cannot be un-trimmed. */
 .banner {
   display: block; width: 100%; aspect-ratio: 3 / 1;
   object-fit: cover; object-position: center;
@@ -808,36 +808,42 @@ td { font-variant-numeric: tabular-nums; }
 }
 
 /* Google sits above the email form, so its spacing is the form's rather than a footer's. */
-.welcome .ghost.wide.first { margin: 0 auto 4px; }
+
 .or span { white-space: nowrap; }
 
 /* Short phones: an older Android has about 520 usable pixels, and the sign-in card wants more.
    The artwork gives up most of the difference, because a crest nobody scrolled past is worth less
    than a way in that nobody had to scroll for. */
-@media (max-height: 720px) {
-  /* Scaled down rather than cropped: contain fits the whole 3:1 picture inside a shorter box, so
-     a small phone gets a smaller crest instead of a trimmed one. */
-  .banner { aspect-ratio: auto; max-height: 52px; object-fit: contain; margin-bottom: 10px; }
-  .newhere { margin-top: 8px; padding-top: 10px; }
-  .signin label { margin-bottom: 6px; }
-  .signin input { padding: 9px 12px; }
-  .or { margin-top: 12px; }
-  .signinalts { padding-top: 4px; }
-  .welcome { padding-bottom: 18px; }
-}
 
-/* Signing up, given its own footing.
 
-   Nobody in this league has an account yet, so this is the one thing on the screen most people
-   opening the link actually need. It was a text link beside a password reminder, which is where
-   you put the thing nobody is looking for. */
+/* Signing up: its own block, not a link at the bottom of somebody else's form.
+
+   Nobody in this league has an account yet, so for most people opening the link this is the whole
+   errand. It is set on the sunk ground with its own heading so it reads as a second door rather
+   than a footnote under the first one. */
 .newhere {
-  display: flex; justify-content: center;
-  margin: 14px 22px 0; padding-top: 14px; border-top: 1px solid var(--hairline);
+  margin: 20px 0 0; padding: 18px 22px 20px;
+  background: var(--sunk); border-top: 1px solid var(--line); text-align: center;
 }
-/* Gold edges and gold text: clearly a way forward, without becoming a second filled button
-   competing with the one that submits the form above it. */
-.welcome .ghost.wide.join {
-  margin: 0; border-color: var(--gold); color: var(--gold); font-weight: 650;
+.newhere h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.newhere p { margin: 0 0 14px; font-size: 13px; color: var(--dim); }
+.welcome .submit.wide.join { width: 100%; max-width: 320px; margin: 0 auto; display: block; }
+
+/* Google, as a Google button.
+
+   People find this by its colours before they read it. An outlined button with the word "Google"
+   in it is not the thing anybody has been trained to look for, and this is the way in that most of
+   the league will take. */
+.ways { padding: 0 22px; }
+.gbtn {
+  display: flex; align-items: center; justify-content: center; gap: 11px;
+  width: 100%; min-height: 50px; padding: 12px 18px; border-radius: 10px;
+  background: #ffffff; color: #1f1f1f; border: 1px solid #dadce0;
+  font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
 }
-.welcome .ghost.wide.join:hover { background: var(--gold); color: var(--on-accent); border-color: var(--gold); }
+.gbtn:hover { background: #f7f8f8; border-color: #c9ccd1; }
+.gbtn:disabled { opacity: 0.55; cursor: not-allowed; }
+/* Google's mark keeps its own colours in both themes; the button stays white beneath it, which
+   is the only pairing their brand allows and the one everybody recognises anyway. */
+.gmark { flex: none; display: block; }
