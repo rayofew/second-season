@@ -205,10 +205,15 @@ export function Rules() {
       </div>
 
       <div className="card prose">
-        <h2>The money</h2>
+        <h2>The money, in January</h2>
         <p>
-          None of this is fixed yet. The buy-in, the weekly prize and how many places pay are all
-          adjustable, and whatever we settle on shows on the Home screen. Below is how it divides.
+          <strong>Nothing is at stake in the practice.</strong> No buy-in, no prize, no winner —
+          these four weeks exist to find out what breaks, and that is all. Any pot shown on the
+          Home screen between now and January is a number I am testing with.
+        </p>
+        <p>
+          This is here so you know what the real thing would look like. None of it is fixed
+          either — the buy-in, the weekly prize and how many places pay are all adjustable.
         </p>
         <p>
           <strong>The more of us who play, the more places pay.</strong> Paying only the top three
