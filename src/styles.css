@@ -749,3 +749,37 @@ td { font-variant-numeric: tabular-nums; }
 }
 .or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 .welcome .ghost.wide { margin: 12px auto 0; }
+
+/* ---- Game day ---------------------------------------------------------- */
+
+/* A heading over a run of fixtures in the same state. Deliberately quiet: the scorelines are what
+   is being read, and three shouting headings would compete with them. */
+.gamegroup {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--faint); margin: 18px 4px 8px;
+}
+.gamecard { padding-bottom: 10px; }
+.gamecard .gamehead + .row { margin-top: 10px; }
+
+/* The scoreline is the card's own header, so it sits on the sunk ground rather than floating. */
+.gamehead {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px 14px;
+  flex-wrap: wrap; padding: 11px 14px;
+  background: var(--sunk); border-bottom: 1px solid var(--line);
+}
+.gameteams {
+  font-size: 15px; font-weight: 600; color: var(--ink);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+}
+.gameteams b { font-weight: 750; }
+.dash { color: var(--faint); margin: 0 6px; }
+.gamestate {
+  display: flex; align-items: baseline; gap: 12px; margin-left: auto;
+  font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums;
+}
+/* The one number on the row that belongs to the reader rather than to the football. */
+.gameworth { font-size: 15px; font-weight: 700; color: var(--gold); }
+.gamehead.playing { border-bottom-color: var(--live); }
+.gamehead.playing .gamestate { color: var(--live); font-weight: 700; }
+.gamehead.final .gameteams { color: var(--dim); }
+.gamehead.upcoming .gameteams { color: var(--dim); font-weight: 500; }

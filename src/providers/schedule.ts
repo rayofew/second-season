@@ -17,6 +17,14 @@ export interface ClubGame {
   /** The other club, with an at or a v so it reads the way people say it. */
   against: string;
   home: boolean;
+  /**
+   * Where the game has got to, in the words a television caption would use.
+   *
+   * Empty before kickoff, because the kickoff time already says it better. ESPN gives the period
+   * and the clock separately and only sometimes assembles them, so this does it rather than
+   * trusting a field that is missing on some games and reads '1st Quarter' on others.
+   */
+  clock: string;
 }
 
 const STATES: Record<string, ClubState> = { pre: 'upcoming', in: 'playing', post: 'final' };
@@ -31,6 +39,14 @@ export async function clubGames(season: number, week: number): Promise<Map<strin
     const state = STATES[competition?.status?.type?.state as string] ?? 'upcoming';
     const kickoff = new Date(event.date);
     const sides = competition?.competitors ?? [];
+    const status = competition?.status;
+    const clock =
+      state === 'playing'
+        ? [status?.period ? (status.period > 4 ? 'OT' : `Q${status.period}`) : '', status?.displayClock ?? '']
+            .filter(Boolean).join(' ')
+        : state === 'final'
+          ? (status?.type?.shortDetail ?? 'Final')
+          : '';
 
     for (const side of sides) {
       const other = sides.find((candidate: { id: string }) => candidate.id !== side.id);
@@ -40,6 +56,7 @@ export async function clubGames(season: number, week: number): Promise<Map<strin
         kickoff,
         against: other?.team?.abbreviation ?? '',
         home: side.homeAway === 'home',
+        clock,
       });
     }
   }
