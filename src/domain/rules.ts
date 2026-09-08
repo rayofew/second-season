@@ -61,6 +61,17 @@ export interface PointsAllowedTier {
  * 30-39, so a league wanting finer tiers under forty could have them; Eastside pays one rate.
  */
 export interface Scoring {
+  /**
+   * Whether a score can only ever be a whole number.
+   *
+   * False pays yards in fractions: 78 receiving yards is 7.8 at a point every ten. True floors
+   * every yardage category instead, so 78 is 7 and so is 79, and the eighth point arrives at 80.
+   *
+   * It is a setting because the two leagues genuinely differ. Eastside's regular season deals in
+   * whole points; this contest wants the tenths, because a multiplier magnifies every gap and
+   * ties are otherwise cheap to arrive at.
+   */
+  wholePoints: boolean;
   reception: number;
   passingYardsPerPoint: number;
   passingTouchdown: number;
@@ -133,15 +144,16 @@ export interface ContestSettings {
   /**
    * How many decimals are shown. What is stored never loses precision.
    *
-   * Zero, because nothing in this league can produce a fraction: every yardage category is whole
-   * before it is scored and everything else is counted in events. A trailing .0 on every figure
-   * would decorate the score with a precision the scoring does not have.
+   * Two, which is what fractional yardage actually needs: a point every 25 passing yards moves
+   * in units of 0.04, so anything less would show a figure that disagrees with the column it is
+   * added into. Set it to zero alongside wholePoints for a league that scores in whole numbers.
    */
   displayDecimals: number;
 }
 
 /** Eastside FFL scoring, copied from the league's own settings, plus the two values it never named. */
 export const EASTSIDE_SCORING: Scoring = {
+  wholePoints: false,
   reception: 1,
   passingYardsPerPoint: 25,
   passingTouchdown: 6,
@@ -180,5 +192,5 @@ export const EASTSIDE: ContestSettings = {
   slots: EASTSIDE_SLOTS,
   byeRule: 'keep-streak',
   tiebreakers: EASTSIDE_TIEBREAKERS,
-  displayDecimals: 0,
+  displayDecimals: 2,
 };

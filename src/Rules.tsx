@@ -241,10 +241,18 @@ export function Rules() {
           Eastside rules, the same as the regular season. Every figure below is read from the
           contest itself rather than typed here, so this page cannot drift from what actually pays.
         </p>
-        <p>
-          <strong>Yards pay whole points.</strong> 78 receiving yards is 7, and so is 79 — the
-          eighth arrives at 80. Nothing is ever rounded; the fraction simply never happens.
-        </p>
+        {scoring.wholePoints ? (
+          <p>
+            <strong>Yards pay whole points.</strong> 78 receiving yards is 7, and so is 79 — the
+            eighth arrives at 80. Nothing is ever rounded; the fraction simply never happens.
+          </p>
+        ) : (
+          <p>
+            <strong>Yards pay in tenths.</strong> 78 receiving yards is 7.8, not 7 — for a
+            receiver, a running back and a tight end alike. Passing is a point every 25 yards, so
+            a quarterback moves in units of 0.04, which is why figures here carry two decimals.
+          </p>
+        )}
       </div>
 
       <Table

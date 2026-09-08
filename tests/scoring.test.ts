@@ -22,18 +22,18 @@ describe('raw points, against real Wild Card weekend stat lines', () => {
   it('scores a quarterback, interception and all', () => {
     // C.J. Stroud: 282 pass yds, 1 TD, 1 INT, 42 rush yds.
     const line: StatLine = { pass_yd: 282, pass_td: 1, pass_int: 1, rush_yd: 42 };
-    close(rawPoints('QB', line), 11 + 6 - 2 + 4, 'Stroud');
-    assert.equal(rawPoints('QB', line), 19, '282 passing yards is 11 points, not 11.28');
+    close(rawPoints('QB', line), 282 / 25 + 6 - 2 + 4.2, 'Stroud');
+    assert.equal(display(rawPoints('QB', line)), 19.48);
   });
 
   it('scores a running back', () => {
     // Derrick Henry: 186 rush yds, 2 TD.
-    close(rawPoints('RB', { rush_yd: 186, rush_td: 2 }), 18 + 12, 'Henry');
+    close(rawPoints('RB', { rush_yd: 186, rush_td: 2 }), 30.6, 'Henry');
   });
 
   it('scores a receiver at full PPR', () => {
     // Ladd McConkey: 9 rec, 197 rec yds, 1 TD.
-    close(rawPoints('WR', { rec: 9, rec_yd: 197, rec_td: 1 }), 9 + 19 + 6, 'McConkey');
+    close(rawPoints('WR', { rec: 9, rec_yd: 197, rec_td: 1 }), 9 + 19.7 + 6, 'McConkey');
   });
 
   it('scores a kicker by field goal distance', () => {
@@ -45,7 +45,7 @@ describe('raw points, against real Wild Card weekend stat lines', () => {
   it('scores a defense', () => {
     // Rams: 9 sacks, 1 INT, 1 fumble recovery, 1 defensive TD, 9 points allowed, 8 punt return yds.
     const line: StatLine = { sack: 9, int: 1, fum_rec: 1, def_td: 1, pts_allow: 9, def_pr_yd: 8 };
-    close(rawPoints('DEF', line), 18 + 2 + 2 + 6 + 0, 'Rams');
+    close(rawPoints('DEF', line), 18 + 2 + 2 + 6 + 8 / 25, 'Rams');
   });
 });
 
@@ -96,10 +96,9 @@ describe('the rules that decide games', () => {
   });
 
   it('keeps precision in the stored figure and rounds only for the eye', () => {
-    // 267 passing yards is ten points and the 17 left over earn nothing: the fraction never exists.
-    assert.equal(rawPoints('QB', { pass_yd: 267 }), 10);
-    assert.equal(rawPoints('QB', { pass_yd: 274 }), 10, 'and still ten at 274');
-    assert.equal(rawPoints('QB', { pass_yd: 275 }), 11, 'the eleventh arrives at 275');
+    const points = rawPoints('QB', { pass_yd: 267 });
+    assert.equal(points, 267 / 25, 'stored to full precision');
+    assert.equal(display(points), 10.68);
   });
 });
 
@@ -156,23 +155,23 @@ describe('rules the commissioner can change', () => {
   });
 
   it('shows as many decimals as the league asked for', () => {
-    // Yardage is whole, so a fraction has to come from somewhere else — half a point a catch.
-    const half = under({ reception: 0.5 });
-    const points = rawPoints('WR', { rec: 5, rec_yd: 44 }, half);
-    assert.equal(points, 6.5, 'two and a half for the catches, four for the yards');
-    assert.equal(display(points, { ...half, displayDecimals: 0 }), 7);
+    const points = rawPoints('QB', { pass_yd: 267 });
+    assert.equal(display(points), 10.68);
+    assert.equal(display(points, { ...EASTSIDE, displayDecimals: 1 }), 10.7);
+    assert.equal(display(points, { ...EASTSIDE, displayDecimals: 0 }), 11);
   });
 
-  it('writes points with no decimal point at all, because none can be filled', () => {
-    assert.equal(EASTSIDE.displayDecimals, 0);
-    assert.equal(shown(rawPoints('WR', { rec: 5, rec_yd: 78 })), '12', 'no trailing .0');
-    assert.equal(shown(0), '0');
+  it('writes points to the decimal the contest asked for', () => {
+    // Two, because 0.04 a passing yard needs both of them to add up in a column.
+    assert.equal(EASTSIDE.displayDecimals, 2);
+    assert.equal(shown(rawPoints('WR', { rec: 5, rec_yd: 78 })), '12.80');
+    assert.equal(shown(0), '0.00');
   });
 
-  it('keeps the decimals when a league asks for them', () => {
-    // The formatter is what reads the setting, so a half-PPR league still gets its half.
+  it('writes fewer when a league asks for fewer', () => {
+    // The formatter is what reads the setting, so one decimal really means one.
     const half = under({ reception: 0.5 });
-    assert.equal(shown(rawPoints('WR', { rec: 5, rec_yd: 44 }, half), { ...half, displayDecimals: 1 }), '6.5');
+    assert.equal(shown(rawPoints('WR', { rec: 5, rec_yd: 44 }, half), { ...half, displayDecimals: 1 }), '6.9');
   });
 
   it('describes slots as data, so Superflex is a setting and not a rewrite', () => {
@@ -207,50 +206,61 @@ describe('return touchdowns', () => {
   });
 });
 
-describe('yards pay whole points', () => {
-  it('gives nothing for the yards that do not complete a point', () => {
-    // 78 receiving yards is seven points. Not 7.8 — the fraction is never created, which is why
-    // every score in this league is a whole number without anything being rounded afterwards.
-    assert.equal(rawPoints('WR', { rec_yd: 78 }), 7);
-    assert.equal(rawPoints('WR', { rec_yd: 79 }), 7, 'and still seven at 79');
-    assert.equal(rawPoints('WR', { rec_yd: 80 }), 8, 'the eighth arrives at 80');
+describe('yards, under either of the two rules a league can pick', () => {
+  // This contest pays the tenths. Eastside’s own regular season does not, which is the whole
+  // reason the rule is a setting rather than a decision baked into the engine.
+  const whole: ContestSettings = { ...EASTSIDE, scoring: { ...EASTSIDE.scoring, wholePoints: true } };
+
+  it('pays a fraction of a point for every single yard', () => {
+    assert.equal(rawPoints('WR', { rec_yd: 78 }), 7.8);
+    assert.equal(rawPoints('WR', { rec_yd: 79 }), 7.9, 'the 79th yard is worth something');
   });
 
-  it('counts each kind of yard on its own', () => {
+  it('pays a running back and a tight end exactly the same way', () => {
+    // One rule for yardage, not one per position: 78 yards is 7.8 however they were gained.
+    assert.equal(rawPoints('RB', { rush_yd: 78 }), 7.8);
+    assert.equal(rawPoints('TE', { rec_yd: 78 }), 7.8);
+    close(rawPoints('RB', { rush_yd: 40, rec_yd: 38 }), 7.8, 'and split across the two');
+  });
+
+  it('pays passing at its own slower rate', () => {
+    close(rawPoints('QB', { pass_yd: 287 }), 287 / 25, 'a point every 25 yards');
+  });
+
+  it('floors every category instead, where the league scores in whole points', () => {
+    assert.equal(rawPoints('WR', { rec_yd: 78 }, whole), 7);
+    assert.equal(rawPoints('WR', { rec_yd: 79 }, whole), 7, 'and still seven at 79');
+    assert.equal(rawPoints('WR', { rec_yd: 80 }, whole), 8, 'the eighth arrives at 80');
+    assert.equal(rawPoints('QB', { pass_yd: 274 }, whole), 10, 'passing floors too');
+  });
+
+  it('counts each floored category on its own, never pooling the yards', () => {
     // 9 rushing and 9 receiving is not 18 yards and a point; it is nothing twice over.
-    assert.equal(rawPoints('RB', { rush_yd: 9, rec_yd: 9 }), 0);
-    assert.equal(rawPoints('RB', { rush_yd: 19, rec_yd: 19 }), 2, 'one point from each');
+    assert.equal(rawPoints('RB', { rush_yd: 9, rec_yd: 9 }, whole), 0);
+    assert.equal(rawPoints('RB', { rush_yd: 19, rec_yd: 19 }, whole), 2, 'one point from each');
   });
 
-  it('applies to passing at its own rate', () => {
-    assert.equal(rawPoints('QB', { pass_yd: 274 }), 10);
-    assert.equal(rawPoints('QB', { pass_yd: 275 }), 11);
-  });
-
-  it('leaves everything that is already whole alone', () => {
-    // Catches and scores were never fractional, so nothing about them changes.
-    assert.equal(rawPoints('WR', { rec: 9, rec_yd: 197, rec_td: 1 }), 9 + 19 + 6);
-  });
-
-  it('matches what the league itself credited', () => {
+  it('still agrees with what Eastside itself credited, under Eastside’s rule', () => {
     // Drake London, 2025 week 18: four catches, 78 yards, a touchdown. Fleaflicker paid 17, and
-    // this is the case that proved yards are whole rather than that scores are rounded at the end.
-    assert.equal(rawPoints('WR', { rec: 4, rec_yd: 78, rec_td: 1 }), 17);
+    // that is what proved the whole-point rule real rather than invented.
+    assert.equal(rawPoints('WR', { rec: 4, rec_yd: 78, rec_td: 1 }, whole), 17);
+    close(rawPoints('WR', { rec: 4, rec_yd: 78, rec_td: 1 }), 17.8, 'this contest pays the tenths');
   });
 });
 
 describe('projections', () => {
-  it('come back whole, because a real score always is', () => {
-    // A projected line holds fractions of things that cannot be fractional: 1.57 passing touchdowns
-    // is a sensible expectation and an impossible afternoon.
+  it('keep the fraction, because a real score here carries one too', () => {
     const line = { pass_yd: 250, pass_td: 1.57 };
-    assert.equal(rawPoints('QB', line), 10 + 9.42, 'the raw figure keeps the fraction');
-    assert.equal(projectedPoints('QB', line), 19, 'and the projection does not');
+    close(rawPoints('QB', line), 10 + 9.42, 'the raw figure');
+    close(projectedPoints('QB', line), 19.42, 'and the projection leaves it alone');
   });
 
-  it('floor the yards before rounding anything else', () => {
-    // 78.9 projected yards is still seven points, not eight — the yardage rule comes first.
-    assert.equal(projectedPoints('WR', { rec_yd: 78.9 }), 7);
+  it('round off where the league deals in whole points', () => {
+    // 1.57 passing touchdowns is a sensible expectation and an impossible afternoon, so a
+    // whole-point league cannot show it as one.
+    const whole: ContestSettings = { ...EASTSIDE, scoring: { ...EASTSIDE.scoring, wholePoints: true } };
+    assert.equal(projectedPoints('QB', { pass_yd: 250, pass_td: 1.57 }, whole), 19);
+    assert.equal(projectedPoints('WR', { rec_yd: 78.9 }, whole), 7, 'the yardage rule comes first');
   });
 
   it('handle a man with no projection at all', () => {

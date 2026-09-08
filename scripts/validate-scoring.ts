@@ -6,15 +6,26 @@
  * shows should be the figure we produce.
  *
  * This is what found the yardage rule: our numbers carried fractions and theirs never did, because
- * yards pay whole points one at a time and the fraction is never created. Worth running against any
- * completed week whenever the scoring changes.
+ * Eastside pays whole points a yard at a time and the fraction is never created.
+ *
+ * That rule is now a setting, and this contest turns it off — a multiplier magnifies every gap, so
+ * the playoff game wants the tenths. Fleaflicker is still the authority on Eastside, so the
+ * comparison below forces wholePoints on regardless of what the contest is currently set to.
+ * Checking a whole-point platform against a fractional rule would only ever report noise.
  *
  *   node scripts/validate-scoring.ts 2025 18
  */
 import { EASTSIDE } from '../src/domain/rules.ts';
+import type { ContestSettings } from '../src/domain/rules.ts';
 import { rawPoints } from '../src/domain/scoring.ts';
 import type { Position } from '../src/domain/rules.ts';
 import type { StatLine } from '../src/domain/scoring.ts';
+
+/** Eastside's own rule, which is what Fleaflicker's figures were produced under. */
+const AS_FLEAFLICKER_SCORES: ContestSettings = {
+  ...EASTSIDE,
+  scoring: { ...EASTSIDE.scoring, wholePoints: true },
+};
 
 const season = Number(process.argv[2] ?? 2025);
 const week = Number(process.argv[3] ?? 18);
@@ -47,7 +58,7 @@ for (const entry of theirs) {
   const id = found?.id;
   if (!id || !position) { console.log(`${entry.name.padEnd(20)} ${String(entry.points).padStart(6)}   (no match)`); continue; }
 
-  const ours = rawPoints(position, stats[id], EASTSIDE);
+  const ours = rawPoints(position, stats[id], AS_FLEAFLICKER_SCORES);
   compared += 1;
   if (Math.abs(ours - entry.points) < 1e-9) rounds += 1;
   const agrees = Math.abs(ours - entry.points) < 1e-9;

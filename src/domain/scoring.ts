@@ -21,12 +21,17 @@ export type StatLine = Readonly<Record<string, number>>;
 const stat = (line: StatLine, field: string): number => line[field] ?? 0;
 
 /**
- * Points for yards, which are earned a whole one at a time.
+ * Points for yards, under whichever of the two rules the league scores by.
  *
- * Seventy-eight receiving yards is seven points and seventy-nine is still seven. The eightieth
- * earns the eighth. Nothing is rounded at the end because no fraction is ever created.
+ * Fractionally, 78 receiving yards is 7.8 and every yard is worth something. Whole, 78 is seven
+ * and so is 79, and the eighth point arrives at 80 — floored per category rather than rounded at
+ * the end, so no fraction is ever created to round.
+ *
+ * The same rule governs passing, rushing, receiving and a defense's return yards. A league that
+ * paid tenths for a catch and whole points for a carry would be describing two games.
  */
-const perYard = (yards: number, each: number): number => Math.floor(yards / each);
+const perYard = (yards: number, each: number, whole: boolean): number =>
+  whole ? Math.floor(yards / each) : yards / each;
 
 /**
  * Anything anyone can do with the ball, applied to every position.
@@ -36,13 +41,13 @@ const perYard = (yards: number, each: number): number => Math.floor(yards / each
  */
 function offense(line: StatLine, rules: Scoring): number {
   return (
-    perYard(stat(line, 'pass_yd'), rules.passingYardsPerPoint) +
+    perYard(stat(line, 'pass_yd'), rules.passingYardsPerPoint, rules.wholePoints) +
     stat(line, 'pass_td') * rules.passingTouchdown +
     stat(line, 'pass_int') * rules.interception +
-    perYard(stat(line, 'rush_yd'), rules.rushingYardsPerPoint) +
+    perYard(stat(line, 'rush_yd'), rules.rushingYardsPerPoint, rules.wholePoints) +
     stat(line, 'rush_td') * rules.rushingTouchdown +
     stat(line, 'rec') * rules.reception +
-    perYard(stat(line, 'rec_yd'), rules.receivingYardsPerPoint) +
+    perYard(stat(line, 'rec_yd'), rules.receivingYardsPerPoint, rules.wholePoints) +
     stat(line, 'rec_td') * rules.receivingTouchdown +
     stat(line, 'fum_lost') * rules.fumbleLost +
     // Only ever reached by an outfield player: a defense's return scores are counted with the rest
@@ -99,7 +104,7 @@ function defense(line: StatLine, rules: Scoring): number {
     stat(line, 'safe') * rules.safety +
     stat(line, 'blk_kick') * rules.blockedKick +
     (stat(line, 'def_td') + stat(line, 'def_st_td')) * rules.defensiveTouchdown +
-    perYard(stat(line, 'def_kr_yd') + stat(line, 'def_pr_yd'), rules.returnYardsPerPoint) +
+    perYard(stat(line, 'def_kr_yd') + stat(line, 'def_pr_yd'), rules.returnYardsPerPoint, rules.wholePoints) +
     allowanceBonus
   );
 }
@@ -127,19 +132,21 @@ export function rawPoints(
 }
 
 /**
- * What a man is expected to score, as a whole number.
+ * What a man is expected to score, in the shape a real score could take.
  *
  * A projected stat line holds fractions of things that cannot be fractional: 1.57 passing
- * touchdowns is a sensible expectation and an impossible afternoon. Yards are already whole by
- * the time they get here; this rounds off what is left, because a real score in this league is
- * never fractional and a projection that looks unlike one invites the question of which is wrong.
+ * touchdowns is a sensible expectation and an impossible afternoon. Where the league scores in
+ * whole points that has to be rounded off, or the projection looks unlike any score it is
+ * predicting and invites the question of which of the two is wrong. Where the league already
+ * deals in tenths it is left alone, because 9.42 is an ordinary figure here.
  */
 export function projectedPoints(
   position: Position,
   line: StatLine | undefined,
   settings: ContestSettings = EASTSIDE,
 ): number {
-  return Math.round(rawPoints(position, line, settings));
+  const raw = rawPoints(position, line, settings);
+  return settings.scoring.wholePoints ? Math.round(raw) : raw;
 }
 
 /** Points as they are shown. Kept apart from the figure that is stored, which never loses precision. */
