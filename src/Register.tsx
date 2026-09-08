@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { updateProfile } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { db } from './firebase.ts';
 import { typingPhone } from './domain/phone.ts';
@@ -8,7 +9,7 @@ import { ThemeChoice } from './Theme.tsx';
 /**
  * Asking to join, which is not the same as being in.
  *
- * Signing in with Google proves who somebody is; it does not prove they were invited. So this
+ * Signing in proves who somebody is; it does not prove they were invited. So this
  * writes an application the commissioner has to act on, and a stranger who finds the link can knock
  * on the door and get no further.
  *
@@ -74,6 +75,9 @@ export function Register({ user }: { user: User }) {
         logo: logo ?? '',
         appliedAt: new Date(),
       });
+      // An account made with an email address arrives with no name on it, so the header would
+      // read out their address until they told us one. They just have; keep it.
+      if (!user.displayName) await updateProfile(user, { displayName: name.trim() }).catch(() => undefined);
       setState('sent');
     } catch (cause) {
       setState('form');

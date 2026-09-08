@@ -1,14 +1,53 @@
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+} from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth, google } from './firebase.ts';
 
 /**
- * Signing in, which for this league means Google and nothing else.
+ * Signing in, by Google or by email and password.
  *
- * No passwords to store, reset or lose, and one tap on a phone — which matters, because half the
- * eventual audience is relatives who will open this once in January and never think about it again.
+ * Google alone was the plan, on the grounds that it is one tap and there is no password to lose.
+ * That holds right up until somebody's mother has a Yahoo address and no Google account, and the
+ * league is exactly the sort of audience that produces one of those. So both, with Google kept
+ * first because most people will still take it.
+ *
+ * Nothing here decides who is in the league. Signing in only proves who somebody is; the
+ * commissioner still has to let them in, so an unrecognised stranger who signs up successfully has
+ * achieved nothing but a seat in the waiting room.
  */
+
+/**
+ * Firebase's own words, which are written for a developer reading a console.
+ *
+ * A wrong password comes back as 'invalid-credential' whether or not the account exists, which is
+ * deliberate on Firebase's part — telling a stranger that an address is registered is how you
+ * confirm someone's membership for them. The message below keeps that ambiguity rather than
+ * helpfully undoing it.
+ */
+function saidPlainly(code: string, fallback: string): string {
+  switch (code) {
+    case 'auth/invalid-email': return 'That does not look like an email address.';
+    case 'auth/missing-password': return 'A password, too.';
+    case 'auth/weak-password': return 'Six characters at least.';
+    case 'auth/email-already-in-use': return 'There is already an account with that email. Sign in instead.';
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found': return 'That email and password do not match.';
+    case 'auth/too-many-requests': return 'Too many tries. Give it a few minutes.';
+    case 'auth/network-request-failed': return 'No connection. Try again in a moment.';
+    case 'auth/operation-not-allowed':
+    case 'auth/configuration-not-found':
+      return 'That way in is not switched on for this project yet.';
+    default: return fallback;
+  }
+}
 
 export function useUser() {
   const [user, setUser] = useState<User | null>(null);
@@ -22,33 +61,130 @@ export function useUser() {
   return { user, checking };
 }
 
-export function SignIn() {
-  const [problem, setProblem] = useState<string | null>(null);
+/** Which of the three things somebody is here to do. */
+type Mode = 'in' | 'new' | 'lost';
 
-  async function enter() {
+export function SignIn() {
+  const [mode, setMode] = useState<Mode>('in');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+
+  function change(next: Mode) {
+    setMode(next);
+    setProblem(null);
+    setSent(false);
+  }
+
+  async function attempt(work: () => Promise<unknown>) {
+    setBusy(true);
     setProblem(null);
     try {
-      await signInWithPopup(auth, google);
+      await work();
     } catch (cause) {
-      // Closing the popup is a decision, not a failure, and should not be reported as one.
       const code = (cause as { code?: string }).code ?? '';
+      // Closing the popup is a decision, not a failure, and should not be reported as one.
       if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return;
-      setProblem(
-        code === 'auth/configuration-not-found'
-          ? 'Google sign-in is not switched on for this project yet.'
-          : (cause as Error).message,
-      );
+      setProblem(saidPlainly(code, (cause as Error).message));
+    } finally {
+      setBusy(false);
     }
+  }
+
+  const withEmail = () => void attempt(async () => {
+    if (mode === 'lost') {
+      // No actionCodeSettings on purpose: the link then lands on the project's own auth domain,
+      // which is always authorised. Pointing it at playoffs.spiteapps.app buys a prettier URL and
+      // risks a link that does not work, which on a password reset is the whole thing broken.
+      await sendPasswordResetEmail(auth, email.trim());
+      setSent(true);
+      return;
+    }
+    const enter = mode === 'new' ? createUserWithEmailAndPassword : signInWithEmailAndPassword;
+    await enter(auth, email.trim(), password);
+  });
+
+  if (sent) {
+    return (
+      <div className="card gate welcome">
+        <h2>Check your email</h2>
+        <p>
+          If there is an account for <strong>{email.trim()}</strong>, a link to set a new password is
+          on its way. It expires in an hour, and it may land in spam.
+        </p>
+        <button className="ghost wide" onClick={() => change('in')}>Back to sign in</button>
+      </div>
+    );
   }
 
   return (
     <div className="card gate welcome">
       <img className="banner" src="/banner.jpg" alt="Eastside Second-Season Playoff Challenge" />
-      <p>A private contest for the Eastside league. Sign in to find your team.</p>
-      <button className="submit" onClick={enter}>
+      <p>
+        {mode === 'lost'
+          ? 'Your email address, and we will send you a link to set a new password.'
+          : mode === 'new'
+          ? 'A private contest for the Eastside league. Make an account, then ask Ray to let you in.'
+          : 'A private contest for the Eastside league. Sign in to find your team.'}
+      </p>
+
+      <form
+        className="signin"
+        onSubmit={(event) => { event.preventDefault(); withEmail(); }}
+      >
+        <label>
+          <span>Email</span>
+          <input
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@example.com"
+          />
+        </label>
+
+        {mode !== 'lost' && (
+          <label>
+            <span>Password{mode === 'new' && <em>six characters or more</em>}</span>
+            <input
+              type="password"
+              // Telling the browser which it is, so it offers to save a new one and fills an old one.
+              autoComplete={mode === 'new' ? 'new-password' : 'current-password'}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
+        )}
+
+        {problem && <p className="problem">{problem}</p>}
+
+        <button className="submit wide" type="submit" disabled={busy}>
+          {busy ? 'One moment…'
+            : mode === 'new' ? 'Create account'
+            : mode === 'lost' ? 'Send the link'
+            : 'Sign in'}
+        </button>
+      </form>
+
+      <div className="signinalts">
+        {mode === 'in' && (
+          <>
+            <button className="linky" onClick={() => change('new')}>New here? Create an account</button>
+            <button className="linky" onClick={() => change('lost')}>Forgotten your password?</button>
+          </>
+        )}
+        {mode !== 'in' && (
+          <button className="linky" onClick={() => change('in')}>Already have an account? Sign in</button>
+        )}
+      </div>
+
+      <div className="or"><span>or</span></div>
+
+      <button className="ghost wide" disabled={busy} onClick={() => void attempt(() => signInWithPopup(auth, google))}>
         Continue with Google
       </button>
-      {problem && <p className="problem">{problem}</p>}
     </div>
   );
 }

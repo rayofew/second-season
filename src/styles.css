@@ -714,3 +714,37 @@ td { font-variant-numeric: tabular-nums; }
 .cdcounts .mult, .summary .mult, .ruleline .mult {
   min-width: 0; height: 22px; font-size: 12px; font-weight: 700; padding: 0 7px;
 }
+
+/* ---- Signing in ------------------------------------------------------- */
+
+/* The welcome card has no side padding of its own, because the banner runs edge to edge. */
+.signin { padding: 0 22px; text-align: left; }
+.signin label { display: block; margin: 0 0 12px; }
+.signin label > span {
+  display: block; font-size: 12px; font-weight: 650; color: var(--dim);
+  margin-bottom: 6px; letter-spacing: 0.01em;
+}
+.signin label > span em { font-style: normal; font-weight: 400; color: var(--faint); margin-left: 6px; }
+/* 16px, because anything smaller makes iOS zoom the page the moment the field is tapped. */
+.signin input {
+  width: 100%; padding: 11px 12px; border-radius: 10px; font-size: 16px;
+  border: 1px solid var(--line); background: var(--ground); color: var(--ink);
+}
+.signin input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.signin .submit { width: 100%; margin-top: 4px; }
+
+.signinalts { display: flex; flex-direction: column; gap: 2px; padding: 12px 22px 0; }
+/* A button that reads as a link: keyboard-reachable and announced as a button, which a span
+   with a click handler is neither. */
+.linky {
+  background: none; border: 0; padding: 6px 2px; cursor: pointer;
+  font: inherit; font-size: 13px; color: var(--gold); text-align: center;
+}
+.linky:hover { text-decoration: underline; }
+
+.or {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 22px; margin: 18px 0 0; color: var(--faint); font-size: 12px;
+}
+.or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.welcome .ghost.wide { margin: 12px auto 0; }
