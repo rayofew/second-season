@@ -138,6 +138,16 @@ export function SignIn() {
         <p>Your email address, and we will send you a link to set a new password.</p>
       )}
 
+      {mode === 'in' && (
+        <div className="newhere">
+          <h2>First time here?</h2>
+          <p>Make an account and the commissioner will let you in.</p>
+          <button className="submit wide join" disabled={busy} onClick={() => change('new')}>
+            Create an account
+          </button>
+        </div>
+      )}
+
       <div className="ways">
         <button className="gbtn" disabled={busy} onClick={() => void attempt(() => signInWithPopup(auth, google))}>
           <GoogleMark />
@@ -186,18 +196,9 @@ export function SignIn() {
       </form>
 
       {mode === 'in' ? (
-        <>
-          <div className="signinalts">
-            <button className="linky" onClick={() => change('lost')}>Forgot password?</button>
-          </div>
-          <div className="newhere">
-            <h2>First time here?</h2>
-            <p>Make an account and the commissioner will let you in.</p>
-            <button className="submit wide join" disabled={busy} onClick={() => change('new')}>
-              Create an account
-            </button>
-          </div>
-        </>
+        <div className="signinalts">
+          <button className="linky" onClick={() => change('lost')}>Forgot password?</button>
+        </div>
       ) : (
         <div className="signinalts">
           <button className="linky" onClick={() => change('in')}>Back to signing in</button>
