@@ -122,13 +122,9 @@ export function SignIn() {
   return (
     <div className="card gate welcome">
       <img className="banner" src="/banner.jpg" alt="Eastside Second-Season Playoff Challenge" />
-      <p>
-        {mode === 'lost'
-          ? 'Your email address, and we will send you a link to set a new password.'
-          : mode === 'new'
-          ? 'A private contest for the Eastside league. Make an account and the commissioner will let you in.'
-          : 'A private contest for the Eastside league. Sign in to find your team.'}
-      </p>
+      {mode === 'lost' && (
+        <p>Your email address, and we will send you a link to set a new password.</p>
+      )}
 
       <button className="ghost wide first" disabled={busy} onClick={() => void attempt(() => signInWithPopup(auth, google))}>
         Continue with Google
@@ -177,12 +173,12 @@ export function SignIn() {
       <div className="signinalts">
         {mode === 'in' && (
           <>
-            <button className="linky" onClick={() => change('new')}>New here? Create an account</button>
-            <button className="linky" onClick={() => change('lost')}>Forgotten your password?</button>
+            <button className="linky" onClick={() => change('new')}>Create an account</button>
+            <button className="linky" onClick={() => change('lost')}>Forgot password?</button>
           </>
         )}
         {mode !== 'in' && (
-          <button className="linky" onClick={() => change('in')}>Already have an account? Sign in</button>
+          <button className="linky" onClick={() => change('in')}>Back to signing in</button>
         )}
       </div>
 

@@ -360,7 +360,7 @@ td { font-variant-numeric: tabular-nums; }
   display: block; width: 100%; aspect-ratio: 2 / 1;
   /* Whatever the artwork wants, it never takes more than this much of the screen: the way in has
      to be reachable without scrolling, and on a short phone the crest was pushing it under. */
-  max-height: 26vh;
+  max-height: 24vh;
   object-fit: cover; object-position: center;
   margin-bottom: 16px;
 }
@@ -745,7 +745,12 @@ td { font-variant-numeric: tabular-nums; }
 .signin input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
 .signin .submit { width: 100%; margin-top: 4px; }
 
-.signinalts { display: flex; flex-direction: column; gap: 2px; padding: 12px 22px 0; }
+/* Side by side rather than stacked: two short links cost one line instead of two, which is the
+   difference between somebody seeing the way to sign up and having to scroll for it. */
+.signinalts {
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline;
+  gap: 0 18px; padding: 8px 22px 0;
+}
 /* A button that reads as a link: keyboard-reachable and announced as a button, which a span
    with a click handler is neither. */
 .linky {
@@ -805,3 +810,15 @@ td { font-variant-numeric: tabular-nums; }
 /* Google sits above the email form, so its spacing is the form's rather than a footer's. */
 .welcome .ghost.wide.first { margin: 0 auto 4px; }
 .or span { white-space: nowrap; }
+
+/* Short phones: an older Android has about 520 usable pixels, and the sign-in card wants more.
+   The artwork gives up most of the difference, because a crest nobody scrolled past is worth less
+   than a way in that nobody had to scroll for. */
+@media (max-height: 720px) {
+  .banner { max-height: 12vh; margin-bottom: 10px; }
+  .signin label { margin-bottom: 8px; }
+  .signin input { padding: 9px 12px; }
+  .or { margin-top: 12px; }
+  .signinalts { padding-top: 4px; }
+  .welcome { padding-bottom: 18px; }
+}
