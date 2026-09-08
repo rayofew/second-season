@@ -126,7 +126,7 @@ export function SignIn() {
         {mode === 'lost'
           ? 'Your email address, and we will send you a link to set a new password.'
           : mode === 'new'
-          ? 'A private contest for the Eastside league. Make an account, then ask Ray to let you in.'
+          ? 'A private contest for the Eastside league. Make an account and the commissioner will let you in.'
           : 'A private contest for the Eastside league. Sign in to find your team.'}
       </p>
 

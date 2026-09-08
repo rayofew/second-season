@@ -90,8 +90,8 @@ export function Register({ user }: { user: User }) {
       <div className="card gate">
         <h2>You're on the list</h2>
         <p>
-          Ray adds everyone himself, so give him a bit. He'll text you the moment you're in and you
-          can pick your team.
+          Everyone is let in by hand, so this is not instant. You will be in before picks lock, and
+          when you are, this page turns into your team.
         </p>
         <p className="footnote">Signed in as {user.email}</p>
       </div>
@@ -101,11 +101,11 @@ export function Register({ user }: { user: User }) {
   return (
     <div className="card prose register">
       <h2>Join the league</h2>
-      <p>Tell Ray who you are and he'll add you to the league.</p>
+      <p>Tell us who you are, and the commissioner will add you to the league.</p>
 
       <label>
         <span>Your name</span>
-        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Ray Reznick" />
+        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="First and last name" />
       </label>
 
       <label>
@@ -118,7 +118,7 @@ export function Register({ user }: { user: User }) {
       </label>
 
       <label>
-        <span>Phone <em>only Ray sees this</em></span>
+        <span>Phone <em>only the commissioner sees this</em></span>
         <input
           type="tel"
           value={phone}
