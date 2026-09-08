@@ -354,13 +354,13 @@ td { font-variant-numeric: tabular-nums; }
 
 /* The banner carries the name and the tagline, so the sign-in card needs no heading. */
 .welcome { padding: 0 0 26px; }
-/* The artwork is 3:1, which renders small on a phone. Cropped to 2:1 the sides come in about as
-   far as the brackets and everything in the middle grows by half again. */
+/* The artwork is 1400x467 — exactly 3:1 — and it is shown at exactly that.
+
+   It used to be cropped to 2:1 to make the middle bigger on a phone, which quietly took a third of
+   the width off the brackets at either end. Whole is better, and it is shorter into the bargain:
+   the way in fits on one screen without the picture giving anything up. */
 .banner {
-  display: block; width: 100%; aspect-ratio: 2 / 1;
-  /* Whatever the artwork wants, it never takes more than this much of the screen: the way in has
-     to be reachable without scrolling, and on a short phone the crest was pushing it under. */
-  max-height: 24vh;
+  display: block; width: 100%; aspect-ratio: 3 / 1;
   object-fit: cover; object-position: center;
   margin-bottom: 16px;
 }
@@ -815,7 +815,7 @@ td { font-variant-numeric: tabular-nums; }
    The artwork gives up most of the difference, because a crest nobody scrolled past is worth less
    than a way in that nobody had to scroll for. */
 @media (max-height: 720px) {
-  .banner { max-height: 12vh; margin-bottom: 10px; }
+  .banner { margin-bottom: 10px; }
   .signin label { margin-bottom: 8px; }
   .signin input { padding: 9px 12px; }
   .or { margin-top: 12px; }
