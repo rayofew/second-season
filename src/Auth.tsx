@@ -141,7 +141,7 @@ export function SignIn() {
       {mode === 'in' && (
         <div className="newhere">
           <h2>First time here?</h2>
-          <p>Make an account and the commissioner will let you in.</p>
+          <p>Create an account for access.</p>
           <button className="submit wide join" disabled={busy} onClick={() => change('new')}>
             Create an account
           </button>
