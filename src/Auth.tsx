@@ -130,6 +130,12 @@ export function SignIn() {
           : 'A private contest for the Eastside league. Sign in to find your team.'}
       </p>
 
+      <button className="ghost wide first" disabled={busy} onClick={() => void attempt(() => signInWithPopup(auth, google))}>
+        Continue with Google
+      </button>
+
+      <div className="or"><span>or use an email address</span></div>
+
       <form
         className="signin"
         onSubmit={(event) => { event.preventDefault(); withEmail(); }}
@@ -180,11 +186,6 @@ export function SignIn() {
         )}
       </div>
 
-      <div className="or"><span>or</span></div>
-
-      <button className="ghost wide" disabled={busy} onClick={() => void attempt(() => signInWithPopup(auth, google))}>
-        Continue with Google
-      </button>
     </div>
   );
 }

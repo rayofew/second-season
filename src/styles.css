@@ -358,8 +358,11 @@ td { font-variant-numeric: tabular-nums; }
    far as the brackets and everything in the middle grows by half again. */
 .banner {
   display: block; width: 100%; aspect-ratio: 2 / 1;
+  /* Whatever the artwork wants, it never takes more than this much of the screen: the way in has
+     to be reachable without scrolling, and on a short phone the crest was pushing it under. */
+  max-height: 26vh;
   object-fit: cover; object-position: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 .welcome p { padding: 0 22px; }
 
@@ -798,3 +801,7 @@ td { font-variant-numeric: tabular-nums; }
   padding: 9px 10px; border-radius: 9px; font-size: 15px; min-width: 92px;
   border: 1px solid var(--line); background: var(--ground); color: var(--ink);
 }
+
+/* Google sits above the email form, so its spacing is the form's rather than a footer's. */
+.welcome .ghost.wide.first { margin: 0 auto 4px; }
+.or span { white-space: nowrap; }
