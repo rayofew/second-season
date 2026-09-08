@@ -16,6 +16,17 @@ describe('the prize pool', () => {
     assert.equal(placesFor(40), 5, 'and stops there rather than paying half the room');
   });
 
+  it('never narrows as more people join', () => {
+    // The rules page tells people that more players means more places. Nothing in the ladder is
+    // allowed to make a liar of it by paying fewer places to a bigger field.
+    for (let managers = 3; managers <= 40; managers += 1) {
+      assert.ok(
+        placesFor(managers) >= placesFor(managers - 1),
+        `${managers} managers pays fewer places than ${managers - 1}`,
+      );
+    }
+  });
+
   it('splits the pot steeply, and exactly', () => {
     const result = pot(10, prizes(), 4);
     assert.deepEqual(result.payouts.map((payout) => payout.amount), [100, 60, 40]);

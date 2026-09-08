@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { readContest } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
 import { EASTSIDE } from './domain/rules.ts';
-import { pot } from './domain/pool.ts';
+import { placesFor, pot } from './domain/pool.ts';
 import type { Scoring } from './domain/rules.ts';
 
 /**
@@ -30,6 +30,28 @@ const dayAndTime = (when: Date) =>
 
 const day = (when: Date) => when.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 const per = (yards: number) => `1 per ${yards} yds`;
+
+/**
+ * The bands of the places ladder, worked out by asking placesFor about every plausible field.
+ *
+ * Derived rather than typed so the table can never quietly disagree with what the pot actually
+ * pays — the same reason the scoring tables below are generated from the contest.
+ */
+function placeBands(): { label: string; places: number }[] {
+  const bands: { from: number; to: number; places: number }[] = [];
+  for (let managers = 2; managers <= 24; managers += 1) {
+    const places = placesFor(managers);
+    const last = bands[bands.length - 1];
+    if (last && last.places === places) last.to = managers;
+    else bands.push({ from: managers, to: managers, places });
+  }
+  return bands.map((band, index) => ({
+    label: index === 0 ? `Up to ${band.to} teams`
+      : index === bands.length - 1 ? `${band.from} or more`
+      : `${band.from} to ${band.to}`,
+    places: band.places,
+  }));
+}
 
 function Table({ title, rows }: { title: string; rows: [string, string][] }) {
   return (
@@ -65,7 +87,7 @@ export function Rules() {
 
   // A worked example, run through the same function that works out the real pot, so the numbers
   // here can never disagree with what the app would actually pay.
-  const example = pot(10, { buyIn: 50, places: 3, shares: [50, 30, 20], weekly: 10 }, 4);
+  const example = pot(10, { buyIn: 50, places: null, shares: null, weekly: 10 }, 4);
   const rounds = contest?.rounds ?? [];
 
   return (
@@ -183,19 +205,40 @@ export function Rules() {
       </div>
 
       <div className="card prose">
-        <h2>The money, as an example</h2>
+        <h2>The money</h2>
         <p>
-          Nothing below is settled — the buy-in and the split are mine to set, and whatever they end
-          up being will show on the Home screen. This is only to explain how it divides.
+          None of this is fixed yet. The buy-in, the weekly prize and how many places pay are all
+          adjustable, and whatever we settle on shows on the Home screen. Below is how it divides.
         </p>
         <p>
-          <strong>Assuming ten teams, a $50 buy-in, $10 a week for the best raw score, and
-          paying first through third:</strong>
+          <strong>The more of us who play, the more places pay.</strong> Paying only the top three
+          out of twenty would leave most of the room with nothing to play for by the third round,
+          so the ladder widens as the field fills:
         </p>
       </div>
 
       <div className="card">
-        <div className="confhead">Assuming 10 teams at $50</div>
+        <div className="confhead">
+          How many places pay
+          <span className="colhead">Places</span>
+        </div>
+        {placeBands().map((band) => (
+          <div className="ruleline" key={band.label}>
+            <span>{band.label}</span>
+            <span className="rulevalue">{band.places}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="card prose">
+        <p>
+          <strong>So say ten of us play, at $50 each, with $10 a week going to the best raw
+          score:</strong>
+        </p>
+      </div>
+
+      <div className="card">
+        <div className="confhead">Ten teams at $50</div>
         <div className="ruleline">
           <span>The pot · 10 × $50</span>
           <span className="rulevalue">${example.total}</span>
