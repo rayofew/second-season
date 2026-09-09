@@ -13,6 +13,7 @@ import { Theme } from './Theme.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
 import { readContest, readEntries } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
+import { isRefusal } from './domain/trouble.ts';
 
 const CONTEST = 'rehearsal-2026';
 
@@ -28,19 +29,38 @@ export function App() {
   // Hiding the tab is courtesy. What a commissioner may actually do is decided by the rules.
   const commissioner = Boolean(user && contest?.commissioners?.includes(user.uid));
 
+  /**
+   * Who is signed in, and whether the league knows them.
+   *
+   * Everything is cleared first, because signing out and back in as somebody else happens in the
+   * same tab and React keeps state that React was not told to forget. Worse, Firestore keeps the
+   * previous account's documents in memory, so the reads below can answer from a cache filled by
+   * a manager who is no longer signed in — which is how a removed account once got a full tab bar
+   * over a screen that then refused to load anything.
+   */
   useEffect(() => {
+    setMember(null);
+    setContest(null);
+    setManagers(0);
+    setTab('home');
     if (!user) return;
+
+    let current = true;
     void (async () => {
       try {
-        setContest(await readContest(CONTEST));
-        setManagers((await readEntries(CONTEST)).length);
+        const found = await readContest(CONTEST);
+        const people = await readEntries(CONTEST);
+        if (!current) return;
+        setContest(found);
+        setManagers(people.length);
         setMember(true);
       } catch (cause) {
         // The rules refuse anyone without an entry, which is how we learn they are not in yet.
-        setMember((cause as { code?: string }).code === 'permission-denied' ? false : true);
+        if (current) setMember(isRefusal(cause) ? false : true);
       }
     })();
-  }, [user]);
+    return () => { current = false; };
+  }, [user?.uid]);
 
   return (
     <div className="wrap">
