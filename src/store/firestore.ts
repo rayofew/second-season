@@ -133,9 +133,6 @@ export interface Manager {
    * Read by the commissioner's own list and nowhere else. Everybody else sees an ordinary name,
    * which is what makes them useful and what makes taking them out before January matter.
    */
-  standIn?: boolean;
-  /** How a stand-in plays: kept on the entry so his character survives between rounds. */
-  temperament?: string;
 }
 
 /** Who is in the league. Readable by any member — but never their phone number, which stays on the application. */
@@ -150,8 +147,6 @@ export async function readEntries(contestId: string): Promise<Manager[]> {
       teamName: (data.teamName as string) || name,
       logo: (data.logo as string) ?? '',
       paid: Boolean(data.paid),
-      standIn: data.standIn === true,
-      temperament: data.temperament as string | undefined,
     };
   });
 }
@@ -348,15 +343,34 @@ export async function removeManager(contestId: string, uid: string, rounds: numb
 export async function addStandIn(
   contestId: string,
   uid: string,
-  fields: { name: string; teamName: string; temperament: string },
+  fields: { name: string; teamName: string },
 ): Promise<void> {
   await setDoc(doc(db, 'contests', contestId, 'entries', uid), {
     ...fields,
     logo: '',
     paid: false,
-    standIn: true,
     joinedAt: serverTimestamp(),
   });
+}
+
+/**
+ * Which entries are invented, and how each one plays.
+ *
+ * Kept in the commissioner's own document rather than on the entries, because an entry is
+ * readable by every member and a field marking one as a stand-in would announce exactly the
+ * thing it records. Same reasoning that keeps a phone number off an entry.
+ */
+export interface StandInRegister {
+  [uid: string]: string;
+}
+
+export async function readStandIns(contestId: string): Promise<StandInRegister> {
+  const snapshot = await getDoc(doc(db, 'contests', contestId, 'admin', 'standins'));
+  return snapshot.exists() ? ((snapshot.data().temperaments ?? {}) as StandInRegister) : {};
+}
+
+export async function writeStandIns(contestId: string, temperaments: StandInRegister): Promise<void> {
+  await setDoc(doc(db, 'contests', contestId, 'admin', 'standins'), { temperaments });
 }
 
 /**
@@ -374,7 +388,6 @@ export async function writeRosterFor(
   await setDoc(doc(db, 'contests', contestId, 'entries', uid, 'rounds', String(round)), {
     players,
     submittedAt: serverTimestamp(),
-    standIn: true,
   });
 }
 

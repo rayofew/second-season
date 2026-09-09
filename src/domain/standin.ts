@@ -15,7 +15,21 @@ import type { HeldPlayer } from './multiplier.ts';
  * week is the entire thesis of the format, played out where it can be watched.
  */
 
+/** Only for sweeping up stand-ins made before the register existed, whose ids said what they were. */
 export const STAND_IN_PREFIX = 'stand-in-';
+
+/**
+ * An id indistinguishable from one Firebase would have issued.
+ *
+ * A stand-in used to be stand-in-3, which is the document id and is handed to every member who
+ * reads the league. No field on the entry gives them away any more, so neither may this.
+ */
+export function newUid(): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = new Uint8Array(28);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map((byte) => alphabet[byte % alphabet.length]).join('');
+}
 
 export type Temperament = 'loyal' | 'chaser' | 'patcher' | 'fiddler' | 'absent';
 
@@ -32,9 +46,10 @@ export interface StandIn {
  * fine for checking a layout, useless for seeing what the table will feel like with ten people in
  * it, and no encouragement at all to somebody deciding whether to join.
  *
- * They are still marked standIn on the entry itself, so the commissioner can always tell which
- * of his managers are real. Anybody else sees a full league, which is the point and also worth
- * being deliberate about: take them out before the round that counts.
+ * Which entries are invented is recorded in the commissioner's own document, never on the entry,
+ * because an entry is readable by every member. So he can always tell which of his managers are
+ * real and nobody else can — which is the point, and worth being deliberate about: take them out
+ * before the round that counts.
  */
 export const STAND_INS: readonly StandIn[] = [
   { name: 'Dave Kessler', teamName: 'Sunday Scaries', temperament: 'loyal' },

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { explain } from './domain/trouble.ts';
-import { admitManager, declineApplication, readApplications, readContest, readEntries, readSubmitted, removeManager, setCommissioners } from './store/firestore.ts';
-import type { Application, Contest, Manager } from './store/firestore.ts';
+import { admitManager, declineApplication, readApplications, readContest, readEntries, readStandIns, readSubmitted, removeManager, setCommissioners } from './store/firestore.ts';
+import type { Application, Contest, Manager, StandInRegister } from './store/firestore.ts';
 import { dialable, formatPhone } from './domain/phone.ts';
 import { Advance } from './Advance.tsx';
 import { Pool } from './Pool.tsx';
@@ -30,6 +30,9 @@ export function Commissioner({ uid }: { uid: string }) {
   const [applications, setApplications] = useState<Application[]>([]);
   const [managers, setManagers] = useState<Manager[]>([]);
   const [submitted, setSubmitted] = useState<Set<string>>(new Set());
+  // Which of these managers are invented. Read from the commissioner's own document, because
+  // nothing readable by the league is allowed to say so.
+  const [standIns, setStandIns] = useState<StandInRegister>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   // Whose team the commissioner is currently fixing, if any.
@@ -46,6 +49,7 @@ export function Commissioner({ uid }: { uid: string }) {
       setManagers(people);
       setApplications(waiting.filter((application) => !members.has(application.uid)));
       setSubmitted(await readSubmitted(CONTEST, people.map((person) => person.uid), found.currentRound));
+      setStandIns(await readStandIns(CONTEST).catch(() => ({})));
     } catch (cause) {
       setProblem(explain(cause));
     }
@@ -156,7 +160,7 @@ export function Commissioner({ uid }: { uid: string }) {
               <span className="rowmeta">
                 {manager.name}
                 {manager.uid === uid && <><span className="dot">·</span>you</>}
-                {manager.standIn && <span className="tag">stand-in</span>}
+                {standIns[manager.uid] && <span className="tag">stand-in</span>}
               </span>
             </span>
             <span className="actions">

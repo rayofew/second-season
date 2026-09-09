@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { explain } from './domain/trouble.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import type { Position } from './domain/rules.ts';
-import { pickFor, STAND_INS, STAND_IN_PREFIX, tasteOf, uidFor, WHY } from './domain/standin.ts';
+import { newUid, pickFor, STAND_INS, STAND_IN_PREFIX, tasteOf, WHY } from './domain/standin.ts';
 import type { Candidate, StandIn, Temperament } from './domain/standin.ts';
 import { projectedPoints } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
@@ -11,9 +11,10 @@ import { standingsFor } from './domain/multiplier.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import {
-  addStandIn, readContest, readEntries, readHistory, readPool, readTeams, removeStandIn, writeRosterFor,
+  addStandIn, readContest, readEntries, readHistory, readPool, readStandIns, readTeams, removeStandIn,
+  writeRosterFor, writeStandIns,
 } from './store/firestore.ts';
-import type { Contest, Manager, PoolPlayer } from './store/firestore.ts';
+import type { Contest, Manager, PoolPlayer, StandInRegister } from './store/firestore.ts';
 
 /**
  * A field of managers who do not exist, named by hand.
@@ -26,9 +27,9 @@ import type { Contest, Manager, PoolPlayer } from './store/firestore.ts';
  * plausible name looks like in his own league and a list written in advance never will.
  *
  * The temperament is the part that matters and the part not worth typing: it decides whether a
- * manager keeps his men or chases points, and it is kept on the entry so his character survives
- * between rounds. One who never lets go against one who chases the best projection every week is
- * the whole thesis of the format, played out where it can be watched.
+ * manager keeps his men or chases points, and it survives between rounds in a register kept in the
+ * commissioner's own document. It cannot live on the entry, because an entry is readable by the
+ * whole league and a field saying standIn would announce the thing it records.
  */
 
 const CONTEST = 'rehearsal-2026';
@@ -53,6 +54,7 @@ export function StandIns() {
   const [pool, setPool] = useState<Map<string, PoolPlayer>>(new Map());
   const [lineups, setLineups] = useState<Lineup[]>([]);
   const [open, setOpen] = useState<string | null>(null);
+  const [register, setRegister] = useState<StandInRegister>({});
 
   const load = useCallback(async () => {
     try {
@@ -61,16 +63,20 @@ export function StandIns() {
       const people = await readEntries(CONTEST);
       setManagers(people);
 
-      // Anybody already in comes back into the form, so the names can be corrected rather than
-      // only ever added. Ordered by uid so row three is always stand-in-3.
-      const existing = people
-        .filter((manager) => manager.uid.startsWith(STAND_IN_PREFIX))
-        .sort((first, second) => first.uid.localeCompare(second.uid, undefined, { numeric: true }));
+      // Anybody already in comes back into the form, so a name can be corrected rather than only
+      // ever added. Entries arrive in id order, which is stable, so a row keeps its manager.
+      const kept = await readStandIns(CONTEST).catch((): StandInRegister => ({}));
+      setRegister(kept);
+      const existing = people.filter(
+        // The prefix only catches stand-ins made before the register existed, whose ids gave
+        // them away and which should be removed and remade.
+        (manager) => kept[manager.uid] !== undefined || manager.uid.startsWith(STAND_IN_PREFIX),
+      );
       if (existing.length > 0) {
         setRows(existing.map((manager, index) => ({
           name: manager.name,
           teamName: manager.teamName,
-          temperament: (manager.temperament as Temperament) ?? STAND_INS[index]?.temperament ?? 'patcher',
+          temperament: (kept[manager.uid] as Temperament) ?? STAND_INS[index]?.temperament ?? 'patcher',
         })));
       }
 
@@ -102,7 +108,11 @@ export function StandIns() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const present = managers.filter((manager) => manager.uid.startsWith(STAND_IN_PREFIX));
+  // The register says who is invented. The prefix is only here to catch the ones made before it
+  // existed, whose ids announced them and which should be removed and remade.
+  const present = managers.filter(
+    (manager) => register[manager.uid] !== undefined || manager.uid.startsWith(STAND_IN_PREFIX),
+  );
 
   const change = (index: number, patch: Partial<StandIn>) =>
     setRows((current) => current.map((row, at) => (at === index ? { ...row, ...patch } : row)));
@@ -149,24 +159,36 @@ export function StandIns() {
       const worth = (player: Candidate) =>
         projectedPoints(player.position as Position, expected[player.id], EASTSIDE);
 
-      const playing: StandIn[] = create
+      // An existing stand-in keeps his id so his history survives a rename; a new one is given an
+      // id indistinguishable from Firebase's own, because the id is handed to every member.
+      const playing: { uid: string; who: StandIn }[] = create
         ? rows.map((row, index) => ({
-            name: row.name.trim() || `Manager ${index + 1}`,
-            teamName: row.teamName.trim() || row.name.trim() || `Team ${index + 1}`,
-            temperament: row.temperament,
+            uid: present[index]?.uid ?? newUid(),
+            who: {
+              name: row.name.trim() || `Manager ${index + 1}`,
+              teamName: row.teamName.trim() || row.name.trim() || `Team ${index + 1}`,
+              temperament: row.temperament,
+            },
           }))
-        // Picking without adding uses whoever is actually in, and the character stored on each.
-        : present
-            .sort((first, second) => first.uid.localeCompare(second.uid, undefined, { numeric: true }))
-            .map((manager, index) => ({
+        // Picking without adding uses whoever is actually in, and the character recorded for each.
+        : present.map((manager, index) => ({
+            uid: manager.uid,
+            who: {
               name: manager.name,
               teamName: manager.teamName,
-              temperament: (manager.temperament as Temperament) ?? STAND_INS[index]?.temperament ?? 'patcher',
-            }));
+              temperament: (register[manager.uid] as Temperament) ?? STAND_INS[index]?.temperament ?? 'patcher',
+            },
+          }));
 
-      for (const [index, standIn] of playing.entries()) {
-        const uid = uidFor(index);
-        if (create) await addStandIn(CONTEST, uid, standIn);
+      // Asking for fewer than are already in means the rest are gone, rosters and all.
+      if (create && present.length > rows.length) {
+        for (const extra of present.slice(rows.length)) {
+          await removeStandIn(CONTEST, extra.uid, contest.rounds.length);
+        }
+      }
+
+      for (const [index, { uid, who: standIn }] of playing.entries()) {
+        if (create) await addStandIn(CONTEST, uid, { name: standIn.name, teamName: standIn.teamName });
 
         const history = round === 0 ? [] : await readHistory(CONTEST, uid, round - 1).catch(() => []);
         const previous = history[round - 1] ?? [];
@@ -187,6 +209,13 @@ export function StandIns() {
           + ` (${WHY[standIn.temperament]})`,
         );
       }
+      if (create) {
+        // The one record of which managers are invented, in the commissioner's own document.
+        await writeStandIns(
+          CONTEST,
+          Object.fromEntries(playing.map((entry) => [entry.uid, entry.who.temperament])),
+        );
+      }
       setSaid(notes);
       await load();
     } catch (cause) {
@@ -205,6 +234,7 @@ export function StandIns() {
       for (const manager of present) {
         await removeStandIn(CONTEST, manager.uid, contest.rounds.length);
       }
+      await writeStandIns(CONTEST, {});
       setRows(STAND_INS.slice(0, 6));
       setSaid(['All stand-ins removed.']);
       await load();

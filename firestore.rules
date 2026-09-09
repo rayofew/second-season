@@ -178,6 +178,18 @@ service cloud.firestore {
         allow write: if isCommissioner(contestId);
       }
 
+      /**
+       * The commissioner's own notes, which no manager may read.
+       *
+       * Holds the register of stand-in managers: which entries are invented and how each plays.
+       * That cannot live on the entry itself, because an entry is readable by the whole league —
+       * a field saying standIn would announce the thing it is recording, in exactly the way a
+       * phone number on an entry would announce a phone number.
+       */
+      match /admin/{docId} {
+        allow read, write: if isCommissioner(contestId);
+      }
+
       // Append only, and never from a browser. History that can be edited is not history.
       match /audit/{entryId} {
         allow read: if isCommissioner(contestId);
