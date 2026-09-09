@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
+import { explain } from './domain/trouble.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import { points } from './domain/scoring.ts';
 import { table } from './domain/standings.ts';
@@ -80,7 +81,7 @@ export function Standings({ uid }: { uid: string }) {
         }));
         setPlacings(table(entries, { statsByRound, correctionsByRound }, EASTSIDE));
       } catch (cause) {
-        setProblem((cause as Error).message);
+        setProblem(explain(cause));
       }
     })();
   }, [uid]);

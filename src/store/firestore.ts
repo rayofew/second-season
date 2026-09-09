@@ -321,7 +321,19 @@ export async function declineApplication(contestId: string, uid: string): Promis
  * subcollection with its parent, and a roster that has already been scored is part of the record.
  * If they are let back in, they find their old team waiting.
  */
-export async function removeManager(contestId: string, uid: string): Promise<void> {
+/**
+ * Taking a manager out, and everything he submitted with him.
+ *
+ * Firestore does not delete a subcollection along with its document, so removing an entry used
+ * to leave every roster he had ever sent behind. Re-admitting him would then bring those teams
+ * back, handing him streaks he had not held — and until then they sat in a collection the whole
+ * league can read once a round has locked.
+ */
+export async function removeManager(contestId: string, uid: string, rounds: number): Promise<void> {
+  for (let round = 0; round < rounds; round += 1) {
+    await deleteDoc(doc(db, 'contests', contestId, 'entries', uid, 'rounds', String(round)))
+      .catch(() => undefined);
+  }
   await deleteDoc(doc(db, 'contests', contestId, 'entries', uid));
 }
 
@@ -366,14 +378,8 @@ export async function writeRosterFor(
   });
 }
 
-/** Takes a stand-in out along with every round he played, which deleting the entry does not. */
-export async function removeStandIn(contestId: string, uid: string, rounds: number): Promise<void> {
-  for (let round = 0; round < rounds; round += 1) {
-    await deleteDoc(doc(db, 'contests', contestId, 'entries', uid, 'rounds', String(round)))
-      .catch(() => undefined);
-  }
-  await deleteDoc(doc(db, 'contests', contestId, 'entries', uid));
-}
+/** A stand-in is removed the same way anybody is. */
+export const removeStandIn = removeManager;
 
 /**
  * Appointing or standing down a co-commissioner.

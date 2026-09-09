@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { explain } from './domain/trouble.ts';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import type { User } from 'firebase/auth';
@@ -90,7 +91,7 @@ export function Register({ user }: { user: User }) {
       setState('sent');
     } catch (cause) {
       setState('form');
-      setProblem((cause as Error).message);
+      setProblem(explain(cause));
     }
   }
 

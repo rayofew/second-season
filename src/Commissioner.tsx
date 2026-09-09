@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { explain } from './domain/trouble.ts';
 import { admitManager, declineApplication, readApplications, readContest, readEntries, readSubmitted, removeManager, setCommissioners } from './store/firestore.ts';
 import type { Application, Contest, Manager } from './store/firestore.ts';
 import { dialable, formatPhone } from './domain/phone.ts';
@@ -46,7 +47,7 @@ export function Commissioner({ uid }: { uid: string }) {
       setApplications(waiting.filter((application) => !members.has(application.uid)));
       setSubmitted(await readSubmitted(CONTEST, people.map((person) => person.uid), found.currentRound));
     } catch (cause) {
-      setProblem((cause as Error).message);
+      setProblem(explain(cause));
     }
   }, []);
 
@@ -59,7 +60,7 @@ export function Commissioner({ uid }: { uid: string }) {
       await work();
       await load();
     } catch (cause) {
-      setProblem((cause as Error).message);
+      setProblem(explain(cause));
     } finally {
       setBusy(null);
       setConfirming(null);
@@ -189,7 +190,7 @@ export function Commissioner({ uid }: { uid: string }) {
                   disabled={busy === manager.uid}
                   onClick={() =>
                     confirming === manager.uid
-                      ? void act(manager.uid, () => removeManager(CONTEST, manager.uid))
+                      ? void act(manager.uid, () => removeManager(CONTEST, manager.uid, contest.rounds.length))
                       : setConfirming(manager.uid)
                   }
                 >

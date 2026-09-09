@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { explain } from './domain/trouble.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import type { Position } from './domain/rules.ts';
 import { standingsFor } from './domain/multiplier.ts';
@@ -92,7 +93,7 @@ export function RosterBuilder({
           ])));
         }
       } catch (cause) {
-        setProblem((cause as Error).message);
+        setProblem(explain(cause));
       }
     })();
   }, [uid]);

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { explain } from './domain/trouble.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import type { Position } from './domain/rules.ts';
 import { pickFor, STAND_INS, STAND_IN_PREFIX, uidFor, WHY } from './domain/standin.ts';
@@ -59,7 +60,7 @@ export function StandIns() {
         })));
       }
     } catch (cause) {
-      setProblem((cause as Error).message);
+      setProblem(explain(cause));
     }
   }, []);
 
@@ -150,7 +151,7 @@ export function StandIns() {
       setSaid(notes);
       await load();
     } catch (cause) {
-      setProblem((cause as Error).message);
+      setProblem(explain(cause));
     } finally {
       setBusy(null);
     }
@@ -169,7 +170,7 @@ export function StandIns() {
       setSaid(['All stand-ins removed.']);
       await load();
     } catch (cause) {
-      setProblem((cause as Error).message);
+      setProblem(explain(cause));
     } finally {
       setBusy(null);
     }
