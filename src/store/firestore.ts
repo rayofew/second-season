@@ -133,6 +133,8 @@ export interface Manager {
    * which is what makes them useful and what makes taking them out before January matter.
    */
   standIn?: boolean;
+  /** How a stand-in plays: kept on the entry so his character survives between rounds. */
+  temperament?: string;
 }
 
 /** Who is in the league. Readable by any member — but never their phone number, which stays on the application. */
@@ -148,6 +150,7 @@ export async function readEntries(contestId: string): Promise<Manager[]> {
       logo: (data.logo as string) ?? '',
       paid: Boolean(data.paid),
       standIn: data.standIn === true,
+      temperament: data.temperament as string | undefined,
     };
   });
 }
@@ -322,7 +325,7 @@ export async function removeManager(contestId: string, uid: string): Promise<voi
 export async function addStandIn(
   contestId: string,
   uid: string,
-  fields: { name: string; teamName: string },
+  fields: { name: string; teamName: string; temperament: string },
 ): Promise<void> {
   await setDoc(doc(db, 'contests', contestId, 'entries', uid), {
     ...fields,

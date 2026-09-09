@@ -873,3 +873,33 @@ td { font-variant-numeric: tabular-nums; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .fieldone.me .fieldwho { color: var(--gold); font-weight: 650; }
+
+/* Naming the stand-ins.
+
+   A grid rather than a form: the three fields of one manager belong on one line, and on a phone
+   the name and the team take a line each with the temperament under them. */
+.standins { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; }
+.standin {
+  display: grid; gap: 6px 8px; align-items: center;
+  grid-template-columns: 1fr 1fr auto auto;
+  grid-template-areas: 'name team mood drop' 'why why why why';
+}
+.standin input:nth-of-type(1) { grid-area: name; }
+.standin input:nth-of-type(2) { grid-area: team; }
+.standin select { grid-area: mood; }
+.standin .danger { grid-area: drop; }
+.standinwhy { grid-area: why; font-size: 11.5px; color: var(--faint); }
+.standin input, .standin select {
+  width: 100%; min-width: 0; padding: 9px 10px; border-radius: 9px; font-size: 15px;
+  border: 1px solid var(--line); background: var(--ground); color: var(--ink);
+}
+.standin select { width: auto; }
+.standin .danger.small { min-height: 38px; padding: 6px 11px; line-height: 1; }
+
+@media (max-width: 520px) {
+  .standin {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 'name drop' 'team drop' 'mood mood' 'why why';
+  }
+  .standin select { width: 100%; }
+}

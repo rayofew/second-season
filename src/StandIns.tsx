@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { EASTSIDE } from './domain/rules.ts';
 import type { Position } from './domain/rules.ts';
 import { pickFor, STAND_INS, STAND_IN_PREFIX, uidFor, WHY } from './domain/standin.ts';
-import type { Candidate } from './domain/standin.ts';
+import type { Candidate, StandIn, Temperament } from './domain/standin.ts';
 import { projectedPoints } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
 import { projections } from './providers/sleeper.ts';
@@ -12,34 +12,52 @@ import {
 import type { Contest, Manager } from './store/firestore.ts';
 
 /**
- * A field of managers who do not exist, put in from the browser.
+ * A field of managers who do not exist, named by hand.
  *
- * Six testers who never reply is what blocks every screen that needs more than one team in it, and
- * fake logins would only ever test the login. The rules already let a commissioner create an entry
- * and write anybody's roster, so this needs no service account key and no accounts — it writes the
- * two things the standings, the live board, the pot and a Monday advance actually read.
+ * Six testers who never reply is what blocks every screen needing more than one team in it, and
+ * fake logins would only test the login. The rules already let a commissioner create an entry and
+ * write anybody's roster, so this needs no service account key and no accounts.
  *
- * They keep their temperaments between rounds, so playing a week is a decision each rather than a
- * reshuffle: one never lets go and climbs to 4x, one chases the best projection and never leaves
- * 1x, and one submits nothing at all, which is the forgotten-roster path that otherwise goes
- * untested until it happens to a real person in January.
+ * The names are typed in rather than invented here, because whoever runs this knows what a
+ * plausible name looks like in his own league and a list written in advance never will.
+ *
+ * The temperament is the part that matters and the part not worth typing: it decides whether a
+ * manager keeps his men or chases points, and it is kept on the entry so his character survives
+ * between rounds. One who never lets go against one who chases the best projection every week is
+ * the whole thesis of the format, played out where it can be watched.
  */
 
 const CONTEST = 'rehearsal-2026';
 
+const TEMPERAMENTS: Temperament[] = ['loyal', 'chaser', 'patcher', 'fiddler', 'absent'];
+
 export function StandIns() {
   const [contest, setContest] = useState<Contest | null>(null);
   const [managers, setManagers] = useState<Manager[]>([]);
+  const [rows, setRows] = useState<StandIn[]>(STAND_INS.slice(0, 6));
   const [busy, setBusy] = useState<string | null>(null);
   const [said, setSaid] = useState<string[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
-  const [howMany, setHowMany] = useState(6);
 
   const load = useCallback(async () => {
     try {
       const found = await readContest(CONTEST);
       setContest(found);
-      setManagers(await readEntries(CONTEST));
+      const people = await readEntries(CONTEST);
+      setManagers(people);
+
+      // Anybody already in comes back into the form, so the names can be corrected rather than
+      // only ever added. Ordered by uid so row three is always stand-in-3.
+      const existing = people
+        .filter((manager) => manager.uid.startsWith(STAND_IN_PREFIX))
+        .sort((first, second) => first.uid.localeCompare(second.uid, undefined, { numeric: true }));
+      if (existing.length > 0) {
+        setRows(existing.map((manager, index) => ({
+          name: manager.name,
+          teamName: manager.teamName,
+          temperament: (manager.temperament as Temperament) ?? STAND_INS[index]?.temperament ?? 'patcher',
+        })));
+      }
     } catch (cause) {
       setProblem((cause as Error).message);
     }
@@ -49,10 +67,21 @@ export function StandIns() {
 
   const present = managers.filter((manager) => manager.uid.startsWith(STAND_IN_PREFIX));
 
+  const change = (index: number, patch: Partial<StandIn>) =>
+    setRows((current) => current.map((row, at) => (at === index ? { ...row, ...patch } : row)));
+
+  const addRow = () =>
+    setRows((current) => [
+      ...current,
+      STAND_INS[current.length] ?? { name: '', teamName: '', temperament: 'patcher' },
+    ]);
+
+  const dropRow = (index: number) => setRows((current) => current.filter((_, at) => at !== index));
+
   /**
-   * Picks and submits for every stand-in, for the round that is open.
+   * Writes the entries and picks a roster for each, for the round that is open.
    *
-   * Run it again after advancing and each one behaves in character against the new field, so the
+   * Run again after advancing and every one behaves in character against the new field, so the
    * multipliers spread out the way they will when real people are doing this.
    */
   async function play(create: boolean) {
@@ -83,13 +112,25 @@ export function StandIns() {
       const worth = (player: Candidate) =>
         projectedPoints(player.position as Position, expected[player.id], EASTSIDE);
 
-      const wanted = create ? STAND_INS.slice(0, howMany) : STAND_INS.slice(0, Math.max(present.length, 1));
+      const playing: StandIn[] = create
+        ? rows.map((row, index) => ({
+            name: row.name.trim() || `Manager ${index + 1}`,
+            teamName: row.teamName.trim() || row.name.trim() || `Team ${index + 1}`,
+            temperament: row.temperament,
+          }))
+        // Picking without adding uses whoever is actually in, and the character stored on each.
+        : present
+            .sort((first, second) => first.uid.localeCompare(second.uid, undefined, { numeric: true }))
+            .map((manager, index) => ({
+              name: manager.name,
+              teamName: manager.teamName,
+              temperament: (manager.temperament as Temperament) ?? STAND_INS[index]?.temperament ?? 'patcher',
+            }));
 
-      for (const [index, standIn] of wanted.entries()) {
+      for (const [index, standIn] of playing.entries()) {
         const uid = uidFor(index);
-        if (create) await addStandIn(CONTEST, uid, { name: standIn.name, teamName: standIn.teamName });
+        if (create) await addStandIn(CONTEST, uid, standIn);
 
-        // What he held last round decides what he keeps, so his own history is read back each time.
         const history = round === 0 ? [] : await readHistory(CONTEST, uid, round - 1).catch(() => []);
         const previous = history[round - 1] ?? [];
         const players = pickFor(standIn.temperament, previous, candidates, alive, byes, worth);
@@ -124,6 +165,7 @@ export function StandIns() {
       for (const manager of present) {
         await removeStandIn(CONTEST, manager.uid, contest.rounds.length);
       }
+      setRows(STAND_INS.slice(0, 6));
       setSaid(['All stand-ins removed.']);
       await load();
     } catch (cause) {
@@ -146,29 +188,49 @@ export function StandIns() {
 
       <div className="pending">
         Not accounts — entries and rosters, written as you. Nobody can sign in as one. They read as
-        ordinary managers to everybody else, and carry a <strong>stand-in</strong> tag in your list
-        below so you can always tell which of your league is real. Take them out before the round
-        that counts.
+        ordinary managers to everybody else, and carry a <strong>stand-in</strong> tag in your own
+        list under Commish so you can always tell which of your league is real. Take them out before
+        the round that counts.
+      </div>
+
+      <div className="standins">
+        {rows.map((row, index) => (
+          <div className="standin" key={index}>
+            <input
+              value={row.name}
+              placeholder="Name"
+              onChange={(event) => change(index, { name: event.target.value })}
+            />
+            <input
+              value={row.teamName}
+              placeholder="Team name"
+              onChange={(event) => change(index, { teamName: event.target.value })}
+            />
+            <select
+              value={row.temperament}
+              title={WHY[row.temperament]}
+              onChange={(event) => change(index, { temperament: event.target.value as Temperament })}
+            >
+              {TEMPERAMENTS.map((temperament) => (
+                <option key={temperament} value={temperament}>{temperament}</option>
+              ))}
+            </select>
+            <button className="danger small" onClick={() => dropRow(index)} title="Remove this row">
+              ×
+            </button>
+            <span className="standinwhy">{WHY[row.temperament]}</span>
+          </div>
+        ))}
+
+        <button className="ghost small" onClick={addRow} disabled={rows.length >= 20}>
+          Add another
+        </button>
       </div>
 
       <div className="editor">
-        <div className="splitrow">
-          <label>
-            <span className="reasonlabel">How many</span>
-            <input
-              type="number"
-              min={1}
-              max={STAND_INS.length}
-              value={howMany}
-              onChange={(event) =>
-                setHowMany(Math.min(STAND_INS.length, Math.max(1, Number(event.target.value) || 1)))}
-            />
-          </label>
-        </div>
-
         <div className="inline">
-          <button className="submit small" disabled={busy !== null} onClick={() => void play(true)}>
-            {busy === 'add' ? 'Adding…' : `Add ${howMany} and pick`}
+          <button className="submit small" disabled={busy !== null || rows.length === 0} onClick={() => void play(true)}>
+            {busy === 'add' ? 'Saving…' : `Put ${rows.length} in and pick`}
           </button>
           <button
             className="ghost small"
