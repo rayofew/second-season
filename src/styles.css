@@ -848,3 +848,28 @@ td { font-variant-numeric: tabular-nums; }
 /* Google's mark keeps its own colours in both themes; the button stays white beneath it, which
    is the only pairing their brand allows and the one everybody recognises anyway. */
 .gmark { flex: none; display: block; }
+
+/* Who else is playing.
+
+   Chips rather than rows: ten managers as full-height rows is a screenful of scrolling for a list
+   whose whole job is to be taken in at a glance. */
+.fieldgrid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px; padding: 12px 14px 14px;
+}
+.fieldone {
+  display: flex; align-items: center; gap: 9px; min-width: 0;
+  padding: 8px 10px; border-radius: 10px;
+  background: var(--sunk); border: 1px solid var(--line);
+}
+.fieldone.me { border-color: var(--gold); }
+.fieldnames { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.fieldteam {
+  font-size: 13.5px; font-weight: 650; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fieldwho {
+  font-size: 11.5px; color: var(--faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fieldone.me .fieldwho { color: var(--gold); font-weight: 650; }

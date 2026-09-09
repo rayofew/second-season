@@ -15,6 +15,7 @@ import type { ClubGame } from './providers/schedule.ts';
 import { fixtureLabel } from './domain/fixture.ts';
 import { Pool } from './Pool.tsx';
 import { Countdown } from './Countdown.tsx';
+import { Field } from './Field.tsx';
 import { GameDay } from './GameDay.tsx';
 import { useHeartbeat } from './useHeartbeat.ts';
 
@@ -211,6 +212,8 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
           </button>
         )}
       </div>
+
+      <Field managers={managers} you={uid} />
 
       {gone.length > 0 && !locked && (
         <div className="card notice">
