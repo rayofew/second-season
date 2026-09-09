@@ -4,6 +4,7 @@ import { updateProfile } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { db } from './firebase.ts';
 import { typingPhone } from './domain/phone.ts';
+import { fullName, shortName, splitName } from './domain/name.ts';
 import { ThemeChoice } from './Theme.tsx';
 
 /**
@@ -39,7 +40,10 @@ async function shrink(file: File): Promise<string> {
 }
 
 export function Register({ user }: { user: User }) {
-  const [name, setName] = useState(user.displayName ?? '');
+  // Google hands a name over as one string; everything after the first word is the surname.
+  const given = splitName(user.displayName ?? '');
+  const [first, setFirst] = useState(given.first);
+  const [last, setLast] = useState(given.last);
   const [teamName, setTeamName] = useState('');
   const [phone, setPhone] = useState('');
   const [logo, setLogo] = useState<string | null>(null);
@@ -63,21 +67,26 @@ export function Register({ user }: { user: User }) {
   }
 
   async function send() {
-    if (!name.trim()) { setProblem('A name, at least.'); return; }
+    if (!first.trim()) { setProblem('A first name, at least.'); return; }
     setState('saving');
     setProblem(null);
     try {
+      const whole = fullName(first, last);
       await setDoc(doc(db, 'contests', CONTEST, 'applications', user.uid), {
-        name: name.trim(),
-        // A team name is optional and falls back to their own, so nobody is nameless in the table.
-        teamName: teamName.trim() || name.trim(),
+        // Both halves, and the whole thing: the commissioner needs to know who this is, and only
+        // he can read an application. What reaches the league is the short form.
+        name: whole,
+        firstName: first.trim(),
+        lastName: last.trim(),
+        // A team name is optional and falls back to how the league will know them.
+        teamName: teamName.trim() || shortName(first, last),
         phone: phone.trim(),
         logo: logo ?? '',
         appliedAt: new Date(),
       });
       // An account made with an email address arrives with no name on it, so the header would
       // read out their address until they told us one. They just have; keep it.
-      if (!user.displayName) await updateProfile(user, { displayName: name.trim() }).catch(() => undefined);
+      if (!user.displayName) await updateProfile(user, { displayName: whole }).catch(() => undefined);
       setState('sent');
     } catch (cause) {
       setState('form');
@@ -103,17 +112,40 @@ export function Register({ user }: { user: User }) {
       <h2>Join the league</h2>
       <p>Tell us who you are, and the commissioner will add you to the league.</p>
 
-      <label>
-        <span>Your name</span>
-        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="First and last name" />
-      </label>
+      <div className="splitrow">
+        <label>
+          <span>First name</span>
+          <input
+            value={first}
+            autoComplete="given-name"
+            onChange={(event) => setFirst(event.target.value)}
+            placeholder="Ray"
+          />
+        </label>
+        <label>
+          <span>Last name</span>
+          <input
+            value={last}
+            autoComplete="family-name"
+            onChange={(event) => setLast(event.target.value)}
+            placeholder="Reznick"
+          />
+        </label>
+      </div>
+
+      {first.trim() && (
+        <p className="footnote">
+          The league will see you as <strong>{shortName(first, last)}</strong>. Your surname is only
+          ever shown to the commissioner.
+        </p>
+      )}
 
       <label>
         <span>Team name <em>optional</em></span>
         <input
           value={teamName}
           onChange={(event) => setTeamName(event.target.value)}
-          placeholder={name || 'Defaults to your name'}
+          placeholder={shortName(first, last) || 'Defaults to your name'}
         />
       </label>
 

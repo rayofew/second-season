@@ -108,7 +108,9 @@ service cloud.firestore {
       match /applications/{uid} {
         allow read: if isOwner(uid) || isCommissioner(contestId);
         allow create, update: if isOwner(uid)
-          && request.resource.data.keys().hasOnly(['name', 'teamName', 'phone', 'logo', 'appliedAt']);
+          && request.resource.data.keys().hasOnly(
+            ['name', 'firstName', 'lastName', 'teamName', 'phone', 'logo', 'appliedAt']
+          );
         allow delete: if isCommissioner(contestId);
       }
 

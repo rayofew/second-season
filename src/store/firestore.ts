@@ -3,6 +3,7 @@ import type { HeldPlayer } from '../domain/multiplier.ts';
 import type { StatLine } from '../domain/scoring.ts';
 import type { ContestSettings } from '../domain/rules.ts';
 import type { Prizes } from '../domain/pool.ts';
+import { shortName, splitName } from '../domain/name.ts';
 import { db } from '../firebase.ts';
 
 /**
@@ -201,7 +202,10 @@ export async function readAllTeams(contestId: string, rounds: number): Promise<(
 
 export interface Application {
   uid: string;
+  /** Both halves, for the commissioner deciding whether he knows this person. */
   name: string;
+  firstName: string;
+  lastName: string;
   teamName: string;
   /** Only the commissioner and the applicant can read this. It never reaches an entry. */
   phone: string;
@@ -214,9 +218,14 @@ export async function readApplications(contestId: string): Promise<Application[]
   return snapshot.docs.map((application) => {
     const data = application.data();
     const name = (data.name as string) ?? application.id;
+    // Applications written before the name was split have only the one field, so the halves are
+    // recovered from it rather than coming back empty.
+    const halves = splitName(name);
     return {
       uid: application.id,
       name,
+      firstName: (data.firstName as string) ?? halves.first,
+      lastName: (data.lastName as string) ?? halves.last,
       teamName: (data.teamName as string) || name,
       phone: (data.phone as string) ?? '',
       logo: (data.logo as string) ?? '',
@@ -232,7 +241,9 @@ export async function readApplications(contestId: string): Promise<Application[]
  */
 export async function admitManager(contestId: string, application: Application): Promise<void> {
   await setDoc(doc(db, 'contests', contestId, 'entries', application.uid), {
-    name: application.name,
+    // The short form only. An entry is readable by the whole league, and a surname given to the
+    // commissioner was not given to everybody — the same reason the phone number stays behind.
+    name: shortName(application.firstName, application.lastName) || application.name,
     teamName: application.teamName,
     logo: application.logo,
     joinedAt: serverTimestamp(),
