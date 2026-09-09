@@ -60,6 +60,39 @@ export const WHY: Record<Temperament, string> = {
 
 export const uidFor = (index: number): string => `${STAND_IN_PREFIX}${index + 1}`;
 
+/**
+ * A number between 0 and 1 that is always the same for the same words.
+ *
+ * Deterministic on purpose: a field seeded twice is the same field, so a bug that only appears on
+ * one particular roster can be got back rather than hunted for.
+ */
+function fraction(of: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < of.length; index += 1) {
+    hash ^= of.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return ((hash >>> 0) % 100000) / 100000;
+}
+
+/**
+ * One manager's opinion of a player, which is not quite anybody else's.
+ *
+ * Without this every stand-in ranks the pool identically and picks the same nine, which in the
+ * opening round — when nobody is holding anybody yet — means six managers with one team between
+ * them. Real managers disagree about who is good, so each gets a fixed private view of every
+ * player, up to a quarter either side of the projection.
+ *
+ * They still overlap heavily, which is correct: the pool is shared and half the league owning the
+ * same running back is the situation the multiplier is supposed to sort out.
+ */
+export function tasteOf(
+  seed: number,
+  worth: (player: Candidate) => number,
+): (player: Candidate) => number {
+  return (player) => worth(player) * (0.75 + 0.5 * fraction(`${seed}:${player.id}`));
+}
+
 export interface Candidate {
   id: string;
   position: string;

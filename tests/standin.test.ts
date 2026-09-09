@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { pickFor, STAND_INS, STAND_IN_PREFIX, uidFor } from '../src/domain/standin.ts';
+import { pickFor, STAND_INS, STAND_IN_PREFIX, tasteOf, uidFor } from '../src/domain/standin.ts';
 import type { Candidate } from '../src/domain/standin.ts';
 import { EASTSIDE } from '../src/domain/rules.ts';
 import type { HeldPlayer } from '../src/domain/multiplier.ts';
@@ -94,6 +94,33 @@ describe('stand-in managers', () => {
     assert.equal(uidFor(0), 'stand-in-1');
     for (const [index] of STAND_INS.entries()) {
       assert.ok(uidFor(index).startsWith(STAND_IN_PREFIX), `uid ${index} is marked`);
+    }
+  });
+
+  it('does not hand six managers one team between them', () => {
+    // Nobody is holding anybody in the opening round, so without a private view of the pool every
+    // stand-in ranks it identically and picks the identical nine.
+    const teams = [1, 2, 3, 4, 5, 6].map((seed) =>
+      pickFor('patcher', [], pool, alive, byes, tasteOf(seed, worth))
+        .map((entry) => entry.playerId).join(','));
+    assert.ok(new Set(teams).size > 1, `all six picked the same nine: ${teams[0]}`);
+  });
+
+  it('gives the same manager the same team twice', () => {
+    const once = pickFor('patcher', [], pool, alive, byes, tasteOf(3, worth));
+    const again = pickFor('patcher', [], pool, alive, byes, tasteOf(3, worth));
+    assert.deepEqual(once, again, 'a field seeded twice is the same field');
+  });
+
+  it('still fills every slot legally whatever a manager thinks of the pool', () => {
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+      const picked = pickFor('patcher', [], pool, alive, byes, tasteOf(seed, worth));
+      assert.equal(picked.length, EASTSIDE.slots.length, `seed ${seed} filled nine`);
+      assert.equal(new Set(picked.map((entry) => entry.playerId)).size, 9, `seed ${seed} picked nobody twice`);
+      for (const entry of picked) {
+        const slot = EASTSIDE.slots.find((candidate) => candidate.id === entry.slot)!;
+        assert.ok(slot.eligible.includes(entry.position), `seed ${seed}: ${entry.slot}`);
+      }
     }
   });
 

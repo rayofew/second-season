@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { explain } from './domain/trouble.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import type { Position } from './domain/rules.ts';
-import { pickFor, STAND_INS, STAND_IN_PREFIX, uidFor, WHY } from './domain/standin.ts';
+import { pickFor, STAND_INS, STAND_IN_PREFIX, tasteOf, uidFor, WHY } from './domain/standin.ts';
 import type { Candidate, StandIn, Temperament } from './domain/standin.ts';
 import { projectedPoints } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
@@ -134,7 +134,10 @@ export function StandIns() {
 
         const history = round === 0 ? [] : await readHistory(CONTEST, uid, round - 1).catch(() => []);
         const previous = history[round - 1] ?? [];
-        const players = pickFor(standIn.temperament, previous, candidates, alive, byes, worth);
+        // His own view of the pool, so six managers do not arrive at one team between them.
+        const players = pickFor(
+          standIn.temperament, previous, candidates, alive, byes, tasteOf(index + 1, worth),
+        );
 
         if (players.length === 0) {
           notes.push(`${standIn.teamName} — submits nothing (${WHY[standIn.temperament]})`);
