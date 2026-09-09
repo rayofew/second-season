@@ -7,10 +7,13 @@ import type { Candidate, StandIn, Temperament } from './domain/standin.ts';
 import { projectedPoints } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
 import { projections } from './providers/sleeper.ts';
+import { standingsFor } from './domain/multiplier.ts';
+import type { HeldPlayer } from './domain/multiplier.ts';
+import { PlayerRow } from './PlayerRow.tsx';
 import {
   addStandIn, readContest, readEntries, readHistory, readPool, readTeams, removeStandIn, writeRosterFor,
 } from './store/firestore.ts';
-import type { Contest, Manager } from './store/firestore.ts';
+import type { Contest, Manager, PoolPlayer } from './store/firestore.ts';
 
 /**
  * A field of managers who do not exist, named by hand.
@@ -30,6 +33,14 @@ import type { Contest, Manager } from './store/firestore.ts';
 
 const CONTEST = 'rehearsal-2026';
 
+/** One stand-in's nine for the open round, with what each man is currently worth to him. */
+interface Lineup {
+  uid: string;
+  teamName: string;
+  players: HeldPlayer[];
+  multipliers: Map<string, number>;
+}
+
 const TEMPERAMENTS: Temperament[] = ['loyal', 'chaser', 'patcher', 'fiddler', 'absent'];
 
 export function StandIns() {
@@ -39,6 +50,9 @@ export function StandIns() {
   const [busy, setBusy] = useState<string | null>(null);
   const [said, setSaid] = useState<string[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
+  const [pool, setPool] = useState<Map<string, PoolPlayer>>(new Map());
+  const [lineups, setLineups] = useState<Lineup[]>([]);
+  const [open, setOpen] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -59,6 +73,28 @@ export function StandIns() {
           temperament: (manager.temperament as Temperament) ?? STAND_INS[index]?.temperament ?? 'patcher',
         })));
       }
+
+      if (!found || existing.length === 0) {
+        setLineups([]);
+        return;
+      }
+
+      // A commissioner may read anybody's roster at any time, which is the only reason this can
+      // show a team before the lock that hides it from everybody else.
+      const round = found.currentRound;
+      const board = await readPool(CONTEST).catch(() => []);
+      setPool(new Map(board.map((player) => [player.id, player])));
+      setLineups(await Promise.all(existing.map(async (manager) => {
+        const history = await readHistory(CONTEST, manager.uid, round).catch(() => []);
+        const players = history[round] ?? [];
+        const standing = standingsFor(history, round, EASTSIDE);
+        return {
+          uid: manager.uid,
+          teamName: manager.teamName,
+          players,
+          multipliers: new Map(standing.map((entry) => [entry.slot, entry.multiplier])),
+        };
+      })));
     } catch (cause) {
       setProblem(explain(cause));
     }
@@ -254,6 +290,45 @@ export function StandIns() {
       {said.length > 0 && (
         <div className="pending">
           {said.map((line) => <div key={line}>{line}</div>)}
+        </div>
+      )}
+
+      {lineups.length > 0 && (
+        <div className="lineups">
+          {lineups.map((lineup) => (
+            <div key={lineup.uid}>
+              <button
+                className={`lineuphead ${open === lineup.uid ? 'on' : ''}`}
+                onClick={() => setOpen(open === lineup.uid ? null : lineup.uid)}
+              >
+                <span className="lineupname">{lineup.teamName}</span>
+                <span className="lineupmeta">
+                  {lineup.players.length === 0
+                    ? 'nothing submitted'
+                    : `${lineup.players.length} in`}
+                  {lineup.players.length > 0 && (() => {
+                    const top = Math.max(...[...lineup.multipliers.values()], 1);
+                    return <span className={`mult mult-${top}`}>{top}x</span>;
+                  })()}
+                </span>
+              </button>
+              {open === lineup.uid && lineup.players.length > 0 && (
+                <div className="lineupteam">
+                  {EASTSIDE.slots.map((slot) => {
+                    const held = lineup.players.find((entry) => entry.slot === slot.id);
+                    return (
+                      <PlayerRow
+                        key={slot.id}
+                        slot={slot.id}
+                        player={held ? (pool.get(held.playerId) ?? null) : null}
+                        multiplier={lineup.multipliers.get(slot.id) ?? 1}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>

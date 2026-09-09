@@ -907,3 +907,23 @@ td { font-variant-numeric: tabular-nums; }
 /* First and last name share a line, because together they are one answer to one question. */
 .register .splitrow { gap: 0 12px; }
 .register .splitrow > label { flex: 1 1 140px; min-width: 0; }
+
+/* The stand-in lineups, one manager at a time.
+
+   Collapsed by default: six nines is fifty-four rows, and the question being asked is usually
+   whether they differ from each other rather than what every one of them is. */
+.lineups { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 6px; }
+.lineuphead {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; padding: 11px 13px; border-radius: 10px; text-align: left;
+  background: var(--sunk); border: 1px solid var(--line); color: var(--ink);
+  font-size: 14px; font-weight: 650;
+}
+.lineuphead:hover { border-color: var(--line-strong); }
+.lineuphead.on { border-color: var(--gold); }
+.lineupname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lineupmeta {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  font-size: 12px; font-weight: 500; color: var(--dim);
+}
+.lineupteam { padding: 8px 0 4px; }
