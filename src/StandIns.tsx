@@ -145,8 +145,10 @@ export function StandIns() {
       </div>
 
       <div className="pending">
-        Not accounts — entries and rosters, written as you. Nobody can sign in as one. They give the
-        standings, the live board and the pot a league to work on while you are still finding people.
+        Not accounts — entries and rosters, written as you. Nobody can sign in as one. They read as
+        ordinary managers to everybody else, and carry a <strong>stand-in</strong> tag in your list
+        below so you can always tell which of your league is real. Take them out before the round
+        that counts.
       </div>
 
       <div className="editor">

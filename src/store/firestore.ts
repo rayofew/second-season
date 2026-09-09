@@ -126,6 +126,13 @@ export interface Manager {
   logo: string;
   /** Whether the commissioner has seen their money. Recorded here, settled between people. */
   paid: boolean;
+  /**
+   * A manager who does not exist, put in to give the screens a league to work on.
+   *
+   * Read by the commissioner's own list and nowhere else. Everybody else sees an ordinary name,
+   * which is what makes them useful and what makes taking them out before January matter.
+   */
+  standIn?: boolean;
 }
 
 /** Who is in the league. Readable by any member — but never their phone number, which stays on the application. */
@@ -140,6 +147,7 @@ export async function readEntries(contestId: string): Promise<Manager[]> {
       teamName: (data.teamName as string) || name,
       logo: (data.logo as string) ?? '',
       paid: Boolean(data.paid),
+      standIn: data.standIn === true,
     };
   });
 }

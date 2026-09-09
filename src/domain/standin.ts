@@ -25,18 +25,28 @@ export interface StandIn {
   temperament: Temperament;
 }
 
-/** Deliberately obvious. Nobody should ever wonder whether one of these is somebody's cousin. */
+/**
+ * Ordinary names, so the league reads as a league.
+ *
+ * They were called Stand-in One through Ten, which made every screen look like a test harness —
+ * fine for checking a layout, useless for seeing what the table will feel like with ten people in
+ * it, and no encouragement at all to somebody deciding whether to join.
+ *
+ * They are still marked standIn on the entry itself, so the commissioner can always tell which
+ * of his managers are real. Anybody else sees a full league, which is the point and also worth
+ * being deliberate about: take them out before the round that counts.
+ */
 export const STAND_INS: readonly StandIn[] = [
-  { name: 'Stand-in One', teamName: 'Dry Run FC', temperament: 'loyal' },
-  { name: 'Stand-in Two', teamName: 'Placeholder United', temperament: 'chaser' },
-  { name: 'Stand-in Three', teamName: 'The Rehearsals', temperament: 'patcher' },
-  { name: 'Stand-in Four', teamName: 'Test Pattern', temperament: 'fiddler' },
-  { name: 'Stand-in Five', teamName: 'Nobody Athletic', temperament: 'patcher' },
-  { name: 'Stand-in Six', teamName: 'Empty Chair XI', temperament: 'absent' },
-  { name: 'Stand-in Seven', teamName: 'Understudy FC', temperament: 'loyal' },
-  { name: 'Stand-in Eight', teamName: 'Soundcheck Rovers', temperament: 'chaser' },
-  { name: 'Stand-in Nine', teamName: 'Fire Drill City', temperament: 'patcher' },
-  { name: 'Stand-in Ten', teamName: 'Sandbox Wanderers', temperament: 'fiddler' },
+  { name: 'Dave Kessler', teamName: 'Sunday Scaries', temperament: 'loyal' },
+  { name: 'Marcus Hale', teamName: 'Victory Formation', temperament: 'chaser' },
+  { name: 'Tony Vitale', teamName: 'Third and Long', temperament: 'patcher' },
+  { name: 'Ben Ortiz', teamName: 'The Pick Six', temperament: 'fiddler' },
+  { name: 'Steve Rankin', teamName: 'Couch Potatoes', temperament: 'patcher' },
+  { name: 'Nick Delgado', teamName: 'Hail Marys', temperament: 'absent' },
+  { name: 'Pat Brennan', teamName: 'Pancake Blocks', temperament: 'loyal' },
+  { name: 'Greg Lindstrom', teamName: 'Gridiron Grinders', temperament: 'chaser' },
+  { name: 'Carl Okafor', teamName: 'Play Action Heroes', temperament: 'patcher' },
+  { name: 'Mike Yost', teamName: 'Zero RB Club', temperament: 'fiddler' },
 ];
 
 /** What each one is for, in a sentence, so a screen can say why the field looks like it does. */

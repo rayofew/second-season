@@ -155,6 +155,7 @@ export function Commissioner({ uid }: { uid: string }) {
               <span className="rowmeta">
                 {manager.name}
                 {manager.uid === uid && <><span className="dot">·</span>you</>}
+                {manager.standIn && <span className="tag">stand-in</span>}
               </span>
             </span>
             <span className="actions">

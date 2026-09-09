@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { pickFor, STAND_INS, uidFor } from '../src/domain/standin.ts';
+import { pickFor, STAND_INS, STAND_IN_PREFIX, uidFor } from '../src/domain/standin.ts';
 import type { Candidate } from '../src/domain/standin.ts';
 import { EASTSIDE } from '../src/domain/rules.ts';
 import type { HeldPlayer } from '../src/domain/multiplier.ts';
@@ -88,8 +88,17 @@ describe('stand-in managers', () => {
     }
   });
 
-  it('names them so nobody could mistake one for a person', () => {
+  it('identifies them by uid, since the names no longer give them away', () => {
+    // They read as ordinary managers on purpose, so the uid is the only thing that marks one —
+    // which makes it the thing removal has to key on, and the thing that must never drift.
     assert.equal(uidFor(0), 'stand-in-1');
-    for (const one of STAND_INS) assert.match(one.name, /^Stand-in /);
+    for (const [index] of STAND_INS.entries()) {
+      assert.ok(uidFor(index).startsWith(STAND_IN_PREFIX), `uid ${index} is marked`);
+    }
+  });
+
+  it('gives every one of them a distinct name and team', () => {
+    assert.equal(new Set(STAND_INS.map((one) => one.name)).size, STAND_INS.length);
+    assert.equal(new Set(STAND_INS.map((one) => one.teamName)).size, STAND_INS.length);
   });
 });
