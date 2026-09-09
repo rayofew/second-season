@@ -304,6 +304,56 @@ export async function removeManager(contestId: string, uid: string): Promise<voi
 }
 
 /**
+ * Putting a stand-in manager into the league, and taking one out again.
+ *
+ * Written from the browser as the commissioner rather than by a script holding a service account
+ * key, because the rules already allow exactly this: a commissioner may create an entry and may
+ * write anybody's roster. Requiring a key for something the rules permit would be inventing a
+ * second, worse door into the same room.
+ */
+export async function addStandIn(
+  contestId: string,
+  uid: string,
+  fields: { name: string; teamName: string },
+): Promise<void> {
+  await setDoc(doc(db, 'contests', contestId, 'entries', uid), {
+    ...fields,
+    logo: '',
+    paid: false,
+    standIn: true,
+    joinedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * A roster written on somebody else's behalf.
+ *
+ * The same path a commissioner already uses to fix a team for a manager who cannot; the rules do
+ * not distinguish, and neither does this.
+ */
+export async function writeRosterFor(
+  contestId: string,
+  uid: string,
+  round: number,
+  players: HeldPlayer[],
+): Promise<void> {
+  await setDoc(doc(db, 'contests', contestId, 'entries', uid, 'rounds', String(round)), {
+    players,
+    submittedAt: serverTimestamp(),
+    standIn: true,
+  });
+}
+
+/** Takes a stand-in out along with every round he played, which deleting the entry does not. */
+export async function removeStandIn(contestId: string, uid: string, rounds: number): Promise<void> {
+  for (let round = 0; round < rounds; round += 1) {
+    await deleteDoc(doc(db, 'contests', contestId, 'entries', uid, 'rounds', String(round)))
+      .catch(() => undefined);
+  }
+  await deleteDoc(doc(db, 'contests', contestId, 'entries', uid));
+}
+
+/**
  * Appointing or standing down a co-commissioner.
  *
  * The rules refuse any update that drops the owner from the list, so the man who set the contest up

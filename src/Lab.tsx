@@ -12,6 +12,7 @@ import { readPool } from './store/firestore.ts';
 import type { PoolPlayer } from './store/firestore.ts';
 import { GameDay } from './GameDay.tsx';
 import { useHeartbeat } from './useHeartbeat.ts';
+import { StandIns } from './StandIns.tsx';
 
 /**
  * A game-day screen pointed at football that is actually being played, for working on the layout.
@@ -115,6 +116,8 @@ export function Lab() {
 
   return (
     <>
+      <StandIns />
+
       <div className="card notice">
         <strong>Nothing here counts.</strong> This is the game-day layout pointed at real football so
         it can be worked on before it matters. It reads the player pool and the public feeds, and it
