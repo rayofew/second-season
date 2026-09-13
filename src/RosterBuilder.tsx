@@ -188,11 +188,20 @@ export function RosterBuilder({
       setSaving('saved');
     } catch (cause) {
       setSaving('failed');
-      // The likeliest cause by far is the deadline, so say that rather than the raw code.
+      /**
+       * A refusal before the lock is not a deadline, whatever it looks like.
+       *
+       * This used to blame the deadline for every refusal, which is how a rules bug spent days
+       * telling managers the round had locked four days early — and sounded plausible enough that
+       * nobody questioned it. The two cases are now told apart, so the next one surfaces as a
+       * fault rather than as a lie.
+       */
       setProblem(
-        (cause as { code?: string }).code === 'permission-denied'
-          ? 'The database refused that. The round has locked.'
-          : (cause as Error).message,
+        (cause as { code?: string }).code !== 'permission-denied' ? explain(cause)
+          : locked
+            ? 'The round locked before that saved, so nothing was changed.'
+            : 'The database refused that, and the round has not locked — so it should have worked. '
+              + 'Tell the commissioner rather than trying again.',
       );
     }
   }

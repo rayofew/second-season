@@ -9,9 +9,11 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "playthrough": "node scripts/playthrough.ts"
+    "playthrough": "node scripts/playthrough.ts",
+    "test:rules": "firebase emulators:exec --only firestore \"node --test tests/emulator/*.test.ts\""
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@types/node": "^26.4.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",

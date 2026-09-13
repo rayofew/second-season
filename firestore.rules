@@ -47,8 +47,18 @@ service cloud.firestore {
       return request.time < lockFor(contestId, roundId);
     }
 
+    /**
+     * Whether this is the round currently being played.
+     *
+     * roundId is a path segment and is therefore a string; currentRound is written as a number.
+     * These rules do not coerce between types, so comparing them directly is always false — and
+     * the write below then fell through to the commissioner clause, which is the only reason it
+     * ever appeared to work. Every manager who was not a commissioner was refused his own roster
+     * and told the round had locked.
+     */
     function isCurrentRound(contestId, roundId) {
-      return contest(contestId).status == 'open' && contest(contestId).currentRound == roundId;
+      return contest(contestId).status == 'open'
+        && string(contest(contestId).currentRound) == roundId;
     }
 
     /**
