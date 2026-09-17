@@ -927,3 +927,21 @@ td { font-variant-numeric: tabular-nums; }
   font-size: 12px; font-weight: 500; color: var(--dim);
 }
 .lineupteam { padding: 8px 0 4px; }
+
+/* A figure you can ask about.
+
+   The dotted underline is the whole affordance: it says this number will explain itself, without
+   turning every projection on the screen into a button that looks pressable. */
+.proj.asked {
+  background: none; border: 0; padding: 0; cursor: pointer; color: inherit; font: inherit;
+  text-align: right;
+}
+.proj.asked b { border-bottom: 1px dotted var(--line-strong); }
+.proj.asked:hover b { border-bottom-color: var(--gold); color: var(--gold); }
+
+/* The panel it opens. Sits above the roster so a phone does not hide it below the fold. */
+.breakdown { margin-bottom: var(--gap); border-color: var(--gold); }
+.breakdown .ruleline span:first-child { display: flex; flex-direction: column; gap: 2px; }
+.bdetail { font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.breakdown .ruleline.total { font-weight: 700; border-top: 1px solid var(--line-strong); }
+.breakdown .ruleline.total span:first-child { color: var(--ink); }

@@ -12,6 +12,8 @@ import { clubGames } from './providers/schedule.ts';
 import type { ClubGame } from './providers/schedule.ts';
 import { fixtureLabel } from './domain/fixture.ts';
 import { points, projectedPoints } from './domain/scoring.ts';
+import type { StatLine } from './domain/scoring.ts';
+import { Breakdown } from './Breakdown.tsx';
 import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
 
 /**
@@ -50,6 +52,9 @@ export function RosterBuilder({
   const [baseline, setBaseline] = useState<HeldPlayer[]>([]);
   // What each man is expected to do this week, in our scoring. The reason to pick him.
   const [projected, setProjected] = useState<Map<string, number>>(new Map());
+  // The stat lines the projections came from, so a figure can be opened up and argued with.
+  const [lines, setLines] = useState<Record<string, StatLine>>({});
+  const [showing, setShowing] = useState<string | null>(null);
   // When each club plays, so nobody picks a man whose game is already over.
   const [games, setGames] = useState<Map<string, ClubGame>>(new Map());
   const [problem, setProblem] = useState<string | null>(null);
@@ -86,7 +91,9 @@ export function RosterBuilder({
         const config = found.rounds[round];
         if (config) {
           void clubGames(found.season, config.week).then(setGames).catch(() => undefined);
-          const expected = await projections(found.season, config.seasonType, config.week).catch(() => ({}));
+          const expected = await projections(found.season, config.seasonType, config.week)
+            .catch(() => ({} as Record<string, StatLine>));
+          setLines(expected as Record<string, StatLine>);
           setProjected(new Map(board.map((player) => [
             player.id,
             projectedPoints(player.position as Position, (expected as Record<string, Record<string, number>>)[player.id], EASTSIDE),
@@ -207,8 +214,20 @@ export function RosterBuilder({
   }
 
 
+  const opened = showing ? byId.get(showing) : undefined;
+
   return (
     <div>
+      {opened && (
+        <Breakdown
+          name={opened.name}
+          position={opened.position as Position}
+          line={lines[opened.id]}
+          multiplier={standings.get(roster.find((held) => held.playerId === opened.id)?.slot ?? '')?.multiplier ?? 1}
+          projected
+          onClose={() => setShowing(null)}
+        />
+      )}
       {onBehalfOf && (
         <div className="card notice">
           <strong>Editing {onBehalfOf.name}'s team.</strong> The lock does not apply to you. Putting
@@ -258,10 +277,14 @@ export function RosterBuilder({
                       : `${fixtureLabel(games.get(person.team))} · ${standing?.retained ? 'kept' : 'new'}`
                 }
                 trailing={person && !resting ? (
-                  <span className="proj">
+                  <button
+                    className="proj asked"
+                    title="How this was worked out"
+                    onClick={(event) => { event.stopPropagation(); setShowing(person.id); }}
+                  >
                     <b>{points(projected.get(person.id) ?? 0)}</b>
                     <span className="projlabel">proj</span>
-                  </span>
+                  </button>
                 ) : undefined}
                 right={!locked ? (
                   <span className="rowright">
