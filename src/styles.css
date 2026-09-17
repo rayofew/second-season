@@ -939,8 +939,34 @@ td { font-variant-numeric: tabular-nums; }
 .proj.asked b { border-bottom: 1px dotted var(--line-strong); }
 .proj.asked:hover b { border-bottom-color: var(--gold); color: var(--gold); }
 
-/* The panel it opens. Sits above the roster so a phone does not hide it below the fold. */
-.breakdown { margin-bottom: var(--gap); border-color: var(--gold); }
+/* The modal it opens.
+
+   Fixed, because the number being asked about is usually halfway down an open picker — drawn in
+   the page it appeared at the top of the document, out of sight, which looks like nothing
+   happening. Centred on a desktop and sat at the bottom of a phone, where a thumb is. */
+.backdrop {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: rgba(3, 6, 14, 0.66);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+  animation: fadein 120ms ease-out;
+}
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .backdrop { animation: none; } }
+
+.breakdown {
+  margin: 0; width: 100%; max-width: 420px;
+  max-height: calc(100dvh - 40px); display: flex; flex-direction: column;
+  border-color: var(--gold);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+}
+/* Only the lines scroll, so the name and the way out stay put. */
+.breakdownbody { overflow-y: auto; }
+
+@media (max-width: 520px) {
+  .backdrop { align-items: flex-end; padding: 0; }
+  .breakdown { max-width: none; border-radius: var(--radius) var(--radius) 0 0; border-bottom: 0; }
+}
 .breakdown .ruleline span:first-child { display: flex; flex-direction: column; gap: 2px; }
 .bdetail { font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
 .breakdown .ruleline.total { font-weight: 700; border-top: 1px solid var(--line-strong); }
