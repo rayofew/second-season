@@ -20,6 +20,7 @@ import {
 } from './store/firestore.ts';
 import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
 import { LiveBracket } from './LiveBracket.tsx';
+import { Games } from './Games.tsx';
 import { PlayerRow } from './PlayerRow.tsx';
 import { useHeartbeat } from './useHeartbeat.ts';
 
@@ -178,6 +179,18 @@ export function Live({ uid }: { uid: string }) {
     passing.set(player.team, Math.max(passing.get(player.team) ?? 0, threw));
   }
 
+  const football = (
+    <Games
+      alive={teams?.alive ?? []}
+      byes={teams?.byes ?? []}
+      games={games}
+      pool={[...pool.values()]}
+      actual={actual}
+      expected={expected}
+      roundName={round?.name ?? 'This round'}
+    />
+  );
+
   const bracket = (
     <LiveBracket
       matchups={(teams?.matchups ?? []).filter((matchup) => !matchup.winner)}
@@ -193,6 +206,7 @@ export function Live({ uid }: { uid: string }) {
     return (
       <>
         {bracket}
+        {football}
         <div className="card gate">
           <h2>{locked === false ? "Everybody's team is sealed" : 'Working out where everybody is…'}</h2>
           {locked === false && (
@@ -236,6 +250,7 @@ export function Live({ uid }: { uid: string }) {
   return (
     <>
       {bracket}
+      {football}
 
       <div className="card">
         <div className="confhead">
