@@ -1,66 +1,47 @@
 import { liveTie, whyLeading } from './domain/bracketlive.ts';
-import type { Fixture, LiveTie } from './domain/bracketlive.ts';
+import type { Fixture, Side } from './domain/bracketlive.ts';
 import type { Field, Matchup } from './domain/advance.ts';
 import { colorOf, crest } from './domain/clubs.ts';
 
 /**
  * The round as it currently stands, while it is being played.
  *
- * The bracket itself says who is drawn against whom. This says who is winning, which for this
- * contest is a different and stranger question: the two clubs never meet, so it is decided by two
- * separate afternoons that have nothing to do with each other. Both have to be on screen or the
- * answer looks arbitrary.
+ * The bracket says who is drawn against whom. This says who is winning, which here is a stranger
+ * question than usual: the two clubs never meet, so it is settled by two separate afternoons that
+ * have nothing to do with each other.
  *
- * In January the two clubs do meet, and the same rows collapse to one scoreline — worked out from
- * the schedule rather than a setting, so nothing has to be remembered and changed in December.
+ * Laid out as the tie rather than as two fixtures — one club on the left, its bracket opponent
+ * mirrored on the right, what it means between them. Stacked, it read as a list of games, which is
+ * what the football below this already is. Here the pairing is the point, and a pairing has two
+ * sides.
+ *
+ * In January the two clubs do meet and the same row still holds: each side's own fixture line would
+ * only name the other, so it goes and the clock moves to the middle where a shared clock belongs.
+ * Worked out from the schedule rather than a setting, so nothing has to be changed in December.
  */
 
-function SideLine({ side }: { side: LiveTie['sides'][number] }) {
-  const done = side.state === 'final';
-  return (
-    <div className={`tieside ${side.state}`}>
-      <img className="clubcrest" src={crest(side.club)} alt="" width="22" height="22" loading="lazy" />
-      <span className="tieclub" style={{ color: colorOf(side.club) }}>{side.club}</span>
-      <span className="tiescore">{side.state === 'upcoming' ? '–' : side.points}</span>
-      <span className="tieagainst">
-        {side.against ? `${side.home ? 'v' : 'at'} ${side.against}` : 'no fixture'}
-      </span>
-      <span className={`tieclock ${side.state}`}>
-        {side.state === 'upcoming'
-          ? (side.kickoff?.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) ?? '')
-          : done ? 'Final' : side.clock}
-      </span>
-    </div>
-  );
-}
+const kickoffAt = (side: Side) =>
+  side.kickoff?.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) ?? '';
 
-/**
- * The January shape: these two are each other's fixture, so it is one line with both scores.
- *
- * Drawing one side of it would lose the other's score entirely, which is half the game.
- */
-function Meeting({ tie }: { tie: LiveTie }) {
-  const [away, home] = tie.sides;
-  const live = home.state === 'playing';
+const clockFor = (side: Side) =>
+  side.state === 'upcoming' ? kickoffAt(side) : side.state === 'final' ? 'Final' : side.clock;
+
+function TieSide({ side, mirrored, sharing }: { side: Side; mirrored?: boolean; sharing: boolean }) {
   return (
-    <div className={`meeting ${home.state}`}>
-      <span className="meetside">
-        <img className="clubcrest" src={crest(away.club)} alt="" width="22" height="22" loading="lazy" />
-        <span className="tieclub" style={{ color: colorOf(away.club) }}>{away.club}</span>
+    <span className={`tieside ${side.state} ${mirrored ? 'mirrored' : ''}`}>
+      <img className="clubcrest big" src={crest(side.club)} alt="" width="30" height="30" loading="lazy" />
+      <span className="tienames">
+        <span className="tieclub" style={{ color: colorOf(side.club) }}>{side.club}</span>
+        <span className="tiescore">{side.state === 'upcoming' ? '–' : side.points}</span>
+        {/* Where they play each other, this line would name the opponent twice over. */}
+        {!sharing && (
+          <span className="tieown">
+            {side.against ? `${side.home ? 'v' : 'at'} ${side.against}` : 'no fixture'}
+            <span className={`tiewhen ${side.state}`}>{clockFor(side)}</span>
+          </span>
+        )}
       </span>
-      <span className="meetscore">
-        {home.state === 'upcoming' ? '–' : `${away.points} – ${home.points}`}
-      </span>
-      <span className="meetside right">
-        <span className="tieclub" style={{ color: colorOf(home.club) }}>{home.club}</span>
-        <img className="clubcrest" src={crest(home.club)} alt="" width="22" height="22" loading="lazy" />
-      </span>
-      <span className={`tieclock ${home.state}`}>
-        {home.state === 'upcoming'
-          ? (home.kickoff?.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) ?? '')
-          : live ? home.clock : 'Final'}
-      </span>
-    </div>
+    </span>
   );
 }
 
@@ -91,17 +72,17 @@ export function LiveBracket({
 
       {ties.map((tie) => {
         const why = whyLeading(tie, field, passingYardsFor);
+        const [away, home] = tie.sides;
         return (
           <div className={`livetie ${tie.settled ? 'done' : ''}`} key={`${tie.away}@${tie.home}`}>
-            <div className="tiehead">
-              {tie.away} <span className="tievs">v</span> {tie.home}
-              {tie.headToHead && <span className="tag">head to head</span>}
+            <div className="tierow">
+              <TieSide side={away} sharing={tie.headToHead} />
+              <span className="tiemiddle">
+                <span className="tievs">v</span>
+                {tie.headToHead && <span className={`tiewhen ${home.state}`}>{clockFor(home)}</span>}
+              </span>
+              <TieSide side={home} mirrored sharing={tie.headToHead} />
             </div>
-
-            {/* Where they actually meet it is one game, so it is one scoreline with both on it. */}
-            {tie.headToHead ? <Meeting tie={tie} /> : tie.sides.map((side) => (
-              <SideLine key={side.club} side={side} />
-            ))}
 
             <div className={`tiestate ${tie.settled ? 'done' : tie.leading ? 'leading' : 'waiting'}`}>
               {tie.state}
