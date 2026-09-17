@@ -16,8 +16,10 @@ import { clubGames } from './providers/schedule.ts';
 import type { ClubGame } from './providers/schedule.ts';
 import {
   readAllRosters, readContest, readCorrections, readEntries, readHistory, readPool, readScores,
+  readTeams,
 } from './store/firestore.ts';
-import type { Contest, PoolPlayer } from './store/firestore.ts';
+import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
+import { LiveBracket } from './LiveBracket.tsx';
 import { PlayerRow } from './PlayerRow.tsx';
 import { useHeartbeat } from './useHeartbeat.ts';
 
@@ -37,13 +39,15 @@ const CONTEST = 'rehearsal-2026';
 const HEARTBEAT = 45_000;
 
 interface Loaded {
-  contest: Contest;
-  pool: Map<string, PoolPlayer>;
   /** Every manager's roster for the open round, plus what he was credited in the rounds before. */
   entries: { entryId: string; name: string; before: number; roster: HeldPlayer[]; history: HeldPlayer[][] }[];
 }
 
 export function Live({ uid }: { uid: string }) {
+  const [contest, setContest] = useState<Contest | null>(null);
+  const [teams, setTeams] = useState<RoundTeams | null>(null);
+  const [pool, setPool] = useState<Map<string, PoolPlayer>>(new Map());
+  /** The leaderboard half. Null until the round locks, because until then there is nothing to see. */
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [games, setGames] = useState<Map<string, ClubGame>>(new Map());
   const [actual, setActual] = useState<Record<string, StatLine>>({});
@@ -59,13 +63,22 @@ export function Live({ uid }: { uid: string }) {
     try {
       const contest = await readContest(CONTEST);
       if (!contest) { setProblem('No contest found.'); return; }
+      setContest(contest);
       const round = contest.currentRound;
+      const [roundTeams, board] = await Promise.all([
+        readTeams(CONTEST, round).catch(() => null),
+        readPool(CONTEST).catch(() => []),
+      ]);
+      setTeams(roundTeams);
+      setPool(new Map(board.map((player) => [player.id, player])));
+
       const lock = contest.locks[String(round)];
       const shut = lock ? lock <= new Date() : false;
       setLocked(shut);
+      // The football below is public. Everybody else's nine is not, until the first kickoff.
       if (!shut) return;
 
-      const [people, pool] = await Promise.all([readEntries(CONTEST), readPool(CONTEST)]);
+      const people = await readEntries(CONTEST);
       const uids = people.map((person) => person.uid);
       const [rosters, histories] = await Promise.all([
         readAllRosters(CONTEST, uids, round),
@@ -104,8 +117,6 @@ export function Live({ uid }: { uid: string }) {
       }
 
       setLoaded({
-        contest,
-        pool: new Map(pool.map((player) => [player.id, player])),
         entries: people.map((person, index) => ({
           entryId: person.uid,
           name: person.teamName,
@@ -122,21 +133,21 @@ export function Live({ uid }: { uid: string }) {
   useEffect(() => { void load(); }, [load]);
 
   const going = [...games.values()].some((game) => game.state !== 'final');
-  const beat = useHeartbeat(Boolean(loaded) && going, HEARTBEAT);
+  const beat = useHeartbeat(going, HEARTBEAT);
 
   /** The public feeds, asked again on every heartbeat. */
   useEffect(() => {
-    if (!loaded) return;
-    const config = loaded.contest.rounds[loaded.contest.currentRound];
+    if (!contest) return;
+    const config = contest.rounds[contest.currentRound];
     if (!config) return;
     let live = true;
 
     void (async () => {
       const [clubs, real, guess] = await Promise.all([
-        clubGames(loaded.contest.season, config.week).catch(() => new Map<string, ClubGame>()),
-        stats(loaded.contest.season, config.seasonType, config.week)
+        clubGames(contest.season, config.week).catch(() => new Map<string, ClubGame>()),
+        stats(contest.season, config.seasonType, config.week)
           .catch(() => ({}) as Record<string, StatLine>),
-        projections(loaded.contest.season, config.seasonType, config.week)
+        projections(contest.season, config.seasonType, config.week)
           .catch(() => ({}) as Record<string, StatLine>),
       ]);
       if (!live) return;
@@ -147,27 +158,57 @@ export function Live({ uid }: { uid: string }) {
     })();
 
     return () => { live = false; };
-  }, [loaded, beat]);
+  }, [contest, beat]);
 
   if (problem) return <div className="card gate"><p className="problem">{problem}</p></div>;
-  if (locked === false) {
+  if (!contest) return <div className="card gate"><p>Loading…</p></div>;
+
+  const round = contest.rounds[contest.currentRound];
+
+  /**
+   * A club's busiest quarterback, for the one tie that finishes level on points.
+   *
+   * Cheap to work out and almost never needed, which is exactly why it should not be a separate
+   * fetch nobody remembers to make.
+   */
+  const passing = new Map<string, number>();
+  for (const player of pool.values()) {
+    if (player.position !== 'QB') continue;
+    const threw = actual[player.id]?.pass_yd ?? 0;
+    passing.set(player.team, Math.max(passing.get(player.team) ?? 0, threw));
+  }
+
+  const bracket = (
+    <LiveBracket
+      matchups={(teams?.matchups ?? []).filter((matchup) => !matchup.winner)}
+      fixtures={games}
+      field={contest.field}
+      passingYardsFor={(club) => passing.get(club) ?? 0}
+      roundName={round?.name ?? 'This round'}
+    />
+  );
+
+  // Before the lock the football is all there is to show, and it is not nothing.
+  if (!loaded) {
     return (
-      <div className="card gate">
-        <h2>Nothing to watch yet</h2>
-        <p>
-          Everybody's team stays sealed until the first kickoff — otherwise the last manager to
-          submit would simply copy the best one. This fills in the moment the round locks.
-        </p>
-      </div>
+      <>
+        {bracket}
+        <div className="card gate">
+          <h2>{locked === false ? "Everybody's team is sealed" : 'Working out where everybody is…'}</h2>
+          {locked === false && (
+            <p>
+              Nobody sees anybody else's nine until the first kickoff, or the last manager to submit
+              would simply copy the best one. The table fills in the moment the round locks.
+            </p>
+          )}
+        </div>
+      </>
     );
   }
-  if (!loaded) return <div className="card gate"><p>Working out where everybody is…</p></div>;
-
-  const round = loaded.contest.rounds[loaded.contest.currentRound];
 
   const inputs: BoardInput[] = loaded.entries.map((entry) => {
     const standing = new Map(
-      standingsFor(entry.history, loaded.contest.currentRound, EASTSIDE)
+      standingsFor(entry.history, contest.currentRound, EASTSIDE)
         .map((held) => [held.slot, held.multiplier]),
     );
     return {
@@ -175,7 +216,7 @@ export function Live({ uid }: { uid: string }) {
       name: entry.name,
       before: entry.before,
       players: liveRoster(entry.roster.map((held) => {
-        const person = loaded.pool.get(held.playerId);
+        const person = pool.get(held.playerId);
         const state = person ? (games.get(person.team)?.state ?? 'upcoming') : 'final';
         return {
           playerId: held.playerId,
@@ -194,6 +235,8 @@ export function Live({ uid }: { uid: string }) {
 
   return (
     <>
+      {bracket}
+
       <div className="card">
         <div className="confhead">
           {round?.name}
@@ -223,7 +266,7 @@ export function Live({ uid }: { uid: string }) {
             row={row}
             you={row.entryId === uid}
             open={open === row.entryId}
-            pool={loaded.pool}
+            pool={pool}
             onToggle={() => setOpen(open === row.entryId ? null : row.entryId)}
           />
         ))}
