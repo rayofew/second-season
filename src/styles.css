@@ -224,11 +224,14 @@ nav button[aria-current="true"] {
 .hint { color: var(--faint); }
 
 .picker { padding: 12px 15px 15px; background: var(--sunk); border-bottom: 1px solid var(--line); }
+/* Beside the count rather than above the list, and only when the list is too long to read. */
+.pickerhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pickerhead .pickercount { margin: 0; flex: none; }
 .picker input {
-  width: 100%; padding: 11px 12px; border-radius: 10px;
-  border: 1px solid var(--line); background: var(--ground); color: var(--ink); font-size: 15px;
+  flex: 1 1 150px; min-width: 0; padding: 8px 11px; border-radius: 9px;
+  border: 1px solid var(--line); background: var(--ground); color: var(--ink); font-size: 16px;
 }
-.options { max-height: 300px; overflow-y: auto; margin-top: 10px; -webkit-overflow-scrolling: touch; }
+.options { max-height: 340px; overflow-y: auto; margin-top: 6px; -webkit-overflow-scrolling: touch; }
 .option {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

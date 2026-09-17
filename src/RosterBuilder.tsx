@@ -301,21 +301,33 @@ export function RosterBuilder({
 
               {open && !locked && (
                 <div className="picker" ref={(node) => node?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })}>
-                  <input
-                    value={search}
-                    placeholder={`Search ${slot.eligible.join(', ')}`}
-                    onChange={(event) => setSearch(event.target.value)}
-                    onClick={(event) => event.stopPropagation()}
-                  />
-                  <div className="pickercount">
-                    {(() => {
-                      const shown = candidatesFor(slot.id).length;
-                      const all = eligibleCount(slot.id);
-                      return shown < all
-                        ? `Best ${shown} of ${all} — search to find anybody else`
-                        : `${all} available`;
-                    })()}
-                  </div>
+                  {(() => {
+                    const shown = candidatesFor(slot.id).length;
+                    const all = eligibleCount(slot.id);
+                    /**
+                     * A search box only where searching is the only way through.
+                     *
+                     * Fourteen defenses fit on the screen, and a field asking which one you are
+                     * looking for is then a hurdle in front of an answer already visible. Once a
+                     * hundred and forty-three receivers will not fit, it earns its place — and it
+                     * stays put while there is something typed in it, so it cannot vanish
+                     * mid-search and strand somebody.
+                     */
+                    if (shown >= all && !search) {
+                      return <div className="pickercount">{all} available</div>;
+                    }
+                    return (
+                      <div className="pickerhead">
+                        <span className="pickercount">Best {shown} of {all}</span>
+                        <input
+                          value={search}
+                          placeholder={`Search ${slot.eligible.join(', ')}`}
+                          onChange={(event) => setSearch(event.target.value)}
+                          onClick={(event) => event.stopPropagation()}
+                        />
+                      </div>
+                    );
+                  })()}
                   <div className="options">
                     {candidatesFor(slot.id).map((candidate) => {
                       const incumbent = previous.some((entry) => entry.playerId === candidate.id);
