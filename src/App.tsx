@@ -11,7 +11,7 @@ import { Version } from './Version.tsx';
 import { Home } from './Home.tsx';
 import { Theme } from './Theme.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
-import { readContest, readEntries } from './store/firestore.ts';
+import { readContest, readEntries, rememberEmail } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
 import { isRefusal } from './domain/trouble.ts';
 
@@ -54,6 +54,9 @@ export function App() {
         setContest(found);
         setManagers(people.length);
         setMember(true);
+        // So the commissioner can reach him. Written to the application, which only the two of
+        // them can read, rather than to the entry, which the whole league can.
+        void rememberEmail(CONTEST, user.uid, user.email).catch(() => undefined);
       } catch (cause) {
         // The rules refuse anyone without an entry, which is how we learn they are not in yet.
         if (current) setMember(isRefusal(cause) ? false : true);

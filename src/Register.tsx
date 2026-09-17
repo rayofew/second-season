@@ -82,6 +82,8 @@ export function Register({ user }: { user: User }) {
         // A team name is optional and falls back to how the league will know them.
         teamName: teamName.trim() || shortName(first, last),
         phone: phone.trim(),
+        // Only the commissioner ever reads this, and it is how he chases somebody who has not picked.
+        email: user.email ?? '',
         logo: logo ?? '',
         appliedAt: new Date(),
       });

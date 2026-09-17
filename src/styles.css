@@ -971,3 +971,13 @@ td { font-variant-numeric: tabular-nums; }
 .bdetail { font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
 .breakdown .ruleline.total { font-weight: 700; border-top: 1px solid var(--line-strong); }
 .breakdown .ruleline.total span:first-child { color: var(--ink); }
+
+/* Contact details, which are only ever on the commissioner's screen.
+
+   Both on their own line and both tappable: nobody retypes a phone number off a screen on a
+   Thursday evening with four people left to chase. */
+.contactlinks { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 3px; font-size: 13px; }
+.contactlinks a { color: var(--gold); text-decoration: underline; text-underline-offset: 2px; }
+.nocontact { color: var(--faint); font-size: 12px; font-style: italic; }
+/* A row with three lines needs room the nine-slot roster rows do not. */
+.card > .row .contactlinks { line-height: 1.5; }

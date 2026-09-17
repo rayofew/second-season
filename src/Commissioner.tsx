@@ -7,6 +7,7 @@ import { Advance } from './Advance.tsx';
 import { Pool } from './Pool.tsx';
 import { RosterBuilder } from './RosterBuilder.tsx';
 import { Corrections } from './Corrections.tsx';
+import { Contacts } from './Contacts.tsx';
 
 /**
  * The commissioner's tab: who wants in, and who has not picked yet.
@@ -28,6 +29,8 @@ const CONTEST = 'rehearsal-2026';
 export function Commissioner({ uid }: { uid: string }) {
   const [contest, setContest] = useState<Contest | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
+  // Every application ever written, including admitted managers — where phone and email live.
+  const [everyone, setEveryone] = useState<Application[]>([]);
   const [managers, setManagers] = useState<Manager[]>([]);
   const [submitted, setSubmitted] = useState<Set<string>>(new Set());
   // Which of these managers are invented. Read from the commissioner's own document, because
@@ -47,6 +50,7 @@ export function Commissioner({ uid }: { uid: string }) {
       const [people, waiting] = await Promise.all([readEntries(CONTEST), readApplications(CONTEST)]);
       const members = new Set(people.map((person) => person.uid));
       setManagers(people);
+      setEveryone(waiting);
       setApplications(waiting.filter((application) => !members.has(application.uid)));
       setSubmitted(await readSubmitted(CONTEST, people.map((person) => person.uid), found.currentRound));
       setStandIns(await readStandIns(CONTEST).catch(() => ({})));
@@ -141,6 +145,13 @@ export function Commissioner({ uid }: { uid: string }) {
           ))
         )}
       </div>
+
+      <Contacts
+        managers={managers}
+        applications={everyone}
+        submitted={submitted}
+        round={round?.name ?? 'this round'}
+      />
 
       <Pool contest={contest} managers={managers} commissioner onChange={() => void load()} />
 

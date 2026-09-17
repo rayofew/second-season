@@ -202,8 +202,9 @@ export interface Application {
   firstName: string;
   lastName: string;
   teamName: string;
-  /** Only the commissioner and the applicant can read this. It never reaches an entry. */
+  /** Only the commissioner and the applicant can read these. They never reach an entry. */
   phone: string;
+  email: string;
   logo: string;
 }
 
@@ -223,6 +224,7 @@ export async function readApplications(contestId: string): Promise<Application[]
       lastName: (data.lastName as string) ?? halves.last,
       teamName: (data.teamName as string) || name,
       phone: (data.phone as string) ?? '',
+      email: (data.email as string) ?? '',
       logo: (data.logo as string) ?? '',
     };
   });
@@ -304,6 +306,24 @@ export async function readMoves(contestId: string): Promise<Move[]> {
  * form in again. Barring somebody would need a list of the barred, which is a lot of machinery for
  * a league where the commissioner knows everyone by name.
  */
+/**
+ * Keeps a manager reachable, without putting his address where the league can read it.
+ *
+ * The application is the one document that survives being admitted and that only he and the
+ * commissioner may read — the same place his phone number already lives, and for the same
+ * reason. An email on the entry would be an email handed to everybody.
+ *
+ * Called on sign-in rather than only at registration, so the people who joined before any of
+ * this existed become reachable the next time they open the app.
+ */
+export async function rememberEmail(contestId: string, uid: string, email: string | null): Promise<void> {
+  if (!email) return;
+  const ref = doc(db, 'contests', contestId, 'applications', uid);
+  const known = await getDoc(ref).catch(() => null);
+  if (known?.exists() && known.data().email === email) return;
+  await setDoc(ref, { email }, { merge: true });
+}
+
 export async function declineApplication(contestId: string, uid: string): Promise<void> {
   await deleteDoc(doc(db, 'contests', contestId, 'applications', uid));
 }
