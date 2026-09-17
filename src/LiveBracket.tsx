@@ -26,22 +26,41 @@ const kickoffAt = (side: Side) =>
 const clockFor = (side: Side) =>
   side.state === 'upcoming' ? kickoffAt(side) : side.state === 'final' ? 'Final' : side.clock;
 
-function TieSide({ side, mirrored, sharing }: { side: Side; mirrored?: boolean; sharing: boolean }) {
+/**
+ * One half of a tie, as a panel.
+ *
+ * The crest sits in a frame of its own rather than floating beside the text, which is what stops
+ * fourteen different logos at fourteen different aspect ratios from making every row look
+ * slightly broken.
+ */
+function TieSide({
+  side,
+  mirrored,
+  sharing,
+  leading,
+}: {
+  side: Side;
+  mirrored?: boolean;
+  sharing: boolean;
+  leading: boolean;
+}) {
   return (
-    <span className={`tieside ${side.state} ${mirrored ? 'mirrored' : ''}`}>
-      <img className="clubcrest big" src={crest(side.club)} alt="" width="30" height="30" loading="lazy" />
-      <span className="tienames">
+    <div className={`tieside ${side.state} ${mirrored ? 'mirrored' : ''} ${leading ? 'leading' : ''}`}>
+      <div className="tietop">
+        <span className="tiecrest" style={{ borderColor: colorOf(side.club) }}>
+          <img src={crest(side.club)} alt="" width="30" height="30" loading="lazy" />
+        </span>
         <span className="tieclub" style={{ color: colorOf(side.club) }}>{side.club}</span>
         <span className="tiescore">{side.state === 'upcoming' ? '–' : side.points}</span>
-        {/* Where they play each other, this line would name the opponent twice over. */}
-        {!sharing && (
-          <span className="tieown">
-            {side.against ? `${side.home ? 'v' : 'at'} ${side.against}` : 'no fixture'}
-            <span className={`tiewhen ${side.state}`}>{clockFor(side)}</span>
-          </span>
-        )}
-      </span>
-    </span>
+      </div>
+      {/* Where they play each other, this line would name the opponent twice over. */}
+      {!sharing && (
+        <div className="tieown">
+          <span>{side.against ? `${side.home ? 'v' : 'at'} ${side.against}` : 'no fixture'}</span>
+          <span className={`tiewhen ${side.state}`}>{clockFor(side)}</span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -76,12 +95,12 @@ export function LiveBracket({
         return (
           <div className={`livetie ${tie.settled ? 'done' : ''}`} key={`${tie.away}@${tie.home}`}>
             <div className="tierow">
-              <TieSide side={away} sharing={tie.headToHead} />
+              <TieSide side={away} sharing={tie.headToHead} leading={tie.leading === away.club} />
               <span className="tiemiddle">
                 <span className="tievs">v</span>
                 {tie.headToHead && <span className={`tiewhen ${home.state}`}>{clockFor(home)}</span>}
               </span>
-              <TieSide side={home} mirrored sharing={tie.headToHead} />
+              <TieSide side={home} mirrored sharing={tie.headToHead} leading={tie.leading === home.club} />
             </div>
 
             <div className={`tiestate ${tie.settled ? 'done' : tie.leading ? 'leading' : 'waiting'}`}>

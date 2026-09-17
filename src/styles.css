@@ -1018,57 +1018,86 @@ td { font-variant-numeric: tabular-nums; }
 
 /* A bracket tie, mid-afternoon.
 
-   Held to a readable width and centred. Left to fill a desktop card it spread the two clubs to
-   opposite edges with a lost 'v' between them and a metre of nothing either side — a scoreline
-   reads as a scoreline only when the two halves are near enough to compare at a glance. */
-.livetie { padding: 14px; border-bottom: 1px solid var(--hairline); }
+   Each half is a card in its own right, raised off a sunk ground, because the two are not two
+   halves of one scoreline — they are two separate afternoons being compared. The crest sits in a
+   frame of its own, which is what stops fourteen logos at fourteen aspect ratios from making
+   every row look faintly broken. */
+.livetie { padding: 14px; background: var(--sunk); border-bottom: 1px solid var(--line); }
 .livetie:last-of-type { border-bottom: 0; }
 .tierow {
-  display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 14px;
-  max-width: 520px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: 10px;
+  max-width: 620px; margin: 0 auto;
 }
 
-.tieside { display: flex; align-items: flex-start; gap: 10px; min-width: 0; justify-content: flex-end; }
-.tieside.mirrored { flex-direction: row-reverse; justify-content: flex-end; }
-.tienames { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 0; }
-.tieside.mirrored .tienames { align-items: flex-start; }
-.clubcrest.big { width: 34px; height: 34px; flex: none; margin-top: 2px; }
-.tieclub { font-size: 14px; font-weight: 750; letter-spacing: 0.01em; }
+.tieside {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0;
+  padding: 12px 13px; border-radius: 14px;
+  background: var(--panel); border: 1px solid var(--line);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+/* Whoever would go through if it ended now. Gold rather than green: it is not settled. */
+.tieside.leading { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset, 0 2px 8px rgba(0,0,0,0.14); }
 
-/* The number in a box, which is what makes the reference layout read at a glance. */
+.tietop { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tieside.mirrored .tietop { flex-direction: row-reverse; }
+
+/* The logo, framed. The border takes the club's own colour, which is the only place it belongs. */
+.tiecrest {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 46px; height: 46px; border-radius: 12px;
+  background: var(--raised); border: 2px solid var(--line);
+}
+.tiecrest img { display: block; width: 30px; height: 30px; object-fit: contain; }
+
+.tieclub {
+  flex: 1; min-width: 0; font-size: 21px; font-weight: 800; letter-spacing: -0.02em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tieside.mirrored .tieclub { text-align: right; }
 .tiescore {
-  min-width: 58px; padding: 4px 10px; border-radius: 9px; text-align: center;
-  background: var(--sunk); border: 1px solid var(--line);
-  font-size: 20px; font-weight: 750; color: var(--ink); line-height: 1.2;
-  font-variant-numeric: tabular-nums;
+  flex: none; font-size: 26px; font-weight: 800; color: var(--ink);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1;
 }
 .tieside.upcoming .tiescore { color: var(--faint); }
-.tieside.final .tiescore { border-color: var(--line-strong); }
-.tieside.playing .tiescore { border-color: var(--live); }
 
 .tieown {
-  display: flex; align-items: baseline; gap: 6px; white-space: nowrap;
-  font-size: 11px; color: var(--faint);
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding-top: 8px; border-top: 1px solid var(--hairline);
+  font-size: 11.5px; color: var(--faint); white-space: nowrap;
 }
 .tieside.mirrored .tieown { flex-direction: row-reverse; }
 .tiewhen { font-variant-numeric: tabular-nums; }
-.tiewhen.playing { color: var(--live); font-weight: 700; }
+.tiewhen.playing { color: var(--live); font-weight: 750; }
+.tiewhen.final { color: var(--dim); font-weight: 650; }
 
-.tiemiddle {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  flex: none; padding-top: 22px;
+.tiemiddle { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; flex: none; }
+.tievs {
+  font-size: 10.5px; font-weight: 800; color: var(--faint);
+  letter-spacing: 0.12em; text-transform: uppercase;
 }
-.tievs { font-size: 11px; font-weight: 700; color: var(--faint); letter-spacing: 0.1em; }
 
+/* The verdict, attached to its own pair rather than floating between two of them. */
 .tiestate {
   display: flex; flex-direction: column; gap: 2px; align-items: center; text-align: center;
-  margin: 12px auto 0; padding-top: 9px; max-width: 520px;
-  border-top: 1px dashed var(--line); font-size: 13px; font-weight: 650;
+  max-width: 620px; margin: 10px auto 0; padding: 8px 12px; border-radius: 10px;
+  background: var(--chip); font-size: 13px; font-weight: 700;
 }
 .tiestate.leading { color: var(--gold); }
 .tiestate.done { color: var(--live); }
 .tiestate.waiting { color: var(--dim); font-weight: 500; }
 .tiewhy { font-size: 11.5px; font-weight: 400; color: var(--faint); }
+
+@media (max-width: 460px) {
+  .livetie { padding: 10px; }
+  .tierow { gap: 6px; }
+  .tieside { padding: 10px; gap: 6px; }
+  .tiecrest { width: 38px; height: 38px; border-radius: 10px; }
+  .tiecrest img { width: 24px; height: 24px; }
+  .tieclub { font-size: 17px; }
+  .tiescore { font-size: 21px; }
+  .tietop { gap: 7px; }
+  .tieown { font-size: 10.5px; }
+}
 
 @media (max-width: 430px) {
   .tierow { gap: 8px; }
