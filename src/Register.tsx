@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { explain } from './domain/trouble.ts';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { updateProfile } from 'firebase/auth';
+import { signOut, updateProfile } from 'firebase/auth';
 import type { User } from 'firebase/auth';
-import { db } from './firebase.ts';
+import { auth, db } from './firebase.ts';
 import { typingPhone } from './domain/phone.ts';
 import { fullName, shortName, splitName } from './domain/name.ts';
 import { ThemeChoice } from './Theme.tsx';
@@ -114,6 +114,12 @@ export function Register({ user }: { user: User }) {
     <div className="card prose register">
       <h2>Join the league</h2>
       <p>Tell us who you are, and the commissioner will add you to the league.</p>
+
+      <p className="whoami">
+        Signed in as <strong>{user.email}</strong>.
+        {' '}Already joined? You may have used a different account —{' '}
+        <button className="linky inline" onClick={() => void signOut(auth)}>sign out and try another</button>.
+      </p>
 
       <div className="splitrow">
         <label>

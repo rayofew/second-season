@@ -1006,3 +1006,12 @@ td { font-variant-numeric: tabular-nums; }
   font-size: 12px; font-weight: 650; letter-spacing: 0; text-transform: none;
   color: var(--gold); text-decoration: underline; text-underline-offset: 2px;
 }
+
+/* Which account this is. The one question somebody being asked to join twice needs answered. */
+.whoami {
+  font-size: 13px; color: var(--dim); line-height: 1.6;
+  background: var(--sunk); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; margin: 0 0 4px;
+}
+.whoami strong { color: var(--ink); }
+.linky.inline { display: inline; padding: 0; font-size: inherit; text-decoration: underline; text-underline-offset: 2px; }
