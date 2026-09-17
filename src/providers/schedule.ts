@@ -25,6 +25,17 @@ export interface ClubGame {
    * trusting a field that is missing on some games and reads '1st Quarter' on others.
    */
   clock: string;
+  /**
+   * What this club is expected to score, from the betting line ESPN publishes.
+   *
+   * The total and the spread give it directly: half the total, plus or minus half the spread.
+   * A line of GB -6.5 on a total of 46.5 is Green Bay 26.5 and Atlanta 20, which is the market
+   * saying what it thinks the scoreboard will read.
+   *
+   * Undefined where no book has posted one, and it disappears once a game is over — a projection
+   * is a thing said beforehand, and nothing should invent one afterwards.
+   */
+  projected?: number;
 }
 
 const STATES: Record<string, ClubState> = { pre: 'upcoming', in: 'playing', post: 'final' };
@@ -40,6 +51,14 @@ export async function clubGames(season: number, week: number): Promise<Map<strin
     const kickoff = new Date(event.date);
     const sides = competition?.competitors ?? [];
     const status = competition?.status;
+
+    // The spread is always quoted for the home side, so the away side takes it the other way.
+    const odds = competition?.odds?.[0];
+    const total = Number(odds?.overUnder);
+    const spread = Number(odds?.spread);
+    const priced = Number.isFinite(total) && Number.isFinite(spread);
+    const homeProjected = priced ? total / 2 - spread / 2 : undefined;
+    const awayProjected = priced ? total / 2 + spread / 2 : undefined;
     const clock =
       state === 'playing'
         ? [status?.period ? (status.period > 4 ? 'OT' : `Q${status.period}`) : '', status?.displayClock ?? '']
@@ -57,6 +76,7 @@ export async function clubGames(season: number, week: number): Promise<Map<strin
         against: other?.team?.abbreviation ?? '',
         home: side.homeAway === 'home',
         clock,
+        projected: side.homeAway === 'home' ? homeProjected : awayProjected,
       });
     }
   }

@@ -115,6 +115,29 @@ describe('a bracket tie while the games are still going', () => {
     assert.equal(whyLeading(liveTie(tie, games, FIELD, noYards), FIELD, noYards), null);
   });
 
+  it('carries the market’s expected score through to the side', () => {
+    // Green Bay -6.5 on a total of 46.5 is 26.5 and 20: they sum to the total and differ by the
+    // spread. Getting the sign backwards would swap the favourite for the underdog and look
+    // perfectly plausible, which is exactly why it is worth a test rather than a glance.
+    const games = new Map([
+      ['LAC', { ...fixture('LV', 0, 'upcoming', 17), projected: 26.5 }],
+      ['NE', { ...fixture('MIA', 0, 'upcoming', 17), projected: 20 }],
+    ]);
+    const live = liveTie(tie, games, FIELD, noYards);
+    assert.deepEqual(live.sides.map((side) => side.projected), [26.5, 20]);
+    assert.equal(26.5 + 20, 46.5, 'the two halves are the total');
+    assert.equal(26.5 - 20, 6.5, 'and they differ by the spread');
+  });
+
+  it('leaves the projection out where no book has priced the game', () => {
+    const games = new Map([
+      ['LAC', fixture('LV', 0, 'upcoming', 17)],
+      ['NE', fixture('MIA', 0, 'upcoming', 17)],
+    ]);
+    const live = liveTie(tie, games, FIELD, noYards);
+    assert.deepEqual(live.sides.map((side) => side.projected), [undefined, undefined]);
+  });
+
   it('copes with a club the feed has no fixture for', () => {
     const live = liveTie(tie, new Map([['LAC', fixture('LV', 24, 'final', 17)]]), FIELD, noYards);
     assert.equal(live.sides[1]?.club, 'NE');

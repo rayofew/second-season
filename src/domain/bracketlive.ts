@@ -23,6 +23,7 @@ export interface Fixture {
   against: string;
   home: boolean;
   clock: string;
+  projected?: number;
 }
 
 export interface Side {
@@ -36,6 +37,8 @@ export interface Side {
   state: ClubState;
   clock: string;
   kickoff: Date | null;
+  /** What the market expects him to score. Absent where no book has priced the game. */
+  projected?: number;
 }
 
 export interface LiveTie {
@@ -80,6 +83,7 @@ export function liveTie(
       state: fixture.state,
       clock: fixture.clock,
       kickoff: fixture.kickoff,
+      projected: fixture.projected,
     };
   };
 

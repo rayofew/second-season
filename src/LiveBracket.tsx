@@ -51,7 +51,12 @@ function TieSide({
           <img src={crest(side.club)} alt="" width="30" height="30" loading="lazy" />
         </span>
         <span className="tieclub" style={{ color: colorOf(side.club) }}>{side.club}</span>
-        <span className="tiescore">{side.state === 'upcoming' ? '–' : side.points}</span>
+        <span className="tienums">
+          <span className="tiescore">{side.state === 'upcoming' ? '–' : side.points}</span>
+          {side.projected !== undefined && side.state !== 'final' && (
+            <span className="tieproj">{Math.round(side.projected * 10) / 10} proj</span>
+          )}
+        </span>
       </div>
       {/* Where they play each other, this line would name the opponent twice over. */}
       {!sharing && (

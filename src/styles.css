@@ -1054,10 +1054,14 @@ td { font-variant-numeric: tabular-nums; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .tieside.mirrored .tieclub { text-align: right; }
+.tienums { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.tieside.mirrored .tienums { align-items: flex-start; }
 .tiescore {
-  flex: none; font-size: 26px; font-weight: 800; color: var(--ink);
+  font-size: 26px; font-weight: 800; color: var(--ink);
   font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1;
 }
+/* What the market expects. Quiet: it is a guess sitting beside a fact. */
+.tieproj { font-size: 10.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
 .tieside.upcoming .tiescore { color: var(--faint); }
 
 .tieown {
