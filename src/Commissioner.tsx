@@ -32,7 +32,8 @@ export function Commissioner({ uid }: { uid: string }) {
   // Every application ever written, including admitted managers — where phone and email live.
   const [everyone, setEveryone] = useState<Application[]>([]);
   const [managers, setManagers] = useState<Manager[]>([]);
-  const [submitted, setSubmitted] = useState<Set<string>>(new Set());
+  /** Slots filled, by manager. Nine is ready; anything less is somebody to chase. */
+  const [filled, setFilled] = useState<Map<string, number>>(new Map());
   // Which of these managers are invented. Read from the commissioner's own document, because
   // nothing readable by the league is allowed to say so.
   const [standIns, setStandIns] = useState<StandInRegister>({});
@@ -52,7 +53,7 @@ export function Commissioner({ uid }: { uid: string }) {
       setManagers(people);
       setEveryone(waiting);
       setApplications(waiting.filter((application) => !members.has(application.uid)));
-      setSubmitted(await readSubmitted(CONTEST, people.map((person) => person.uid), found.currentRound));
+      setFilled(await readSubmitted(CONTEST, people.map((person) => person.uid), found.currentRound));
       setStandIns(await readStandIns(CONTEST).catch(() => ({})));
     } catch (cause) {
       setProblem(explain(cause));
@@ -83,7 +84,6 @@ export function Commissioner({ uid }: { uid: string }) {
   // Whoever set the contest up. The rules refuse any update that drops him, so this only decides
   // what the screen offers.
   const owner = commissioners[0];
-  const missing = managers.filter((manager) => !submitted.has(manager.uid));
 
   // While fixing somebody's team, that is the whole screen — no room to press the wrong thing.
   if (editing) {
@@ -149,8 +149,8 @@ export function Commissioner({ uid }: { uid: string }) {
       <Contacts
         managers={managers}
         applications={everyone}
-        submitted={submitted}
-        round={round?.name ?? 'this round'}
+        filled={filled}
+        round={round?.name ?? 'This round'}
       />
 
       <Pool contest={contest} managers={managers} commissioner onChange={() => void load()} />
@@ -161,7 +161,8 @@ export function Commissioner({ uid }: { uid: string }) {
 
       <div className="card">
         <div className="confhead">
-          {round?.name} — {submitted.size} of {managers.length} submitted
+          Managers
+          <span className="colhead">{managers.length}</span>
         </div>
         {managers.map((manager) => (
           <div className="row" key={manager.uid}>
@@ -175,9 +176,7 @@ export function Commissioner({ uid }: { uid: string }) {
               </span>
             </span>
             <span className="actions">
-              <span className={submitted.has(manager.uid) ? 'keeps' : 'resets'}>
-                {submitted.has(manager.uid) ? 'in' : 'not yet'}
-              </span>
+
               <button className="ghost small" onClick={() => setEditing(manager)}>Team</button>
               {manager.uid === owner ? (
                 <span className="tag">owner</span>
@@ -217,12 +216,7 @@ export function Commissioner({ uid }: { uid: string }) {
         ))}
       </div>
 
-      {missing.length > 0 && (
-        <p className="footnote">
-          Still to pick: {missing.map((manager) => manager.name).join(', ')}. Their phone numbers are
-          on the applications, which only you can read.
-        </p>
-      )}
+
     </>
   );
 }

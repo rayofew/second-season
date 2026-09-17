@@ -127,12 +127,6 @@ export interface Manager {
   logo: string;
   /** Whether the commissioner has seen their money. Recorded here, settled between people. */
   paid: boolean;
-  /**
-   * A manager who does not exist, put in to give the screens a league to work on.
-   *
-   * Read by the commissioner's own list and nowhere else. Everybody else sees an ordinary name,
-   * which is what makes them useful and what makes taking them out before January matter.
-   */
 }
 
 /** Who is in the league. Readable by any member — but never their phone number, which stays on the application. */
@@ -247,17 +241,27 @@ export async function admitManager(contestId: string, application: Application):
   });
 }
 
-/** Which managers have a roster in for a round. Used to know who still needs chasing. */
-export async function readSubmitted(contestId: string, uids: string[], round: number): Promise<Set<string>> {
+/**
+ * How many slots each manager has filled for a round.
+ *
+ * A count rather than a yes, because a roster of four is not a roster and the old answer said
+ * it was — anybody who had started and wandered off showed as done, which is precisely the
+ * manager who most needs chasing.
+ */
+export async function readSubmitted(
+  contestId: string,
+  uids: string[],
+  round: number,
+): Promise<Map<string, number>> {
   const docs = await Promise.all(
     uids.map((uid) => getDoc(doc(db, 'contests', contestId, 'entries', uid, 'rounds', String(round)))),
   );
-  const submitted = new Set<string>();
+  const filled = new Map<string, number>();
   uids.forEach((uid, index) => {
     const snapshot = docs[index]!;
-    if (snapshot.exists() && ((snapshot.data().players as unknown[]) ?? []).length > 0) submitted.add(uid);
+    filled.set(uid, snapshot.exists() ? ((snapshot.data().players as unknown[]) ?? []).length : 0);
   });
-  return submitted;
+  return filled;
 }
 
 export interface Move {

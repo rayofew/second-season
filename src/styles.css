@@ -984,3 +984,25 @@ td { font-variant-numeric: tabular-nums; }
 .nocontact { color: var(--faint); font-size: 12px; font-style: italic; }
 /* A row with three lines needs room the nine-slot roster rows do not. */
 .card > .row .contactlinks { line-height: 1.5; }
+
+/* How much of the league is in, as a shape rather than a fraction.
+
+   '7 of 10' takes reading; a bar two-thirds full does not, and that is the whole question being
+   asked at four o'clock on a Thursday. */
+.readybar {
+  height: 6px; margin: 0 14px; border-radius: 999px; overflow: hidden;
+  background: var(--sunk); border: 1px solid var(--line);
+}
+.readybar span { display: block; height: 100%; background: var(--live); transition: width 200ms ease-out; }
+@media (prefers-reduced-motion: reduce) { .readybar span { transition: none; } }
+
+/* A heading inside a card, splitting the people still to chase from the people done. */
+.grouphead {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 14px 16px 6px; font-size: 11.5px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint);
+}
+.textall {
+  font-size: 12px; font-weight: 650; letter-spacing: 0; text-transform: none;
+  color: var(--gold); text-decoration: underline; text-underline-offset: 2px;
+}
