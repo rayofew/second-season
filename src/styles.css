@@ -1054,14 +1054,21 @@ td { font-variant-numeric: tabular-nums; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .tieside.mirrored .tieclub { text-align: right; }
-.tienums { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
-.tieside.mirrored .tienums { align-items: flex-start; }
+.tienums { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+/* The box holds whichever number is live: the expectation until kickoff, the scoreboard after. */
 .tiescore {
-  font-size: 26px; font-weight: 800; color: var(--ink);
-  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1;
+  min-width: 64px; padding: 6px 10px; border-radius: 11px; text-align: center;
+  background: var(--raised); border: 1px solid var(--line);
+  font-size: 24px; font-weight: 800; color: var(--ink);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1.1;
 }
-/* What the market expects. Quiet: it is a guess sitting beside a fact. */
-.tieproj { font-size: 10.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.tiescore.playing { border-color: var(--live); }
+.tiescore.upcoming { color: var(--dim); border-style: dashed; }
+/* Demoted under the box once there is a real number to compare it against. */
+.tieproj {
+  font-size: 10px; color: var(--faint); font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
 .tieside.upcoming .tiescore { color: var(--faint); }
 
 .tieown {
@@ -1207,3 +1214,35 @@ td { font-variant-numeric: tabular-nums; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .squadname .pos { font-size: 10.5px; font-weight: 700; color: var(--faint); letter-spacing: 0.04em; }
+
+/* Who has picked from these two clubs — the shared pool made visible. */
+.tieopen {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 2px;
+  background: none; border: 0; padding: 2px 4px; cursor: pointer;
+  font: inherit; font-size: 11.5px; font-weight: 650; color: var(--gold);
+}
+.tieopen:hover { text-decoration: underline; text-underline-offset: 2px; }
+.chev { font-size: 9px; }
+.tiesquads {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px;
+  max-width: 620px; margin: 10px auto 0;
+}
+@media (max-width: 620px) { .tiesquads { grid-template-columns: 1fr; } }
+.tiesquad { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px 8px 8px; }
+.heldline { display: flex; align-items: center; gap: 8px; padding: 6px 2px; }
+.heldmain { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.heldname {
+  font-size: 13px; font-weight: 650; display: flex; align-items: baseline; gap: 6px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.heldname .pos { font-size: 10px; font-weight: 700; color: var(--faint); letter-spacing: 0.04em; }
+/* Every manager holding him, and what he is worth to each — which is never the same number. */
+.heldby { display: flex; flex-wrap: wrap; gap: 4px; }
+.owner {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 6px; border-radius: 999px; font-size: 10.5px;
+  background: var(--sunk); border: 1px solid var(--line); color: var(--dim);
+  max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.owner.you { border-color: var(--gold); color: var(--ink); font-weight: 650; }
+.owner .mult { min-width: 0; height: 15px; font-size: 9px; padding: 0 4px; }

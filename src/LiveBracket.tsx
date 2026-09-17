@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { liveTie, whyLeading } from './domain/bracketlive.ts';
 import type { Fixture, Side } from './domain/bracketlive.ts';
 import type { Field, Matchup } from './domain/advance.ts';
 import { colorOf, crest } from './domain/clubs.ts';
+import { points } from './domain/scoring.ts';
+import { Face } from './PlayerRow.tsx';
 
 /**
  * The round as it currently stands, while it is being played.
@@ -20,11 +23,22 @@ import { colorOf, crest } from './domain/clubs.ts';
  * Worked out from the schedule rather than a setting, so nothing has to be changed in December.
  */
 
+/**
+ * When this club plays, which is not when the other one does.
+ *
+ * The two halves of a tie kick off at different times far more often than not — that is the
+ * whole shape of the rehearsal — so the time belongs under each club rather than once under the
+ * pair, where it could only ever be right about one of them.
+ */
 const kickoffAt = (side: Side) =>
-  side.kickoff?.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) ?? '';
+  side.kickoff
+    ? side.kickoff.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })
+    : '';
 
 const clockFor = (side: Side) =>
   side.state === 'upcoming' ? kickoffAt(side) : side.state === 'final' ? 'Final' : side.clock;
+
+const rounded = (value: number) => Math.round(value * 10) / 10;
 
 /**
  * One half of a tie, as a panel.
@@ -51,10 +65,24 @@ function TieSide({
           <img src={crest(side.club)} alt="" width="30" height="30" loading="lazy" />
         </span>
         <span className="tieclub" style={{ color: colorOf(side.club) }}>{side.club}</span>
+        {/*
+          * The box holds whichever number is the live one.
+          *
+          * Before kickoff that is the expectation, because there is nothing else; after it, the
+          * scoreboard, with the expectation demoted underneath where it can be compared against
+          * what actually happened.
+          */}
         <span className="tienums">
-          <span className="tiescore">{side.state === 'upcoming' ? '–' : side.points}</span>
-          {side.projected !== undefined && side.state !== 'final' && (
-            <span className="tieproj">{Math.round(side.projected * 10) / 10} proj</span>
+          <span className={`tiescore ${side.state}`}>
+            {side.state === 'upcoming'
+              ? (side.projected === undefined ? '–' : rounded(side.projected))
+              : side.points}
+          </span>
+          {side.state !== 'upcoming' && side.projected !== undefined && (
+            <span className="tieproj">{rounded(side.projected)} proj</span>
+          )}
+          {side.state === 'upcoming' && side.projected !== undefined && (
+            <span className="tieproj">projected</span>
           )}
         </span>
       </div>
@@ -69,19 +97,87 @@ function TieSide({
   );
 }
 
+/** A man somebody has picked, and everybody who picked him. */
+export interface Held {
+  id: string;
+  name: string;
+  position: string;
+  team: string;
+  /** What he has scored, or his projection if his game has not started. */
+  counting: number;
+  projected: number;
+  started: boolean;
+  /** The managers holding him, each with the multiplier he is worth to that one. */
+  by: { name: string; multiplier: number; you: boolean }[];
+}
+
+/**
+ * Everybody's men from one club, with who holds them.
+ *
+ * The pool is shared, so a club having an afternoon does not help one manager — it helps
+ * however many picked from it, by different amounts. Seeing that a receiver is held by six
+ * people at 1x and by one at 4x is the whole texture of this format, and it exists nowhere else
+ * in the app.
+ */
+function Squad({ club, held }: { club: string; held: Held[] }) {
+  if (held.length === 0) {
+    return (
+      <div className="tiesquad">
+        <div className="squadhead">{club}</div>
+        <div className="pending">Nobody has picked from this club.</div>
+      </div>
+    );
+  }
+  return (
+    <div className="tiesquad">
+      <div className="squadhead">
+        {club}
+        <span className="colhead">{held.length} picked</span>
+      </div>
+      {held.map((man) => (
+        <div className="heldline" key={man.id}>
+          <Face player={man} size={30} />
+          <span className="heldmain">
+            <span className="heldname">
+              {man.name}
+              <span className="pos">{man.position}</span>
+            </span>
+            <span className="heldby">
+              {man.by.map((owner, index) => (
+                <span className={`owner ${owner.you ? 'you' : ''}`} key={`${owner.name}-${index}`}>
+                  {owner.name}
+                  <span className={`mult mult-${owner.multiplier}`}>{owner.multiplier}x</span>
+                </span>
+              ))}
+            </span>
+          </span>
+          <span className={`livepts ${man.started ? 'final' : 'upcoming'}`}>
+            <b>{points(man.counting)}</b>
+            <span className="liveraw">{man.started ? `${points(man.projected)} proj` : 'proj'}</span>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function LiveBracket({
   matchups,
   fixtures,
   field,
   passingYardsFor,
   roundName,
+  heldBy,
 }: {
   matchups: Matchup[];
   fixtures: Map<string, Fixture>;
   field: Field;
   passingYardsFor: (club: string) => number;
   roundName: string;
+  /** Who everybody has picked, by club. Absent before the lock, when nobody may know. */
+  heldBy?: Map<string, Held[]>;
 }) {
+  const [open, setOpen] = useState<string | null>(null);
   if (matchups.length === 0) return null;
 
   const ties = matchups.map((matchup) => liveTie(matchup, fixtures, field, passingYardsFor));
@@ -109,9 +205,28 @@ export function LiveBracket({
             </div>
 
             <div className={`tiestate ${tie.settled ? 'done' : tie.leading ? 'leading' : 'waiting'}`}>
-              {tie.state}
-              {why && <span className="tiewhy">{why}</span>}
+              <span>
+                {tie.state}
+                {why && <span className="tiewhy">{why}</span>}
+              </span>
+              {heldBy && (
+                <button
+                  className="tieopen"
+                  aria-expanded={open === tie.home}
+                  onClick={() => setOpen(open === tie.home ? null : tie.home)}
+                >
+                  {open === tie.home ? 'Hide who has picked' : 'Who has picked'}
+                  <span className="chev">{open === tie.home ? '▴' : '▾'}</span>
+                </button>
+              )}
             </div>
+
+            {heldBy && open === tie.home && (
+              <div className="tiesquads">
+                <Squad club={away.club} held={heldBy.get(away.club) ?? []} />
+                <Squad club={home.club} held={heldBy.get(home.club) ?? []} />
+              </div>
+            )}
           </div>
         );
       })}

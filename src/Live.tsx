@@ -20,6 +20,7 @@ import {
 } from './store/firestore.ts';
 import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
 import { LiveBracket } from './LiveBracket.tsx';
+import type { Held } from './LiveBracket.tsx';
 import { Games } from './Games.tsx';
 import { PlayerRow } from './PlayerRow.tsx';
 import { useHeartbeat } from './useHeartbeat.ts';
@@ -191,36 +192,8 @@ export function Live({ uid }: { uid: string }) {
     />
   );
 
-  const bracket = (
-    <LiveBracket
-      matchups={(teams?.matchups ?? []).filter((matchup) => !matchup.winner)}
-      fixtures={games}
-      field={contest.field}
-      passingYardsFor={(club) => passing.get(club) ?? 0}
-      roundName={round?.name ?? 'This round'}
-    />
-  );
-
-  // Before the lock the football is all there is to show, and it is not nothing.
-  if (!loaded) {
-    return (
-      <>
-        {bracket}
-        {football}
-        <div className="card gate">
-          <h2>{locked === false ? "Everybody's team is sealed" : 'Working out where everybody is…'}</h2>
-          {locked === false && (
-            <p>
-              Nobody sees anybody else's nine until the first kickoff, or the last manager to submit
-              would simply copy the best one. The table fills in the moment the round locks.
-            </p>
-          )}
-        </div>
-      </>
-    );
-  }
-
-  const inputs: BoardInput[] = loaded.entries.map((entry) => {
+  // Needed by the leaderboard and by the bracket alike, so it is worked out before either.
+  const inputs: BoardInput[] = (loaded?.entries ?? []).map((entry) => {
     const standing = new Map(
       standingsFor(entry.history, contest.currentRound, EASTSIDE)
         .map((held) => [held.slot, held.multiplier]),
@@ -244,6 +217,84 @@ export function Live({ uid }: { uid: string }) {
       })).players,
     };
   });
+
+  /**
+   * Who has picked whom, gathered from the rosters already loaded for the leaderboard.
+   *
+   * Only exists once the round has locked, which is exactly right: before then nobody may know
+   * what anybody else has done, and the bracket simply offers no way to ask.
+   */
+  const heldBy = loaded && (() => {
+    const byClub = new Map<string, Map<string, Held>>();
+    for (const [index, entry] of loaded.entries.entries()) {
+      const row = inputs[index];
+      if (!row) continue;
+      const mine = entry.entryId === uid;
+      for (const player of row.players) {
+        const person = pool.get(player.playerId);
+        if (!person) continue;
+        const club = byClub.get(person.team) ?? new Map<string, Held>();
+        const already = club.get(player.playerId);
+        const owner = { name: entry.name, multiplier: player.multiplier, you: mine };
+        if (already) {
+          already.by.push(owner);
+        } else {
+          club.set(player.playerId, {
+            id: person.id,
+            name: person.name,
+            position: person.position,
+            team: person.team,
+            counting: player.counting,
+            projected: player.projected,
+            started: player.state !== 'upcoming',
+            by: [owner],
+          });
+        }
+        byClub.set(person.team, club);
+      }
+    }
+    // Whoever is doing most first, and within a man the biggest multiplier first — the holder
+    // for whom the afternoon matters most.
+    return new Map(
+      [...byClub].map(([club, men]) => [
+        club,
+        [...men.values()]
+          .map((man) => ({ ...man, by: [...man.by].sort((a, b) => b.multiplier - a.multiplier) }))
+          .sort((first, second) => second.counting - first.counting),
+      ]),
+    );
+  })();
+
+  const bracket = (
+    <LiveBracket
+      matchups={(teams?.matchups ?? []).filter((matchup) => !matchup.winner)}
+      fixtures={games}
+      field={contest.field}
+      passingYardsFor={(club) => passing.get(club) ?? 0}
+      roundName={round?.name ?? 'This round'}
+      heldBy={heldBy || undefined}
+    />
+  );
+
+  // Before the lock the football is all there is to show, and it is not nothing.
+  if (!loaded) {
+    return (
+      <>
+        {bracket}
+        {football}
+        <div className="card gate">
+          <h2>{locked === false ? "Everybody's team is sealed" : 'Working out where everybody is…'}</h2>
+          {locked === false && (
+            <p>
+              Nobody sees anybody else's nine until the first kickoff, or the last manager to submit
+              would simply copy the best one. The table fills in the moment the round locks.
+            </p>
+          )}
+        </div>
+      </>
+    );
+  }
+
 
   const rows = board(inputs, race);
 
