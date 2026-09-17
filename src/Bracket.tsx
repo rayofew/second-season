@@ -2,6 +2,14 @@ import { useEffect, useState } from 'react';
 import { readAllTeams, readContest } from './store/firestore.ts';
 import type { Contest, RoundTeams } from './store/firestore.ts';
 import { colorOf, crest } from './domain/clubs.ts';
+import { clubGames } from './providers/schedule.ts';
+import type { ClubGame } from './providers/schedule.ts';
+import { stats } from './providers/sleeper.ts';
+import type { StatLine } from './domain/scoring.ts';
+import { readPool } from './store/firestore.ts';
+import { LiveBracket } from './LiveBracket.tsx';
+import { useHeartbeat } from './useHeartbeat.ts';
+import { explain } from './domain/trouble.ts';
 
 /**
  * The whole bracket, all four rounds.
@@ -125,6 +133,10 @@ export function Bracket() {
   const [rounds, setRounds] = useState<(RoundTeams | null)[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
 
+  const [fixtures, setFixtures] = useState<Map<string, ClubGame>>(new Map());
+  // Passing yards only matter when two clubs finish level, which is rare and worth getting right.
+  const [passing, setPassing] = useState<Map<string, number>>(new Map());
+
   useEffect(() => {
     void (async () => {
       try {
@@ -132,12 +144,65 @@ export function Bracket() {
         setContest(found);
         if (found) setRounds(await readAllTeams(CONTEST, found.rounds.length));
       } catch (cause) {
-        setProblem((cause as Error).message);
+        setProblem(explain(cause));
       }
     })();
   }, []);
 
+  const going = [...fixtures.values()].some((game) => game.state !== 'final');
+  const beat = useHeartbeat(going, 45_000);
+
+  /**
+   * The football itself, refetched while any of it is happening.
+   *
+   * Only the public feeds are on the heartbeat; the bracket above comes from Firestore once, and
+   * cannot change between Monday nights.
+   */
+  useEffect(() => {
+    if (!contest) return;
+    const config = contest.rounds[contest.currentRound];
+    if (!config) return;
+    let live = true;
+
+    void (async () => {
+      const [games, board, lines] = await Promise.all([
+        clubGames(contest.season, config.week).catch(() => new Map<string, ClubGame>()),
+        readPool(CONTEST).catch(() => []),
+        stats(contest.season, config.seasonType, config.week)
+          .catch(() => ({}) as Record<string, StatLine>),
+      ]);
+      if (!live) return;
+      setFixtures(games);
+
+      // A club's busiest quarterback, which is what the tiebreaker asks for.
+      const yards = new Map<string, number>();
+      for (const player of board) {
+        if (player.position !== 'QB') continue;
+        const threw = lines[player.id]?.pass_yd ?? 0;
+        yards.set(player.team, Math.max(yards.get(player.team) ?? 0, threw));
+      }
+      setPassing(yards);
+    })();
+
+    return () => { live = false; };
+  }, [contest, beat]);
+
   if (problem) return <div className="card gate"><p className="problem">{problem}</p></div>;
   if (!contest) return <div className="card gate"><p>Loading the bracket…</p></div>;
-  return <BracketLadder contest={contest} rounds={rounds} />;
+
+  const open = rounds[contest.currentRound];
+  const undecided = (open?.matchups ?? []).filter((matchup) => !matchup.winner);
+
+  return (
+    <>
+      <LiveBracket
+        matchups={undecided}
+        fixtures={fixtures}
+        field={contest.field}
+        passingYardsFor={(club) => passing.get(club) ?? 0}
+        roundName={contest.rounds[contest.currentRound]?.name ?? 'This round'}
+      />
+      <BracketLadder contest={contest} rounds={rounds} />
+    </>
+  );
 }

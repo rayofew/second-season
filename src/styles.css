@@ -1015,3 +1015,63 @@ td { font-variant-numeric: tabular-nums; }
 }
 .whoami strong { color: var(--ink); }
 .linky.inline { display: inline; padding: 0; font-size: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+/* A bracket tie, mid-afternoon.
+
+   Two scorelines under one pairing, because the two clubs are not playing each other and the
+   answer comes from both. In January they are, and there is one line. */
+/* .livetie, not .tie: the ladder underneath already owns that name and lays it out as a row. */
+.livetie { padding: 12px 14px; border-bottom: 1px solid var(--hairline); }
+.livetie:last-of-type { border-bottom: 0; }
+.tiehead {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  font-size: 13px; font-weight: 700; color: var(--dim);
+  letter-spacing: 0.02em; margin-bottom: 8px;
+}
+.tievs { color: var(--faint); font-weight: 500; }
+
+.tieside {
+  display: grid; align-items: center; gap: 0 9px;
+  grid-template-columns: 22px auto 1fr auto;
+  grid-template-areas: 'crest club score clock' '. against against clock';
+  padding: 5px 0;
+}
+.tieside .clubcrest { grid-area: crest; }
+.tieclub { grid-area: club; font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+.tiescore {
+  grid-area: score; font-size: 17px; font-weight: 750; color: var(--ink);
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+.tieagainst { grid-area: against; font-size: 11.5px; color: var(--faint); }
+.tieclock {
+  grid-area: clock; font-size: 11.5px; color: var(--dim); text-align: right;
+  font-variant-numeric: tabular-nums; padding-left: 10px; white-space: nowrap;
+}
+.tieclock.playing { color: var(--live); font-weight: 700; }
+.tieside.upcoming .tiescore, .tieside.upcoming .tieclub { color: var(--faint); }
+
+.tiestate {
+  display: flex; flex-direction: column; gap: 2px;
+  margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line);
+  font-size: 13px; font-weight: 650;
+}
+.tiestate.leading { color: var(--gold); }
+.tiestate.done { color: var(--live); }
+.tiestate.waiting { color: var(--dim); font-weight: 500; }
+.tiewhy { font-size: 11.5px; font-weight: 400; color: var(--faint); }
+
+/* One game between the two of them, which is every January tie. */
+.meeting {
+  display: grid; align-items: center; gap: 2px 10px;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-areas: 'away score home' 'clock clock clock';
+  padding: 5px 0;
+}
+.meetside { grid-area: away; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.meetside.right { grid-area: home; justify-content: flex-end; }
+.meetscore {
+  grid-area: score; font-size: 17px; font-weight: 750; color: var(--ink);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.meeting .tieclock { grid-area: clock; text-align: center; padding: 2px 0 0; }
+.meeting.upcoming .meetscore, .meeting.upcoming .tieclub { color: var(--faint); }
