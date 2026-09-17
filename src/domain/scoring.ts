@@ -83,6 +83,28 @@ function kicking(line: StatLine, rules: Scoring): number {
 }
 
 /**
+ * Yards a defense's return unit gained, which the two Sleeper feeds name differently.
+ *
+ * A completed game reports them as def_kr_yd and def_pr_yd, and those are right: Seattle in week
+ * 18 shows def_kr_yd 34 beside def_kr_lng 34, one return of thirty-four yards.
+ *
+ * A projection reports both those names AND kr_yd / pr_yd, and they disagree wildly — the 49ers
+ * projected pr_yd 20.31 and def_pr_yd 155.72 in the same line. Twenty is a punt return unit’s
+ * afternoon; a hundred and fifty-five is not, whatever it is. Taking the def_ pair was paying
+ * every defense about eleven points for returns it will never make, which is how a projection
+ * reached 22 for a unit the league itself expects to score 8.
+ *
+ * So: the weekly pair wins wherever it appears, all or nothing. Mixing them would take one real
+ * figure and one impossible one, which is worse than either.
+ */
+function returnYards(line: StatLine): number {
+  const weekly = line.kr_yd !== undefined || line.pr_yd !== undefined;
+  return weekly
+    ? stat(line, 'kr_yd') + stat(line, 'pr_yd')
+    : stat(line, 'def_kr_yd') + stat(line, 'def_pr_yd');
+}
+
+/**
  * Defense and special teams.
  *
  * `pts_allow` is read rather than defaulted, because zero is a real and valuable answer here. A
@@ -104,7 +126,7 @@ function defense(line: StatLine, rules: Scoring): number {
     stat(line, 'safe') * rules.safety +
     stat(line, 'blk_kick') * rules.blockedKick +
     (stat(line, 'def_td') + stat(line, 'def_st_td')) * rules.defensiveTouchdown +
-    perYard(stat(line, 'def_kr_yd') + stat(line, 'def_pr_yd'), rules.returnYardsPerPoint, rules.wholePoints) +
+    perYard(returnYards(line), rules.returnYardsPerPoint, rules.wholePoints) +
     allowanceBonus
   );
 }

@@ -115,7 +115,11 @@ function defense(line: StatLine, rules: Scoring): Line[] {
     counted(line, 'def_st_td', rules.defensiveTouchdown, 'Special teams touchdowns'),
   ].filter((entry): entry is Line => entry !== null);
 
-  const returned = value(line, 'def_kr_yd') + value(line, 'def_pr_yd');
+  // The same all-or-nothing choice the scorer makes; see returnYards there for why.
+  const weekly = line.kr_yd !== undefined || line.pr_yd !== undefined;
+  const returned = weekly
+    ? value(line, 'kr_yd') + value(line, 'pr_yd')
+    : value(line, 'def_kr_yd') + value(line, 'def_pr_yd');
   if (returned && rules.returnYardsPerPoint) {
     lines.push({
       label: 'Return yards',

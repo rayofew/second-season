@@ -330,10 +330,14 @@ export function RosterBuilder({
                           }
                           trailing={
                             byes.has(candidate.team) ? undefined : (
-                              <span className="proj">
+                              <button
+                                className="proj asked"
+                                title="How this was worked out"
+                                onClick={(event) => { event.stopPropagation(); setShowing(candidate.id); }}
+                              >
                                 <b>{points(projected.get(candidate.id) ?? 0)}</b>
                                 <span className="projlabel">proj</span>
-                              </span>
+                              </button>
                             )
                           }
                           right={<span className={incumbent ? 'keeps' : 'resets'}>{incumbent ? 'keeps streak' : '1x'}</span>}
