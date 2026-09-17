@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { RosterBuilder } from './RosterBuilder.tsx';
 import { Bracket } from './Bracket.tsx';
 import { Standings } from './Standings.tsx';
+import { Live } from './Live.tsx';
 import { Rules } from './Rules.tsx';
 import { Register } from './Register.tsx';
 import { Commissioner } from './Commissioner.tsx';
@@ -17,7 +18,7 @@ import { isRefusal } from './domain/trouble.ts';
 
 const CONTEST = 'rehearsal-2026';
 
-type Tab = 'home' | 'team' | 'bracket' | 'standings' | 'moves' | 'rules' | 'commish' | 'lab';
+type Tab = 'home' | 'team' | 'live' | 'bracket' | 'standings' | 'moves' | 'rules' | 'commish' | 'lab';
 
 export function App() {
   const [tab, setTab] = useState<Tab>('home');
@@ -95,6 +96,7 @@ export function App() {
           <nav>
             <button aria-current={tab === 'home'} onClick={() => setTab('home')}>Home</button>
             <button aria-current={tab === 'team'} onClick={() => setTab('team')}>My Team</button>
+            <button aria-current={tab === 'live'} onClick={() => setTab('live')}>Live</button>
             <button aria-current={tab === 'bracket'} onClick={() => setTab('bracket')}>Bracket</button>
             <button aria-current={tab === 'standings'} onClick={() => setTab('standings')}>Standings</button>
             <button aria-current={tab === 'moves'} onClick={() => setTab('moves')}>Moves</button>
@@ -109,6 +111,7 @@ export function App() {
 
           {tab === 'home' ? <Home uid={user.uid} onGoToTeam={() => setTab('team')} />
             : tab === 'team' ? <RosterBuilder uid={user.uid} />
+            : tab === 'live' ? <Live uid={user.uid} />
             : tab === 'bracket' ? <Bracket />
             : tab === 'moves' ? <Moves />
             : tab === 'rules' ? <Rules />
