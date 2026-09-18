@@ -719,11 +719,29 @@ td { font-variant-numeric: tabular-nums; }
 
 /* ---- Moves ------------------------------------------------------------ */
 
-.movesround {
-  font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--faint); margin: 18px 4px 8px;
+/**
+ * A manager's week, folded up.
+ *
+ * The heading is the whole row when it is shut: who, and how much he did. Everything under it is
+ * the detail, which most of the time nobody wants — a ticker of forty changes answers "what
+ * happened" and never "what did he do".
+ */
+.movegroup { margin-bottom: 8px; }
+.movegroup.open { border-color: var(--line-strong); }
+.movehead {
+  display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+  padding: 11px 14px; background: none; border: 0; color: inherit; min-height: 56px;
 }
-.move { display: flex; align-items: center; gap: 11px; padding: 11px 14px; margin-bottom: 8px; }
+.movehead:hover { background: var(--raised); }
+.movecount { flex: none; display: flex; align-items: center; gap: 6px; }
+.movelist { border-top: 1px solid var(--line); background: var(--sunk); padding: 4px 0; }
+
+/* The round tabs. Same shape as the two races on Live, because they are the same gesture. */
+.roundtabs { flex-wrap: wrap; padding: 12px 14px; }
+.roundtabs button { flex: 1 1 110px; }
+
+.move { display: flex; align-items: center; gap: 11px; padding: 9px 14px; }
+.move + .move { border-top: 1px solid var(--hairline); }
 .arrow {
   flex: none; width: 22px; height: 22px; border-radius: 6px;
   display: inline-flex; align-items: center; justify-content: center;
@@ -731,8 +749,12 @@ td { font-variant-numeric: tabular-nums; }
 }
 .arrow.in { color: var(--live); background: var(--good-bg); }
 .arrow.out { color: var(--gone); background: var(--bad-bg); }
-.movewho { flex: none; text-align: right; line-height: 1.4; }
-.movewhen { color: var(--faint); font-size: 11px; }
+.movewhen { flex: none; color: var(--faint); font-size: 11px; white-space: nowrap; }
+/* A count rather than a sign, so the chip has to hold two characters. */
+.movecount .arrow {
+  width: auto; min-width: 26px; padding: 0 6px; font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
 
 .ruleline.total { border-top: 1px solid var(--line); background: var(--sunk); }
 .ruleline.total .rulevalue { color: var(--gold); }

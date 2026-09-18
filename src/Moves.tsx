@@ -9,9 +9,12 @@ import { Face } from './PlayerRow.tsx';
  * The rosters say what everybody played; this says how they got there — which the rosters cannot,
  * because a man signed and dropped again before the lock leaves no trace in them at all.
  *
+ * A round at a time, and a manager at a time within it. Flat and newest-first it was a ticker: true,
+ * and no use for the question anybody actually brings here, which is "what did he do this week".
+ * Folded up by manager, the same list answers it in one glance and opens where you want it.
+ *
  * Nothing appears until the round it belongs to has locked. Seeing that somebody has just taken
- * Barkley is seeing their team, so the rules refuse it on exactly the same terms as the rosters
- * themselves.
+ * Barkley is seeing their team, so the rules refuse it on exactly the same terms as the rosters.
  */
 
 const CONTEST = 'rehearsal-2026';
@@ -21,6 +24,8 @@ export function Moves() {
   const [managers, setManagers] = useState<Map<string, Manager>>(new Map());
   const [players, setPlayers] = useState<Map<string, PoolPlayer>>(new Map());
   const [contest, setContest] = useState<Contest | null>(null);
+  const [round, setRound] = useState<number | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -52,45 +57,106 @@ export function Moves() {
     );
   }
 
-  const nameOfRound = (round: number) => contest?.rounds[round]?.name ?? `Round ${round + 1}`;
-  let lastRound: number | null = null;
+  const nameOfRound = (number: number) => contest?.rounds[number]?.name ?? `Round ${number + 1}`;
+
+  // Only rounds anybody actually moved in. A tab leading to an empty screen is a worse answer than
+  // no tab at all.
+  const played = [...new Set(real.map((move) => move.round))].sort((first, second) => first - second);
+  const showing = round !== null && played.includes(round) ? round : played[played.length - 1]!;
+
+  const inRound = real.filter((move) => move.round === showing);
+
+  /**
+   * One group a manager, busiest first.
+   *
+   * Busiest rather than alphabetical because the man who made nine changes is the story of the
+   * week and the two who made one each are not.
+   */
+  const byManager = new Map<string, Move[]>();
+  for (const move of inRound) byManager.set(move.uid, [...(byManager.get(move.uid) ?? []), move]);
+  const groups = [...byManager].sort((first, second) => second[1].length - first[1].length);
 
   return (
     <>
-      {real.map((move, index) => {
-        const manager = managers.get(move.uid);
-        const player = players.get(move.playerId);
-        const header = move.round !== lastRound;
-        lastRound = move.round;
+      {played.length > 1 && (
+        <div className="card">
+          <div className="races roundtabs">
+            {played.map((number) => (
+              <button
+                key={number}
+                className={number === showing ? 'on' : ''}
+                onClick={() => { setRound(number); setOpen(null); }}
+              >
+                {nameOfRound(number)}
+              </button>
+            ))}
+          </div>
+          <div className="pending">
+            {inRound.length} change{inRound.length === 1 ? '' : 's'} by {groups.length}{' '}
+            {groups.length === 1 ? 'manager' : 'managers'}.
+          </div>
+        </div>
+      )}
+
+      {groups.map(([uid, theirs]) => {
+        const manager = managers.get(uid);
+        const signed = theirs.filter((move) => move.action === 'in').length;
+        const dropped = theirs.length - signed;
+        const expanded = open === uid;
 
         return (
-          <div key={`${move.uid}-${move.playerId}-${index}`}>
-            {header && <div className="movesround">{nameOfRound(move.round)}</div>}
-            <div className="card move">
-              <span className={`arrow ${move.action}`}>{move.action === 'in' ? '+' : '−'}</span>
-              {player
-                ? <Face player={player} size={38} />
-                : <span className="face empty" style={{ width: 38, height: 38 }} />}
+          <div className={`card movegroup ${expanded ? 'open' : ''}`} key={uid}>
+            <button
+              className="movehead"
+              aria-expanded={expanded}
+              onClick={() => setOpen(expanded ? null : uid)}
+            >
+              {manager?.logo
+                ? <img className="badge small" src={manager.logo} alt="" />
+                : <span className="badge small empty" />}
               <span className="rowmain">
-                <span className="rowname">{move.playerName}</span>
-                <span className="rowmeta">
-                  {player && <>{player.position}<span className="dot">·</span>{player.team}<span className="dot">·</span></>}
-                  {move.slot}
-                </span>
+                <span className="rowname">{manager?.teamName ?? 'Somebody'}</span>
+                <span className="rowmeta">{manager?.name}</span>
               </span>
-              <span className="rowmeta movewho">
-                {manager?.teamName ?? 'somebody'}
-                <br />
-                <span className="movewhen">
-                  {move.at.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                </span>
+              <span className="movecount">
+                {signed > 0 && <span className="arrow in">+{signed}</span>}
+                {dropped > 0 && <span className="arrow out">−{dropped}</span>}
               </span>
-            </div>
+              <span className="chev">{expanded ? '▴' : '▾'}</span>
+            </button>
+
+            {expanded && (
+              <div className="movelist">
+                {theirs.map((move, index) => {
+                  const player = players.get(move.playerId);
+                  return (
+                    <div className="move" key={`${move.playerId}-${index}`}>
+                      <span className={`arrow ${move.action}`}>{move.action === 'in' ? '+' : '−'}</span>
+                      {player
+                        ? <Face player={player} size={34} />
+                        : <span className="face empty" style={{ width: 34, height: 34 }} />}
+                      <span className="rowmain">
+                        <span className="rowname">{move.playerName}</span>
+                        <span className="rowmeta">
+                          {player && <>{player.position}<span className="dot">·</span>{player.team}<span className="dot">·</span></>}
+                          {move.slot}
+                        </span>
+                      </span>
+                      <span className="movewhen">
+                        {move.at.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       })}
+
       <p className="footnote">
-        Signings and drops, newest first. A round's moves appear once it has locked.
+        Signings and drops, newest first within each manager. A round's moves appear once it has
+        locked — before that, watching somebody build a team is watching their team.
       </p>
     </>
   );
