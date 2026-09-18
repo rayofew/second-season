@@ -322,25 +322,29 @@ export async function recordMoves(
 /**
  * Everything that has happened, newest first.
  *
- * Rules are not filters. A manager may read a move only once its round has locked, and asking for
- * the whole collection returns documents from the round still open — so Firestore refuses the
- * entire query rather than quietly handing back the part he is allowed, and he sees nothing at all,
- * including the weeks that finished a month ago.
+ * Rules are not filters, and for a query they are stricter than that. A manager may read a move
+ * only once its round has locked, which the rule expresses as a comparison against
+ * resource.data.round — and Firestore will only allow a query whose own constraints prove what
+ * that field is. An equality on round does; a range does not, and nor does asking for everything.
+ * Both are refused outright, so the manager sees nothing at all, including weeks that finished a
+ * month ago.
  *
- * So `upTo` narrows the question to rounds that have locked, which makes every document it can
- * return one he may have. A commissioner may read all of them and asks without it.
+ * Hence one query per locked round rather than one clever one. There are four rounds in a
+ * postseason, so this is four reads at worst, and each of them is a question the rules can answer.
+ * A commissioner may read the lot and asks in a single query with no rounds given.
  *
- * Sorted here rather than by the database: a range on round and an order on time would want a
- * composite index, and three hundred rows sort in no time at all.
+ * Verified against the live rules rather than reasoned about: round == 0 is allowed and returns
+ * sixty-six documents where round <= 0 is refused, which is not a difference anybody would guess.
  */
-export async function readMoves(contestId: string, upTo?: number): Promise<Move[]> {
+export async function readMoves(contestId: string, rounds?: readonly number[]): Promise<Move[]> {
   const log = collection(db, 'contests', contestId, 'log');
-  const asked = upTo === undefined
-    ? query(log, orderBy('at', 'desc'), limit(300))
-    : query(log, where('round', '<=', upTo), limit(300));
 
-  const snapshot = await getDocs(asked);
-  return snapshot.docs
+  const pages = rounds === undefined
+    ? [await getDocs(query(log, orderBy('at', 'desc'), limit(300)))]
+    : await Promise.all(rounds.map((round) => getDocs(query(log, where('round', '==', round), limit(300)))));
+
+  return pages
+    .flatMap((snapshot) => snapshot.docs)
     .map((entry) => {
       const data = entry.data();
       return { ...data, at: (data.at as { toDate(): Date } | null)?.toDate() ?? new Date() } as Move;

@@ -38,20 +38,20 @@ export function Moves() {
       setManagers(new Map(people.map((person) => [person.uid, person])));
       setPlayers(new Map(board.map((player) => [player.id, player])));
       /*
-       * The whole log if the rules allow it, and otherwise only the rounds that have locked.
+       * The whole log if the rules allow it, and otherwise a query per round that has locked.
        *
        * A commissioner may read every move including the round being played. Everybody else may
-       * not, and because rules are not filters the unrestricted question is refused outright — so
-       * the fallback asks a narrower one that every answer to is allowed.
+       * not, and the rule turns on each document's own round — which Firestore will only allow a
+       * query to rely on when the query pins that field to one value. So the fallback asks about
+       * one round at a time.
        */
       const locked = (found?.rounds ?? [])
         .filter((entry) => (found?.locks[String(entry.round)] ?? new Date()) <= new Date())
         .map((entry) => entry.round);
-      const last = locked.length > 0 ? Math.max(...locked) : -1;
 
       setMoves(
         await readMoves(CONTEST).catch(() =>
-          last < 0 ? [] : readMoves(CONTEST, last).catch(() => []),
+          locked.length === 0 ? [] : readMoves(CONTEST, locked).catch(() => []),
         ),
       );
     })();
