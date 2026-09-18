@@ -1062,6 +1062,11 @@ td { font-variant-numeric: tabular-nums; }
   font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1.2;
 }
 .tiescore.upcoming { color: var(--dim); border-style: dashed; }
+/* Words instead of a figure, sized so the chip keeps exactly the height of the numeric ones. */
+.tiescore.notyet {
+  font-size: 10px; font-weight: 750; letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 14px 6px; line-height: 1.2; color: var(--faint);
+}
 .tiescore.playing { border-color: var(--live); }
 .tieside.leading .tiescore { border-color: var(--gold); color: var(--gold); }
 
@@ -1108,6 +1113,7 @@ td { font-variant-numeric: tabular-nums; }
   .tieclub { font-size: 13px; }
   .tieabbr { display: none; }
   .tiescore { min-width: 44px; font-size: 16px; padding: 4px 7px; }
+  .tiescore.notyet { font-size: 8.5px; padding: 8px 4px; letter-spacing: 0.03em; }
   .tiefeet { font-size: 10px; gap: 6px; padding: 0 8px; margin-top: 7px; }
   .tieopen { width: 24px; height: 24px; }
 }

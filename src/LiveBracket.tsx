@@ -59,6 +59,7 @@ function TieSide({
   /** Whether either club in this tie has taken the field yet. */
   started: boolean;
 }) {
+  const waiting = side.state === 'upcoming' && (started || side.projected === undefined);
   return (
     <span className={`tieside ${side.state} ${mirrored ? 'mirrored' : ''} ${leading ? 'leading' : ''}`}>
       <span className="tiecrest" style={{ borderColor: colorOf(side.club) }}>
@@ -77,9 +78,9 @@ function TieSide({
         * against eighteen expected reads as a scoreline and is not one: half of it has happened
         * and half of it is a guess, and putting them either side of a "vs" says otherwise.
         */}
-      <span className={`tiescore ${side.state}`}>
+      <span className={`tiescore ${side.state} ${waiting ? 'notyet' : ''}`}>
         {side.state !== 'upcoming' ? side.points
-          : started || side.projected === undefined ? '–'
+          : started || side.projected === undefined ? 'Not yet'
           : rounded(side.projected)}
       </span>
     </span>
