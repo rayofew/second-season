@@ -41,59 +41,38 @@ const clockFor = (side: Side) =>
 const rounded = (value: number) => Math.round(value * 10) / 10;
 
 /**
- * One half of a tie, as a panel.
+ * One half of a tie: crest, club, number.
  *
- * The crest sits in a frame of its own rather than floating beside the text, which is what stops
- * fourteen different logos at fourteen different aspect ratios from making every row look
- * slightly broken.
+ * The crest keeps a frame of its own, which is what stops fourteen logos at fourteen aspect
+ * ratios from making every row sit slightly differently. Everything else is as small as it can
+ * be and still be read, because seven of these have to fit on a screen at once.
  */
 function TieSide({
   side,
   mirrored,
-  sharing,
   leading,
 }: {
   side: Side;
   mirrored?: boolean;
-  sharing: boolean;
   leading: boolean;
 }) {
   return (
-    <div className={`tieside ${side.state} ${mirrored ? 'mirrored' : ''} ${leading ? 'leading' : ''}`}>
-      <div className="tietop">
-        <span className="tiecrest" style={{ borderColor: colorOf(side.club) }}>
-          <img src={crest(side.club)} alt="" width="30" height="30" loading="lazy" />
-        </span>
-        <span className="tieclub" style={{ color: colorOf(side.club) }}>{side.club}</span>
-        {/*
-          * The box holds whichever number is the live one.
-          *
-          * Before kickoff that is the expectation, because there is nothing else; after it, the
-          * scoreboard, with the expectation demoted underneath where it can be compared against
-          * what actually happened.
-          */}
-        <span className="tienums">
-          <span className={`tiescore ${side.state}`}>
-            {side.state === 'upcoming'
-              ? (side.projected === undefined ? '–' : rounded(side.projected))
-              : side.points}
-          </span>
-          {side.state !== 'upcoming' && side.projected !== undefined && (
-            <span className="tieproj">{rounded(side.projected)} proj</span>
-          )}
-          {side.state === 'upcoming' && side.projected !== undefined && (
-            <span className="tieproj">projected</span>
-          )}
-        </span>
-      </div>
-      {/* Where they play each other, this line would name the opponent twice over. */}
-      {!sharing && (
-        <div className="tieown">
-          <span>{side.against ? `${side.home ? 'vs' : 'at'} ${side.against}` : 'no fixture'}</span>
-          <span className={`tiewhen ${side.state}`}>{clockFor(side)}</span>
-        </div>
-      )}
-    </div>
+    <span className={`tieside ${side.state} ${mirrored ? 'mirrored' : ''} ${leading ? 'leading' : ''}`}>
+      <span className="tiecrest" style={{ borderColor: colorOf(side.club) }}>
+        <img src={crest(side.club)} alt="" width="22" height="22" loading="lazy" />
+      </span>
+      <span className="tieclub" style={{ color: colorOf(side.club) }}>{side.club}</span>
+      {/*
+        * The chip holds whichever number is the live one: the expectation until kickoff, because
+        * there is nothing else, and the scoreboard after. A dashed edge says which, so the word
+        * "projected" need not take a line of its own seven times over.
+        */}
+      <span className={`tiescore ${side.state}`}>
+        {side.state === 'upcoming'
+          ? (side.projected === undefined ? '–' : rounded(side.projected))
+          : side.points}
+      </span>
+    </span>
   );
 }
 
@@ -208,29 +187,35 @@ export function LiveBracket({
         return (
           <div className={`livetie ${tie.settled ? 'done' : ''}`} key={`${tie.away}@${tie.home}`}>
             <div className="tierow">
-              <TieSide side={away} sharing={tie.headToHead} leading={tie.leading === away.club} />
-              <span className="tiemiddle">
-                <span className="tievs">vs</span>
-                {tie.headToHead && <span className={`tiewhen ${home.state}`}>{clockFor(home)}</span>}
-              </span>
-              <TieSide side={home} mirrored sharing={tie.headToHead} leading={tie.leading === home.club} />
-            </div>
-
-            <div className={`tiestate ${tie.settled ? 'done' : tie.leading ? 'leading' : 'waiting'}`}>
-              <span>
-                {tie.state}
-                {why && <span className="tiewhy">{why}</span>}
-              </span>
+              <TieSide side={away} leading={tie.leading === away.club} />
+              <span className="tievs">vs</span>
+              <TieSide side={home} mirrored leading={tie.leading === home.club} />
               {heldBy && (
                 <button
                   className="tieopen"
                   aria-expanded={open === tie.home}
+                  aria-label={`Who has picked from ${tie.away} or ${tie.home}`}
                   onClick={() => setOpen(open === tie.home ? null : tie.home)}
                 >
-                  {open === tie.home ? 'Hide who has picked' : 'Who has picked'}
-                  <span className="chev">{open === tie.home ? '▴' : '▾'}</span>
+                  {open === tie.home ? '▴' : '▾'}
                 </button>
               )}
+            </div>
+
+            {/* Where each is playing and when — different fixtures, so two separate answers. */}
+            <div className="tiefeet">
+              <span className="tiefoot">
+                {tie.headToHead ? '' : `${away.home ? 'vs' : 'at'} ${away.against}`}
+                <span className={`tiewhen ${away.state}`}>{clockFor(away)}</span>
+              </span>
+              <span className={`tiestate ${tie.settled ? 'done' : tie.leading ? 'leading' : 'waiting'}`}>
+                {tie.state}
+                {why && <span className="tiewhy">{why}</span>}
+              </span>
+              <span className="tiefoot right">
+                <span className={`tiewhen ${home.state}`}>{clockFor(home)}</span>
+                {tie.headToHead ? '' : `${home.home ? 'vs' : 'at'} ${home.against}`}
+              </span>
             </div>
 
             {heldBy && open === tie.home && (
