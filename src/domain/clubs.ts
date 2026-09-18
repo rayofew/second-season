@@ -31,3 +31,23 @@ export const headshot = (playerId: string, position: string): string =>
 
 export const crest = (club: string): string =>
   `https://sleepercdn.com/images/team_logos/nfl/${club.toLowerCase()}.png`;
+
+/**
+ * What people actually call each club.
+ *
+ * Abbreviations are right where space is tight and wrong where it is not: 'Chargers' is what
+ * anybody watching says, and 'LAC' is what a table says when it cannot fit the word.
+ */
+export const CLUB_NAME: Record<string, string> = {
+  ARI: 'Cardinals', ATL: 'Falcons', BAL: 'Ravens', BUF: 'Bills',
+  CAR: 'Panthers', CHI: 'Bears', CIN: 'Bengals', CLE: 'Browns',
+  DAL: 'Cowboys', DEN: 'Broncos', DET: 'Lions', GB: 'Packers',
+  HOU: 'Texans', IND: 'Colts', JAX: 'Jaguars', KC: 'Chiefs',
+  LAC: 'Chargers', LAR: 'Rams', LV: 'Raiders', MIA: 'Dolphins',
+  MIN: 'Vikings', NE: 'Patriots', NO: 'Saints', NYG: 'Giants',
+  NYJ: 'Jets', PHI: 'Eagles', PIT: 'Steelers', SEA: 'Seahawks',
+  SF: '49ers', TB: 'Buccaneers', TEN: 'Titans', WSH: 'Commanders',
+};
+
+/** The club's name, falling back to its abbreviation for anything the list does not know. */
+export const nameOf = (club: string): string => CLUB_NAME[club] ?? club;

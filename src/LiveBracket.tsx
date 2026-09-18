@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { liveTie, whyLeading } from './domain/bracketlive.ts';
 import type { Fixture, Side } from './domain/bracketlive.ts';
 import type { Field, Matchup } from './domain/advance.ts';
-import { colorOf, crest } from './domain/clubs.ts';
+import { colorOf, crest, nameOf } from './domain/clubs.ts';
 import { points } from './domain/scoring.ts';
 import { Face } from './PlayerRow.tsx';
 
@@ -62,9 +62,12 @@ function TieSide({
   return (
     <span className={`tieside ${side.state} ${mirrored ? 'mirrored' : ''} ${leading ? 'leading' : ''}`}>
       <span className="tiecrest" style={{ borderColor: colorOf(side.club) }}>
-        <img src={crest(side.club)} alt="" width="22" height="22" loading="lazy" />
+        <img src={crest(side.club)} alt="" width="34" height="34" loading="lazy" />
       </span>
-      <span className="tieclub" style={{ color: colorOf(side.club) }}>{side.club}</span>
+      <span className="tienames">
+        <span className="tieclub" style={{ color: colorOf(side.club) }}>{nameOf(side.club)}</span>
+        <span className="tieabbr">{side.club}</span>
+      </span>
       {/*
         * The chip holds the scoreboard once his game is on, and the market's expected score before
         * anybody in the tie has kicked off — where it is the only thing there is, and two
