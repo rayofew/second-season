@@ -1054,21 +1054,37 @@ td { font-variant-numeric: tabular-nums; }
   letter-spacing: 0.1em; text-transform: uppercase;
 }
 
-/* The chip carries the live number. A dashed edge means it has not happened yet. */
+/**
+ * The chip, in the three states a club can be in.
+ *
+ * Before kickoff there is no box at all, because there is nothing to put in one: the figure is a
+ * forecast and it floats on the card. The moment he takes the field the box appears in the live
+ * colour, which is the only thing on this screen that is happening right now and should be the
+ * thing your eye goes to. When it is over the colour comes off and the box goes solid — settled,
+ * still there, no longer shouting.
+ *
+ * The border is two pixels in every state, transparent when there is no box, so nothing shifts by
+ * a pixel as a game starts and finishes.
+ */
 .tiescore {
   flex: none; min-width: 62px; padding: 8px 12px; border-radius: 10px; text-align: center;
-  background: var(--raised); border: 1px solid var(--line);
+  background: transparent; border: 2px solid transparent;
   font-size: 20px; font-weight: 800; color: var(--ink);
   font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1.2;
 }
-.tiescore.upcoming { color: var(--dim); border-style: dashed; }
+.tiescore.upcoming { color: var(--dim); }
 /* Words instead of a figure, sized so the chip keeps exactly the height of the numeric ones. */
 .tiescore.notyet {
   font-size: 10px; font-weight: 750; letter-spacing: 0.05em; text-transform: uppercase;
   padding: 14px 6px; line-height: 1.2; color: var(--faint);
 }
-.tiescore.playing { border-color: var(--live); }
-.tieside.leading .tiescore { border-color: var(--gold); color: var(--gold); }
+.tiescore.playing {
+  background: var(--good-bg); border-color: var(--live); color: var(--live);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--live) 18%, transparent);
+}
+.tiescore.final { background: var(--raised); border-color: var(--line-strong); }
+/* Ahead in the tie, which is a different question from whose game is on. */
+.tieside.leading .tiescore.final { border-color: var(--gold); color: var(--gold); }
 
 .tievs {
   flex: none; font-size: 9.5px; font-weight: 800; color: var(--faint);
