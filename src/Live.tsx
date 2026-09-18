@@ -21,7 +21,6 @@ import {
 import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
 import { LiveBracket } from './LiveBracket.tsx';
 import type { Held } from './LiveBracket.tsx';
-import { Games } from './Games.tsx';
 import { clubPoints } from './domain/clubpoints.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import { useHeartbeat } from './useHeartbeat.ts';
@@ -181,17 +180,6 @@ export function Live({ uid }: { uid: string }) {
     passing.set(player.team, Math.max(passing.get(player.team) ?? 0, threw));
   }
 
-  const football = (
-    <Games
-      alive={teams?.alive ?? []}
-      byes={teams?.byes ?? []}
-      games={games}
-      pool={[...pool.values()]}
-      actual={actual}
-      expected={expected}
-      roundName={round?.name ?? 'This round'}
-    />
-  );
 
   // Needed by the leaderboard and by the bracket alike, so it is worked out before either.
   const inputs: BoardInput[] = (loaded?.entries ?? []).map((entry) => {
@@ -271,6 +259,7 @@ export function Live({ uid }: { uid: string }) {
       field={contest.field}
       passingYardsFor={(club) => passing.get(club) ?? 0}
       roundName={round?.name ?? 'This round'}
+      resting={teams?.byes ?? []}
       heldBy={heldBy || undefined}
     />
   );
@@ -280,7 +269,6 @@ export function Live({ uid }: { uid: string }) {
     return (
       <>
         {bracket}
-        {football}
         <div className="card gate">
           <h2>{locked === false ? "Everybody's team is sealed" : 'Working out where everybody is…'}</h2>
           {locked === false && (
@@ -300,7 +288,6 @@ export function Live({ uid }: { uid: string }) {
   return (
     <>
       {bracket}
-      {football}
 
       <div className="card">
         <div className="confhead">

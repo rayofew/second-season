@@ -176,6 +176,7 @@ export function LiveBracket({
   field,
   passingYardsFor,
   roundName,
+  resting,
   heldBy,
 }: {
   matchups: Matchup[];
@@ -183,6 +184,8 @@ export function LiveBracket({
   field: Field;
   passingYardsFor: (club: string) => number;
   roundName: string;
+  /** Clubs with a first-round bye, which appear in no tie and would otherwise go unmentioned. */
+  resting?: string[];
   /** Who everybody has picked, by club. Absent before the lock, when nobody may know. */
   heldBy?: Map<string, Held[]>;
 }) {
@@ -239,6 +242,20 @@ export function LiveBracket({
           </div>
         );
       })}
+
+      {resting && resting.length > 0 && (
+        <div className="restingrow">
+          <span className="restingclubs">
+            {resting.map((club) => (
+              <span className="restingclub" key={club}>
+                <img className="clubcrest" src={crest(club)} alt="" width="20" height="20" loading="lazy" />
+                <span style={{ color: colorOf(club) }}>{club}</span>
+              </span>
+            ))}
+          </span>
+          <span className="restingwhy">resting — scores nothing, but the round still counts towards holding</span>
+        </div>
+      )}
 
       <div className="pending">
         Provisional until every club has finished, and worked out by the same code that decides the
