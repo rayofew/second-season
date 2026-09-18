@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, deleteField, doc, getDoc, getDocs, limit, orderBy, query, setDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, deleteField, doc, getDoc, getDocs, increment, limit, orderBy, query, setDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
 import type { HeldPlayer } from '../domain/multiplier.ts';
 import type { StatLine } from '../domain/scoring.ts';
 import type { ContestSettings } from '../domain/rules.ts';
@@ -127,6 +127,10 @@ export interface Manager {
   logo: string;
   /** Whether the commissioner has seen their money. Recorded here, settled between people. */
   paid: boolean;
+  /** When this manager last had the app open. Undefined means they have never opened it. */
+  lastSeen?: Date;
+  /** How many times they have opened it, ever. */
+  visits: number;
 }
 
 /** Who is in the league. Readable by any member — but never their phone number, which stays on the application. */
@@ -141,8 +145,29 @@ export async function readEntries(contestId: string): Promise<Manager[]> {
       teamName: (data.teamName as string) || name,
       logo: (data.logo as string) ?? '',
       paid: Boolean(data.paid),
+      lastSeen: (data.lastSeen as { toDate?: () => Date } | undefined)?.toDate?.(),
+      visits: Number(data.visits) || 0,
     };
   });
+}
+
+/**
+ * Note that somebody has the app open, once per session.
+ *
+ * Firebase Auth knows when each account last signed in, but only the Admin SDK can read that for
+ * anybody other than the person asking — and there is no server here. So the league keeps its own
+ * note: the manager's own browser stamps his own entry, which the rules allow him and nobody else
+ * to do.
+ *
+ * He could therefore lie about it, and it does not matter. The question it answers is "has Eric
+ * ever actually opened the thing I sent him", and nobody fakes having not used an app.
+ */
+export async function noteVisit(contestId: string, uid: string): Promise<void> {
+  await setDoc(
+    doc(db, 'contests', contestId, 'entries', uid),
+    { lastSeen: serverTimestamp(), visits: increment(1) },
+    { merge: true },
+  );
 }
 
 /**

@@ -297,19 +297,19 @@ export function Live({ uid }: { uid: string }) {
           </span>
         </div>
 
-        {/* One list, one switch: the same ten people, two different questions. */}
+        {/* One list, one switch: the same people, two different questions. */}
         <div className="races">
           <button className={race === 'contest' ? 'on' : ''} onClick={() => setRace('contest')}>
-            Contest
+            Overall
           </button>
           <button className={race === 'week' ? 'on' : ''} onClick={() => setRace('week')}>
-            This week
+            Weekly prize
           </button>
         </div>
         <div className="pending">
           {race === 'contest'
-            ? 'Credited points, multipliers and all.'
-            : 'Raw points this round, multipliers ignored — so it stays winnable by anybody.'}
+            ? 'Every round added up, multipliers and all — the contest.'
+            : 'This round alone, raw points with multipliers ignored — so it stays winnable by anybody.'}
         </div>
 
         {rows.map((row) => (

@@ -8,6 +8,7 @@ import { Pool } from './Pool.tsx';
 import { RosterBuilder } from './RosterBuilder.tsx';
 import { Corrections } from './Corrections.tsx';
 import { Contacts } from './Contacts.tsx';
+import { Log } from './Log.tsx';
 
 /**
  * The commissioner's tab: who wants in, and who has not picked yet.
@@ -152,6 +153,8 @@ export function Commissioner({ uid }: { uid: string }) {
         filled={filled}
         round={round?.name ?? 'This round'}
       />
+
+      <Log managers={managers} standIns={standIns} uid={uid} />
 
       <Pool contest={contest} managers={managers} commissioner onChange={() => void load()} />
 
