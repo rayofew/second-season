@@ -1032,7 +1032,7 @@ td { font-variant-numeric: tabular-nums; }
 }
 .livetie:hover .tierow { border-color: var(--line-strong); }
 
-.tieside { display: flex; align-items: center; gap: 13px; min-width: 0; justify-content: flex-end; }
+.tieside { display: flex; align-items: center; gap: 13px; min-width: 0; }
 .tieside.mirrored { flex-direction: row-reverse; }
 
 /* Framed, so fourteen logos at fourteen aspect ratios all sit the same. */
@@ -1043,7 +1043,7 @@ td { font-variant-numeric: tabular-nums; }
 }
 .tiecrest img { display: block; width: 32px; height: 32px; object-fit: contain; }
 
-.tienames { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; min-width: 0; }
+.tienames { display: flex; flex: 1 1 auto; flex-direction: column; align-items: flex-end; gap: 1px; min-width: 0; }
 .tieside.mirrored .tienames { align-items: flex-start; }
 .tieclub {
   font-size: 16px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2;
