@@ -438,24 +438,27 @@ td { font-variant-numeric: tabular-nums; }
  * the only thing in here that would break if slots stopped being equal height.
  */
 .treescroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 4px 0 8px; }
-.tree { display: flex; align-items: stretch; min-width: 720px; padding: 10px 14px 4px; }
+.tree { display: flex; align-items: stretch; min-width: 760px; padding: 14px 16px 6px; }
 
 .treeround { flex: 1 1 0; display: flex; flex-direction: column; min-width: 0; }
 .treeround:not(:last-child) { padding-right: 15px; }
 .treeround:not(:first-child) { padding-left: 15px; }
 
 .treehead {
-  flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
-  padding: 0 2px 12px; min-height: 58px;
+  flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  padding: 0 2px 14px; min-height: 56px;
 }
-.treehead strong { font-size: 13.5px; font-weight: 750; letter-spacing: -0.01em; }
-.treedate { font-size: 10.5px; color: var(--faint); }
+.treetitle { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.treehead strong { font-size: 13px; font-weight: 800; letter-spacing: 0.01em; }
+.treedate { font-size: 10px; color: var(--faint); }
 .treeround.current .treehead strong { color: var(--gold); }
 
 .treeslots { flex: 1 1 auto; display: flex; flex-direction: column; }
+/* The padding is what stops one tie running into the next: the slots tile the column with no gaps
+   by design, so the air between the boxes has to come from inside them. */
 .treeslot {
   flex: 1 1 0; position: relative; display: flex; flex-direction: column; justify-content: center;
-  min-height: 62px;
+  min-height: 74px; padding: 7px 0;
 }
 
 /* Out of every slot, into every slot, and the vertical that joins a pair. */
@@ -471,32 +474,44 @@ td { font-variant-numeric: tabular-nums; }
   background: var(--line);
 }
 
-/* The box itself: two clubs, or one resting, or a place nobody has reached. */
+/**
+ * The box itself: two clubs, or one resting, or a place nobody has reached.
+ *
+ * A card rather than a shaded block. Eight shaded blocks stacked in a column in the same pale grey
+ * ran together into one long smear, and you could not see where one tie ended and the next began —
+ * which in a bracket is the only thing you are looking for.
+ */
 .box {
-  background: var(--sunk); border: 1px solid var(--line); border-radius: 10px;
-  overflow: hidden;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 9px;
+  overflow: hidden; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.07);
 }
 .box .side {
-  display: flex; align-items: center; gap: 8px; padding: 7px 9px; min-width: 0;
+  display: flex; align-items: center; gap: 8px; padding: 6px 9px; min-width: 0; flex: none;
 }
+/* The hairline between the two clubs, which is the line that means "against". */
 .box .side + .side { border-top: 1px solid var(--line); }
-.box .side .club { font-size: 13px; }
-.box .side .seed { width: 19px; height: 19px; font-size: 10px; border-radius: 5px; }
-.box .clubcrest { width: 22px; height: 22px; }
+.box .side .club { font-size: 12.5px; font-weight: 750; }
+.box .side .seed { width: 18px; height: 18px; font-size: 9.5px; border-radius: 5px; }
+.box .clubcrest { width: 20px; height: 20px; }
 /* Decided: the club that went through is the one you read, the other is struck out. */
 .box.settled .side.won { background: var(--good-bg); }
-.box.resting { background: var(--panel); border-style: dashed; }
+.box.settled .side.out { opacity: 0.72; }
+
+/* Nobody opposite, and the dashes say the box is deliberately half empty rather than unfinished. */
+.box.resting { border-style: dashed; box-shadow: none; }
 .restinghint {
-  display: block; padding: 0 9px 7px; font-size: 10px; color: var(--faint);
-  letter-spacing: 0.04em;
+  display: block; padding: 0 9px 6px 35px; font-size: 9px; color: var(--faint);
+  letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
 }
+
+/* A place in the draw rather than a card. Nothing has reached it, so it claims as little as it can. */
 .box.empty {
-  border-style: dashed; background: transparent;
-  display: flex; align-items: center; justify-content: center; min-height: 44px;
+  border: 1px dashed var(--line); background: transparent; box-shadow: none;
+  display: flex; align-items: center; justify-content: center; min-height: 36px;
 }
 .waiting {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--faint);
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--faint); opacity: 0.75;
 }
 
 .treefoot { padding: 0 16px 16px; margin: 0; }

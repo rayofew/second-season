@@ -89,9 +89,11 @@ export function BracketLadder({ contest, rounds }: { contest: Contest; rounds: (
             return (
               <div className={`treeround ${current ? 'current' : ''}`} key={column.round}>
                 <div className="treehead">
-                  <strong>{config?.name}</strong>
-                  <span className={`state ${current ? 'now' : decided ? 'done' : ''}`}>
-                    {decided ? 'decided' : current ? (lock && lock > new Date() ? 'open' : 'in play') : 'to come'}
+                  <span className="treetitle">
+                    <strong>{config?.name}</strong>
+                    <span className={`state ${current ? 'now' : decided ? 'done' : ''}`}>
+                      {decided ? 'decided' : current ? (lock && lock > new Date() ? 'open' : 'in play') : 'to come'}
+                    </span>
                   </span>
                   {lock && (
                     <span className="treedate">
