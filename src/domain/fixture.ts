@@ -16,5 +16,5 @@ export function fixtureLabel(game: ClubGame | undefined): string {
   const time = game.kickoff
     .toLocaleString(undefined, { hour: 'numeric', minute: '2-digit' })
     .replace(/s?[AP]M/i, '');
-  return `${day} ${time} ${game.home ? 'v' : 'at'} ${game.against}`;
+  return `${day} ${time} ${game.home ? 'vs' : 'at'} ${game.against}`;
 }

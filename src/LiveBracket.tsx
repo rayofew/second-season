@@ -89,7 +89,7 @@ function TieSide({
       {/* Where they play each other, this line would name the opponent twice over. */}
       {!sharing && (
         <div className="tieown">
-          <span>{side.against ? `${side.home ? 'v' : 'at'} ${side.against}` : 'no fixture'}</span>
+          <span>{side.against ? `${side.home ? 'vs' : 'at'} ${side.against}` : 'no fixture'}</span>
           <span className={`tiewhen ${side.state}`}>{clockFor(side)}</span>
         </div>
       )}
@@ -154,9 +154,15 @@ function Squad({ club, held }: { club: string; held: Held[] }) {
               ))}
             </span>
           </span>
-          <span className={`livepts ${man.started ? 'final' : 'upcoming'}`}>
-            <b>{points(man.counting)}</b>
-            <span className="liveraw">{man.started ? `${points(man.projected)} proj` : 'proj'}</span>
+          <span className="heldnums">
+            <span className={`heldnum ${man.started ? 'live' : ''}`}>
+              <b>{man.started ? points(man.counting) : '–'}</b>
+              <span className="numlabel">pts</span>
+            </span>
+            <span className="heldnum">
+              <b>{points(man.projected)}</b>
+              <span className="numlabel">proj</span>
+            </span>
           </span>
         </div>
       ))}
@@ -201,7 +207,7 @@ export function LiveBracket({
             <div className="tierow">
               <TieSide side={away} sharing={tie.headToHead} leading={tie.leading === away.club} />
               <span className="tiemiddle">
-                <span className="tievs">v</span>
+                <span className="tievs">vs</span>
                 {tie.headToHead && <span className={`tiewhen ${home.state}`}>{clockFor(home)}</span>}
               </span>
               <TieSide side={home} mirrored sharing={tie.headToHead} leading={tie.leading === home.club} />

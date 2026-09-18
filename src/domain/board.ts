@@ -30,8 +30,15 @@ export interface BoardRow extends BoardInput {
   banked: number;
   /** Raw points this round, multipliers ignored. The weekly prize. */
   raw: number;
-  /** What this row is ranked on, which depends on the race. */
+  /** What this row is ranked on, which depends on the race. Counts projections for the unplayed. */
   total: number;
+  /**
+   * Points that have actually been scored — nothing expected, nothing guessed.
+   *
+   * On a Sunday morning this is nought and the total is a hundred and forty, and a row showing
+   * only the second is telling somebody he has a hundred and forty points. He has none yet.
+   */
+  scored: number;
   /** How much of the total is real rather than expected, from 0 to 1. */
   settled: number;
   done: number;
@@ -54,7 +61,14 @@ export function board(entries: readonly BoardInput[], race: Race): BoardRow[] {
       (player) => player.credited,
     );
     const raw = sum(players, (player) => player.counting);
+
+    // A man whose game is under way has real points, finished or not. Only the ones yet to kick
+    // off are being guessed at, so only they are left out of what has actually been scored.
+    const started = players.filter((player) => player.state !== 'upcoming');
     const total = race === 'week' ? raw : entry.before + running;
+    const scored = race === 'week'
+      ? sum(started, (player) => player.counting)
+      : entry.before + sum(started, (player) => player.credited);
 
     return {
       ...entry,
@@ -62,6 +76,7 @@ export function board(entries: readonly BoardInput[], race: Race): BoardRow[] {
       banked,
       raw,
       total,
+      scored,
       // Against the round's own running total, so the bar means the same thing on every row
       // whatever anybody is carrying in from previous weeks.
       settled: running === 0 ? 0 : Math.min(1, banked / running),

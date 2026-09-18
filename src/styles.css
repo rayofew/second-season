@@ -1154,12 +1154,24 @@ td { font-variant-numeric: tabular-nums; }
 }
 .settledbar span { display: block; height: 100%; background: var(--live); }
 .standingstate { font-size: 11.5px; color: var(--faint); }
-.standingtotal {
-  flex: none; text-align: right; display: flex; flex-direction: column; gap: 1px;
-  font-variant-numeric: tabular-nums;
+.standingnums { flex: none; display: flex; align-items: flex-start; gap: 14px; }
+.standingnum {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 0;
+  min-width: 58px; font-variant-numeric: tabular-nums;
 }
-.standingtotal b { font-size: 17px; font-weight: 750; letter-spacing: -0.01em; }
-.behind { font-size: 11.5px; color: var(--faint); }
+.standingnum b { font-size: 17px; font-weight: 750; letter-spacing: -0.01em; color: var(--dim); }
+/* What has actually happened reads as the fact; the running total reads as the forecast. */
+.standingnum.scored b { color: var(--ink); }
+.numlabel {
+  font-size: 8.5px; font-weight: 700; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--faint);
+}
+.behind { font-size: 11px; color: var(--faint); margin-top: 1px; }
+@media (max-width: 430px) {
+  .standingnums { gap: 10px; }
+  .standingnum { min-width: 46px; }
+  .standingnum b { font-size: 15px; }
+}
 .standingteam { padding: 4px 4px 10px; background: var(--sunk); }
 
 /* ---- The week's football ------------------------------------------------ */
@@ -1253,3 +1265,14 @@ td { font-variant-numeric: tabular-nums; }
 }
 .owner.you { border-color: var(--gold); color: var(--ink); font-weight: 650; }
 .owner .mult { min-width: 0; height: 15px; font-size: 9px; padding: 0 4px; }
+
+/* Points and projection as two columns rather than one stacked on the other. */
+.heldnums { flex: none; display: flex; align-items: flex-start; gap: 12px; }
+.heldnum {
+  display: flex; flex-direction: column; align-items: flex-end;
+  min-width: 42px; font-variant-numeric: tabular-nums;
+}
+.heldnum b { font-size: 14px; font-weight: 700; color: var(--faint); letter-spacing: -0.01em; }
+/* Only a man whose game has started has a real figure; the rest is expectation. */
+.heldnum.live b { color: var(--ink); }
+.heldnums .numlabel { font-size: 8px; }

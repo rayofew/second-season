@@ -115,7 +115,7 @@ export function Games({
               <ClubSide club={away} inBracket={alive.includes(fixture.away)} />
               <span className="gamemiddle">
                 <span className="gamescore">
-                  {started ? `${fixture.awayScore} – ${fixture.homeScore}` : 'at'}
+                  {started ? `${fixture.awayScore} – ${fixture.homeScore}` : 'vs'}
                 </span>
                 <span className={`gamewhen ${fixture.state}`}>
                   {fixture.state === 'playing' ? fixture.clock
@@ -208,9 +208,15 @@ function Line({ player }: { player: PlayerPoints }) {
         </span>
         {said && <span className="rowstats">{said}</span>}
       </span>
-      <span className={`livepts ${player.state}`}>
-        <b>{player.state === 'upcoming' ? '–' : points(player.points)}</b>
-        <span className="liveraw">{points(player.projected)} proj</span>
+      <span className="heldnums">
+        <span className={`heldnum ${player.state !== 'upcoming' ? 'live' : ''}`}>
+          <b>{player.state === 'upcoming' ? '–' : points(player.points)}</b>
+          <span className="numlabel">pts</span>
+        </span>
+        <span className="heldnum">
+          <b>{points(player.projected)}</b>
+          <span className="numlabel">proj</span>
+        </span>
       </span>
     </div>
   );

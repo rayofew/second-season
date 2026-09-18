@@ -77,6 +77,38 @@ describe('the live leaderboard', () => {
     assert.equal(rows[0]?.settled, 0.5);
   });
 
+  it('counts nothing as scored before anybody has kicked off', () => {
+    // A row reading 140 on a Sunday morning is telling somebody he has 140 points. He has none.
+    const rows = board([entry('hopeful', 0, [man('QB', 0, 1, 'upcoming', 24)])], 'contest');
+    assert.equal(rows[0]?.total, 24, 'expected');
+    assert.equal(rows[0]?.scored, 0, 'and actually scored');
+  });
+
+  it('counts a man whose game is under way, finished or not', () => {
+    const rows = board([entry('playing', 0, [
+      man('QB', 18, 2, 'final'),
+      man('RB1', 7, 1, 'playing'),
+      man('RB2', 0, 1, 'upcoming', 12),
+    ])], 'contest');
+    assert.equal(rows[0]?.scored, 36 + 7, 'the finished man and the one on the field');
+    assert.equal(rows[0]?.total, 36 + 7 + 12, 'and the one still to come, at his projection');
+  });
+
+  it('carries previous rounds into what has been scored, since they are real', () => {
+    const rows = board([entry('carried', 300, [man('QB', 0, 1, 'upcoming', 20)])], 'contest');
+    assert.equal(rows[0]?.scored, 300);
+    assert.equal(rows[0]?.total, 320);
+  });
+
+  it('scores the week on raw points from games under way', () => {
+    const rows = board([entry('week', 999, [
+      man('QB', 20, 4, 'final'),
+      man('RB1', 0, 1, 'upcoming', 9),
+    ])], 'week');
+    assert.equal(rows[0]?.scored, 20, 'raw, and nothing carried in');
+    assert.equal(rows[0]?.total, 29);
+  });
+
   it('shares a rank between equal totals and skips the next', () => {
     const rows = board([
       entry('a', 0, [man('QB', 20, 1, 'final')]),
