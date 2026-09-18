@@ -360,13 +360,12 @@ function Standing({
           </span>
         </span>
         <span className="standingnums">
+          <span className="standingnum forecast">
+            <b>{points(row.total)}</b>
+            <span className="numlabel">proj</span>
+          </span>
           <span className="standingnum scored">
             <b>{points(row.scored)}</b>
-            <span className="numlabel">scored</span>
-          </span>
-          <span className="standingnum">
-            <b>{points(row.total)}</b>
-            <span className="numlabel">projected</span>
             {row.behind > 0 && <span className="behind">−{points(row.behind)}</span>}
           </span>
         </span>
