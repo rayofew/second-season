@@ -423,6 +423,35 @@ td { font-variant-numeric: tabular-nums; }
 .side.out .clubcrest { filter: grayscale(1); opacity: 0.45; }
 .opened { background: var(--raised); }
 
+/**
+ * The two doors.
+ *
+ * Everything used to be on the first screen at once — is it your first time, a Google button, and
+ * a form that signs you in — and somebody who had never been here had to work out which of the
+ * three was theirs. Two cards, one question each, and the rest of it only after they have answered.
+ */
+.doors { display: grid; gap: 12px; padding: 4px 4px 2px; }
+@media (min-width: 620px) { .doors { grid-template-columns: 1fr 1fr; } }
+
+.door {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  padding: 18px 18px 16px; text-align: left; color: inherit;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+}
+.door:hover { border-color: var(--line-strong); background: var(--raised); }
+.door h2 { margin: 0; font-size: 17px; font-weight: 750; letter-spacing: -0.01em; }
+.door p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--dim); flex: 1 1 auto; }
+.doorgo {
+  margin-top: 8px; padding: 10px 14px; border-radius: 10px; width: 100%; text-align: center;
+  font-size: 13.5px; font-weight: 650;
+  background: var(--sunk); border: 1px solid var(--line); color: var(--ink);
+}
+/* The one most people arriving at this screen actually want. */
+.door.new { border-color: var(--warn-line); }
+.door.new .doorgo { background: var(--gold); border-color: var(--gold); color: var(--on-accent); }
+
+.gatehead { margin: 4px 0 4px; font-size: 19px; font-weight: 750; }
+
 /* ---- The standings, in boxes of five ---------------------------------- */
 
 /* Two contests run at once on this screen and they are scored differently. Without a heading over

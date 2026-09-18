@@ -73,11 +73,18 @@ function GoogleMark() {
   );
 }
 
-/** Which of the three things somebody is here to do. */
-type Mode = 'in' | 'new' | 'lost';
+/**
+ * Which of the four things somebody is here to do.
+ *
+ * 'choose' is the one that was missing. Everything used to be on one screen at once — a heading
+ * asking whether it was your first time, a Google button, and a form that signed you in — and a
+ * person who had never been here had to work out which of the three was meant for them. Two doors
+ * first, and then only the one they picked.
+ */
+type Mode = 'choose' | 'in' | 'new' | 'lost';
 
 export function SignIn() {
-  const [mode, setMode] = useState<Mode>('in');
+  const [mode, setMode] = useState<Mode>('choose');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -131,31 +138,59 @@ export function SignIn() {
     );
   }
 
+  // Two doors, and nothing else to read.
+  if (mode === 'choose') {
+    return (
+      <div className="card gate welcome">
+        <img className="banner" src="/banner.jpg" alt="Eastside Second-Season Playoff Challenge" />
+        <div className="doors">
+          <button className="door new" onClick={() => change('new')}>
+            <h2>Create an account</h2>
+            <p>
+              First time here. It takes a minute, and then the commissioner lets you into the
+              league.
+            </p>
+            <span className="doorgo">Create an account</span>
+          </button>
+
+          <button className="door" onClick={() => change('in')}>
+            <h2>Sign in</h2>
+            <p>You have been here before and already have an account.</p>
+            <span className="doorgo">Sign in</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="card gate welcome">
       <img className="banner" src="/banner.jpg" alt="Eastside Second-Season Playoff Challenge" />
+
+      <h2 className="gatehead">
+        {mode === 'new' ? 'Create an account' : mode === 'lost' ? 'Forgotten password' : 'Sign in'}
+      </h2>
       {mode === 'lost' && (
         <p>Your email address, and we will send you a link to set a new password.</p>
       )}
-
-      {mode === 'in' && (
-        <div className="newhere">
-          <h2>First time here?</h2>
-          <p>Create an account for access.</p>
-          <button className="submit wide join" disabled={busy} onClick={() => change('new')}>
-            Create an account
-          </button>
-        </div>
+      {mode === 'new' && (
+        <p>Signing up does not put you in the league — the commissioner still has to let you in.</p>
       )}
 
-      <div className="ways">
-        <button className="gbtn" disabled={busy} onClick={() => void attempt(() => signInWithPopup(auth, google))}>
-          <GoogleMark />
-          <span>Sign in with Google</span>
-        </button>
-      </div>
+      {mode !== 'lost' && (
+        <>
+          <div className="ways">
+            {/* The same call either way: Google makes the account the first time and knows you
+                after that. Only the word changes, because only the intention has. */}
+            <button className="gbtn" disabled={busy} onClick={() => void attempt(() => signInWithPopup(auth, google))}>
+              <GoogleMark />
+              <span>{mode === 'new' ? 'Sign up with Google' : 'Sign in with Google'}</span>
+            </button>
+          </div>
 
-      <div className="or"><span>or with an email address</span></div>
+          <div className="or"><span>or with an email address</span></div>
+        </>
+      )}
 
       <form
         className="signin"
@@ -195,15 +230,10 @@ export function SignIn() {
         </button>
       </form>
 
-      {mode === 'in' ? (
-        <div className="signinalts">
-          <button className="linky" onClick={() => change('lost')}>Forgot password?</button>
-        </div>
-      ) : (
-        <div className="signinalts">
-          <button className="linky" onClick={() => change('in')}>Back to signing in</button>
-        </div>
-      )}
+      <div className="signinalts">
+        {mode === 'in' && <button className="linky" onClick={() => change('lost')}>Forgot password?</button>}
+        <button className="linky" onClick={() => change('choose')}>Back</button>
+      </div>
     </div>
   );
 }
