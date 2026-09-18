@@ -479,6 +479,20 @@ td { font-variant-numeric: tabular-nums; }
 .placenums b { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
 .placing.leader .placenums b { color: var(--gold); }
 
+/* The one heading on the Live tab that is a title rather than a label. */
+.scoreshead {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 18px 15px 14px; border-bottom: 1px solid var(--line); background: var(--sunk);
+}
+.scoreshead h2 {
+  margin: 0; font-size: 28px; font-weight: 850; letter-spacing: 0.02em;
+  text-transform: uppercase; line-height: 1.1;
+}
+.scoreshead span {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--faint);
+}
+
 /* ---- Who has been in --------------------------------------------------- */
 
 .seenrow {
