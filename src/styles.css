@@ -438,11 +438,28 @@ td { font-variant-numeric: tabular-nums; }
  * the only thing in here that would break if slots stopped being equal height.
  */
 .treescroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 4px 0 8px; }
-.tree { display: flex; align-items: stretch; min-width: 760px; padding: 14px 16px 6px; }
+.tree { display: flex; align-items: stretch; min-width: 780px; padding: 14px 16px 6px; }
 
 .treeround { flex: 1 1 0; display: flex; flex-direction: column; min-width: 0; }
-.treeround:not(:last-child) { padding-right: 15px; }
-.treeround:not(:first-child) { padding-left: 15px; }
+.treeround:not(:last-child) { padding-right: 16px; }
+/* Adjacent-sibling rather than :not(:first-child), because the conference rail is the first child
+   and the opening round must not be given a line coming in from nothing. */
+.treeround + .treeround { padding-left: 16px; }
+/* Where the football is. Faint enough to be a tint rather than a panel. */
+.treeround.current > .treeslots {
+  background: linear-gradient(var(--sunk), transparent 70%);
+  border-radius: 12px;
+}
+
+/* The conference rail: the only thing on the screen that says which half is which. */
+.treerail { flex: 0 0 22px; display: flex; flex-direction: column; }
+.treerail .treeslots { flex: 1 1 auto; display: flex; flex-direction: column; }
+.conf {
+  flex: 1 1 0; display: flex; align-items: center; justify-content: center;
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  font-size: 9.5px; font-weight: 800; letter-spacing: 0.18em; color: var(--faint);
+}
+.conf + .conf { border-top: 1px dashed var(--line); }
 
 .treehead {
   flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
@@ -461,17 +478,34 @@ td { font-variant-numeric: tabular-nums; }
   min-height: 74px; padding: 7px 0;
 }
 
-/* Out of every slot, into every slot, and the vertical that joins a pair. */
-.treeround:not(:last-child) > .treeslots > .treeslot::after,
-.treeround:not(:first-child) > .treeslots > .treeslot::before {
-  content: ''; position: absolute; top: 50%; margin-top: -1px; height: 2px; width: 15px;
-  background: var(--line);
+/**
+ * The elbows.
+ *
+ * Each slot draws its own half of the bracket it belongs to: the upper one a line running right
+ * from its middle and turning down, the lower one a line running right and turning up. They meet
+ * on the vertical at the exact point where the next round's slot sits, because a slot in one round
+ * is precisely two slots tall in the round before it. Rounded where they turn, which is the whole
+ * difference between a bracket and a diagram made of rules.
+ *
+ * The two verticals overlap perfectly rather than each drawing half, which is a pixel cheaper to
+ * reason about than working out which of the pair owns the middle.
+ */
+.treeround:not(:last-child) > .treeslots > .treeslot::after {
+  content: ''; position: absolute; right: -16px; width: 16px; height: 100%;
+  border-right: 2px solid var(--line);
 }
-.treeround:not(:last-child) > .treeslots > .treeslot::after { right: -15px; }
-.treeround:not(:first-child) > .treeslots > .treeslot::before { left: -15px; }
-.joint {
-  position: absolute; right: -15px; top: 50%; margin-top: -1px; width: 2px; height: 100%;
-  background: var(--line);
+.treeround:not(:last-child) > .treeslots > .treeslot:nth-child(odd)::after {
+  top: 50%; margin-top: -1px;
+  border-top: 2px solid var(--line); border-top-right-radius: 7px;
+}
+.treeround:not(:last-child) > .treeslots > .treeslot:nth-child(even)::after {
+  bottom: 50%; margin-bottom: -1px;
+  border-bottom: 2px solid var(--line); border-bottom-right-radius: 7px;
+}
+/* And the short line in, from the elbow to the box it feeds. */
+.treeround + .treeround > .treeslots > .treeslot::before {
+  content: ''; position: absolute; left: -16px; top: 50%; margin-top: -1px;
+  height: 2px; width: 16px; background: var(--line);
 }
 
 /**
@@ -490,7 +524,10 @@ td { font-variant-numeric: tabular-nums; }
 }
 /* The hairline between the two clubs, which is the line that means "against". */
 .box .side + .side { border-top: 1px solid var(--line); }
-.box .side .club { font-size: 12.5px; font-weight: 750; }
+.box .side .club {
+  font-size: 12.5px; font-weight: 750; letter-spacing: -0.01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
 .box .side .seed { width: 18px; height: 18px; font-size: 9.5px; border-radius: 5px; }
 .box .clubcrest { width: 20px; height: 20px; }
 /* Decided: the club that went through is the one you read, the other is struck out. */
@@ -500,8 +537,8 @@ td { font-variant-numeric: tabular-nums; }
 /* Nobody opposite, and the dashes say the box is deliberately half empty rather than unfinished. */
 .box.resting { border-style: dashed; box-shadow: none; }
 .restinghint {
-  display: block; padding: 0 9px 6px 35px; font-size: 9px; color: var(--faint);
-  letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
+  display: block; padding: 0 9px 6px 35px; font-size: 8.5px; color: var(--faint);
+  letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
 }
 
 /* A place in the draw rather than a card. Nothing has reached it, so it claims as little as it can. */

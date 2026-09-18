@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { readAllTeams, readContest } from './store/firestore.ts';
 import type { Contest, RoundTeams } from './store/firestore.ts';
-import { colorOf, crest } from './domain/clubs.ts';
+import { colorOf, crest, nameOf } from './domain/clubs.ts';
 import { tree } from './domain/tree.ts';
 import type { Slot } from './domain/tree.ts';
 import { explain } from './domain/trouble.ts';
@@ -42,7 +42,9 @@ function Side({ club, seed, won }: { club: string; seed: number; won: boolean | 
     <div className={`side ${won === true ? 'won' : ''} ${won === false ? 'out' : ''}`}>
       <span className="seed">{seed}</span>
       <img className="clubcrest" src={crest(club)} alt="" width="22" height="22" loading="lazy" />
-      <span className="club" style={won === false ? undefined : { color: colorOf(club) }}>{club}</span>
+      <span className="club" style={won === false ? undefined : { color: colorOf(club) }}>
+        {nameOf(club)}
+      </span>
     </div>
   );
 }
@@ -80,6 +82,14 @@ export function BracketLadder({ contest, rounds }: { contest: Contest; rounds: (
       {/* Wider than a phone, and a bracket squeezed to 375px is not a bracket. It scrolls. */}
       <div className="treescroll">
         <div className="tree">
+          <div className="treerail" aria-hidden="true">
+            <div className="treehead" />
+            <div className="treeslots">
+              <span className="conf">AFC</span>
+              <span className="conf">NFC</span>
+            </div>
+          </div>
+
           {columns.map((column) => {
             const config = contest.rounds[column.round];
             const lock = contest.locks[String(column.round)];
@@ -106,8 +116,6 @@ export function BracketLadder({ contest, rounds }: { contest: Contest; rounds: (
                   {column.slots.map((slot, index) => (
                     <div className="treeslot" key={`${column.round}-${index}`}>
                       <Box slot={slot} seedOf={seedOf} />
-                      {/* The vertical that joins this slot to the one below, drawn once per pair. */}
-                      {index % 2 === 0 && column.round < columns.length - 1 && <span className="joint" />}
                     </div>
                   ))}
                 </div>
