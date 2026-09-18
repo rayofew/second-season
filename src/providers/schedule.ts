@@ -1,3 +1,4 @@
+import { caption } from '../domain/gameclock.ts';
 import type { ClubState } from '../domain/live.ts';
 
 /**
@@ -20,9 +21,9 @@ export interface ClubGame {
   /**
    * Where the game has got to, in the words a television caption would use.
    *
-   * Empty before kickoff, because the kickoff time already says it better. ESPN gives the period
-   * and the clock separately and only sometimes assembles them, so this does it rather than
-   * trusting a field that is missing on some games and reads '1st Quarter' on others.
+   * Empty before kickoff, because the kickoff time already says it better. Worked out in
+   * domain/gameclock.ts, which is where the difference between half time and a stopped clock
+   * lives.
    */
   clock: string;
   /**
@@ -59,13 +60,13 @@ export async function clubGames(season: number, week: number): Promise<Map<strin
     const priced = Number.isFinite(total) && Number.isFinite(spread);
     const homeProjected = priced ? total / 2 - spread / 2 : undefined;
     const awayProjected = priced ? total / 2 + spread / 2 : undefined;
-    const clock =
-      state === 'playing'
-        ? [status?.period ? (status.period > 4 ? 'OT' : `Q${status.period}`) : '', status?.displayClock ?? '']
-            .filter(Boolean).join(' ')
-        : state === 'final'
-          ? (status?.type?.shortDetail ?? 'Final')
-          : '';
+    const clock = caption({
+      state,
+      name: status?.type?.name,
+      period: status?.period,
+      displayClock: status?.displayClock,
+      shortDetail: status?.type?.shortDetail,
+    });
 
     for (const side of sides) {
       const other = sides.find((candidate: { id: string }) => candidate.id !== side.id);

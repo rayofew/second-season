@@ -1054,6 +1054,19 @@ td { font-variant-numeric: tabular-nums; }
   letter-spacing: 0.1em; text-transform: uppercase;
 }
 
+/* The chip and, under it, where the game has got to. A fixed height whether or not there is a
+   clock to show, so a row does not grow by a line the moment its game kicks off. */
+.tienums {
+  flex: none; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 4px; min-height: 58px;
+}
+.tieclock {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap;
+  color: var(--faint); font-variant-numeric: tabular-nums;
+}
+/* The only thing on the screen that is still moving. */
+.tieclock.playing { color: var(--live); }
+
 /**
  * The chip, in the three states a club can be in.
  *
@@ -1106,9 +1119,8 @@ td { font-variant-numeric: tabular-nums; }
 }
 .tiefoot { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; min-width: 0; }
 .tiefoot.right { justify-content: flex-end; }
+/* The kickoff time, which never changes — the live clock lives on the card now. */
 .tiewhen { font-variant-numeric: tabular-nums; }
-.tiewhen.playing { color: var(--live); font-weight: 750; }
-.tiewhen.final { color: var(--dim); font-weight: 650; }
 
 .tiestate {
   display: flex; align-items: baseline; gap: 6px; justify-content: center;
@@ -1128,6 +1140,8 @@ td { font-variant-numeric: tabular-nums; }
   .tiecrest img { width: 25px; height: 25px; }
   .tieclub { font-size: 13px; }
   .tieabbr { display: none; }
+  .tienums { min-height: 46px; gap: 3px; }
+  .tieclock { font-size: 9px; }
   .tiescore { min-width: 44px; font-size: 16px; padding: 4px 7px; }
   .tiescore.notyet { font-size: 8.5px; padding: 8px 4px; letter-spacing: 0.03em; }
   .tiefeet { font-size: 10px; gap: 6px; padding: 0 8px; margin-top: 7px; }

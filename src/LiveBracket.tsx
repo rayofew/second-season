@@ -35,8 +35,7 @@ const kickoffAt = (side: Side) =>
     ? side.kickoff.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })
     : '';
 
-const clockFor = (side: Side) =>
-  side.state === 'upcoming' ? kickoffAt(side) : side.state === 'final' ? 'Final' : side.clock;
+
 
 const rounded = (value: number) => Math.round(value * 10) / 10;
 
@@ -78,10 +77,14 @@ function TieSide({
         * against eighteen expected reads as a scoreline and is not one: half of it has happened
         * and half of it is a guess, and putting them either side of a "vs" says otherwise.
         */}
-      <span className={`tiescore ${side.state} ${waiting ? 'notyet' : ''}`}>
-        {side.state !== 'upcoming' ? side.points
-          : started || side.projected === undefined ? 'Not yet'
-          : rounded(side.projected)}
+      <span className="tienums">
+        <span className={`tiescore ${side.state} ${waiting ? 'notyet' : ''}`}>
+          {side.state !== 'upcoming' ? side.points
+            : started || side.projected === undefined ? 'Not yet'
+            : rounded(side.projected)}
+        </span>
+        {/* Half, End 3rd, Q2 1:03, Final — whatever a caption would say, under the number. */}
+        {side.clock && <span className={`tieclock ${side.state}`}>{side.clock}</span>}
       </span>
     </span>
   );
@@ -218,14 +221,14 @@ export function LiveBracket({
             <div className="tiefeet">
               <span className="tiefoot">
                 {tie.headToHead ? '' : `${away.home ? 'vs' : 'at'} ${away.against}`}
-                <span className={`tiewhen ${away.state}`}>{clockFor(away)}</span>
+                <span className="tiewhen">{kickoffAt(away)}</span>
               </span>
               <span className={`tiestate ${tie.settled ? 'done' : tie.leading ? 'leading' : 'waiting'}`}>
                 {tie.state}
                 {why && <span className="tiewhy">{why}</span>}
               </span>
               <span className="tiefoot right">
-                <span className={`tiewhen ${home.state}`}>{clockFor(home)}</span>
+                <span className="tiewhen">{kickoffAt(home)}</span>
                 {tie.headToHead ? '' : `${home.home ? 'vs' : 'at'} ${home.against}`}
               </span>
             </div>
