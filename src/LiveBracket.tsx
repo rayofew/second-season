@@ -51,10 +51,13 @@ function TieSide({
   side,
   mirrored,
   leading,
+  started,
 }: {
   side: Side;
   mirrored?: boolean;
   leading: boolean;
+  /** Whether either club in this tie has taken the field yet. */
+  started: boolean;
 }) {
   return (
     <span className={`tieside ${side.state} ${mirrored ? 'mirrored' : ''} ${leading ? 'leading' : ''}`}>
@@ -63,14 +66,18 @@ function TieSide({
       </span>
       <span className="tieclub" style={{ color: colorOf(side.club) }}>{side.club}</span>
       {/*
-        * The chip holds whichever number is the live one: the expectation until kickoff, because
-        * there is nothing else, and the scoreboard after. A dashed edge says which, so the word
-        * "projected" need not take a line of its own seven times over.
+        * The chip holds the scoreboard once his game is on, and the market's expected score before
+        * anybody in the tie has kicked off — where it is the only thing there is, and two
+        * expectations either side of a "vs" compare like with like.
+        *
+        * The moment one of them starts, the other's expectation comes off. Twenty-one scored
+        * against eighteen expected reads as a scoreline and is not one: half of it has happened
+        * and half of it is a guess, and putting them either side of a "vs" says otherwise.
         */}
       <span className={`tiescore ${side.state}`}>
-        {side.state === 'upcoming'
-          ? (side.projected === undefined ? '–' : rounded(side.projected))
-          : side.points}
+        {side.state !== 'upcoming' ? side.points
+          : started || side.projected === undefined ? '–'
+          : rounded(side.projected)}
       </span>
     </span>
   );
@@ -184,12 +191,13 @@ export function LiveBracket({
       {ties.map((tie) => {
         const why = whyLeading(tie, field, passingYardsFor);
         const [away, home] = tie.sides;
+        const begun = tie.sides.some((side) => side.state !== 'upcoming');
         return (
           <div className={`livetie ${tie.settled ? 'done' : ''}`} key={`${tie.away}@${tie.home}`}>
             <div className="tierow">
-              <TieSide side={away} leading={tie.leading === away.club} />
+              <TieSide side={away} leading={tie.leading === away.club} started={begun} />
               <span className="tievs">vs</span>
-              <TieSide side={home} mirrored leading={tie.leading === home.club} />
+              <TieSide side={home} mirrored leading={tie.leading === home.club} started={begun} />
               {heldBy && (
                 <button
                   className="tieopen"
