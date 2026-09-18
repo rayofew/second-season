@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { explain } from './domain/trouble.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import { points } from './domain/scoring.ts';
@@ -23,6 +23,19 @@ import { Pool } from './Pool.tsx';
  */
 
 const CONTEST = 'rehearsal-2026';
+
+/**
+ * The table cut into boxes of five.
+ *
+ * Five because a place is read against the places either side of it, and because fifteen managers
+ * then come out as three boxes across a screen. A short league gives fewer boxes and a long one
+ * more; nothing here assumes how many people are playing.
+ */
+function inFives<T>(all: readonly T[]): T[][] {
+  const groups: T[][] = [];
+  for (let at = 0; at < all.length; at += 5) groups.push(all.slice(at, at + 5));
+  return groups;
+}
 
 export function Standings({ uid }: { uid: string }) {
   const [placings, setPlacings] = useState<Placing[] | null>(null);
@@ -120,87 +133,104 @@ export function Standings({ uid }: { uid: string }) {
     ? <Pool contest={contest} managers={[...managers.values()]} commissioner={false} onChange={() => undefined} />
     : null;
 
+  const leader = placings[0]?.credited ?? 0;
+  const groups = inFives(placings);
+  const showing = placings.find((placing) => placing.entryId === open) ?? null;
+
   return (
     <>
       {pool}
-      <div className="card scroll">
-        <table>
-          <thead>
-            <tr>
-              <th className="rank" />
-              <th>Manager</th>
-              {roundNames.map((name) => <th key={name}>{name}</th>)}
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {placings.map((placing, index) => (
-              <Fragment key={placing.entryId}>
-                <tr
-                  className={index === 0 ? 'leader' : undefined}
+
+      {/*
+        * Three boxes of five rather than one table fifteen rows deep.
+        *
+        * The table carried a column per round, so it grew sideways every week and had to be
+        * scrolled sideways to read by January. Nobody reads a standings table across, though —
+        * they find their own name, and then whoever is immediately above it. Five at a time puts
+        * the whole league on one screen with the places kept next to each other, which is the
+        * comparison anybody is actually making.
+        */}
+      <div className="boards">
+        {groups.map((group) => (
+          <div className="card board" key={group[0]!.entryId}>
+            <div className="confhead">
+              {group[0]!.rank}–{group[group.length - 1]!.rank}
+            </div>
+            {group.map((placing) => {
+              const manager = managers.get(placing.entryId);
+              const behind = leader - placing.credited;
+              return (
+                <button
+                  className={`placing ${placing.rank === 1 ? 'leader' : ''} ${open === placing.entryId ? 'open' : ''}`}
+                  key={placing.entryId}
                   aria-expanded={open === placing.entryId}
                   onClick={() => setOpen(open === placing.entryId ? null : placing.entryId)}
                 >
-                  <td className="rank">{placing.rank}</td>
-                  <td>
-                    <span className="manager">
-                      {managers.get(placing.entryId)?.logo
-                        ? <img className="badge small" src={managers.get(placing.entryId)!.logo} alt="" />
-                        : <span className="badge small empty" />}
-                      <span className="managername">
-                        {placing.name}
-                        {placing.entryId === uid && <span className="tag">you</span>}
-                      </span>
-                    </span>
-                  </td>
-                  {placing.rounds.map((round) => <td key={round.round}>{points(round.credited)}</td>)}
-                  <td className="total">{points(placing.credited)}</td>
-                </tr>
-                {open === placing.entryId && (
-                  <tr>
-                    <td colSpan={roundNames.length + 3} style={{ padding: 0 }}>
-                      <div className="detail">
-                        {placing.rounds.map((round) => (
-                          <div key={round.round}>
-                            <h3>{roundNames[round.round]} — {points(round.credited)} points</h3>
-                            {[...round.players]
-                              .sort((first, second) => second.credited - first.credited)
-                              .map((player) => {
-                                const person = names.get(player.playerId);
-                                return (
-                                  <PlayerRow
-                                    key={player.slot}
-                                    slot={player.slot}
-                                    player={person ?? { id: player.playerId, name: player.playerId, position: player.position, team: '' }}
-                                    multiplier={player.multiplier}
-                                    right={
-                                      <span className="math">
-                                        <span className={player.raw === 0 ? 'zero' : undefined}>{points(player.raw)}</span>
-                                        {player.corrected && (
-                                          <span className="fixed" title={`Imported as ${points(player.imported ?? 0)}`}>
-                                            {' '}corrected
-                                          </span>
-                                        )}
-                                        {' × '}{player.multiplier}{' = '}<b>{points(player.credited)}</b>
-                                      </span>
-                                    }
-                                  />
-                                );
-                              })}
-                          </div>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
+                  <span className="placerank">{placing.rank}</span>
+                  {manager?.logo
+                    ? <img className="badge small" src={manager.logo} alt="" />
+                    : <span className="badge small empty" />}
+                  <span className="placename">
+                    {placing.name}
+                    {placing.entryId === uid && <span className="tag">you</span>}
+                  </span>
+                  <span className="placenums">
+                    <b>{points(placing.credited)}</b>
+                    {behind > 0 && <span className="behind">−{points(behind)}</span>}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </div>
+
+      {/* Full width underneath: nine players and their arithmetic will not fit in a third of a
+          screen, and there is only ever one of these open. */}
+      {showing && (
+        <div className="card">
+          <div className="confhead">
+            {showing.name} — every round
+            <button className="closedetail" onClick={() => setOpen(null)}>close</button>
+          </div>
+          <div className="detail">
+            {showing.rounds.map((round) => (
+              <div key={round.round}>
+                <h3>{roundNames[round.round]} — {points(round.credited)} points</h3>
+                {[...round.players]
+                  .sort((first, second) => second.credited - first.credited)
+                  .map((player) => {
+                    const person = names.get(player.playerId);
+                    return (
+                      <PlayerRow
+                        key={player.slot}
+                        slot={player.slot}
+                        player={person ?? { id: player.playerId, name: player.playerId, position: player.position, team: '' }}
+                        multiplier={player.multiplier}
+                        right={
+                          <span className="math">
+                            <span className={player.raw === 0 ? 'zero' : undefined}>{points(player.raw)}</span>
+                            {player.corrected && (
+                              <span className="fixed" title={`Imported as ${points(player.imported ?? 0)}`}>
+                                {' '}corrected
+                              </span>
+                            )}
+                            {' × '}{player.multiplier}{' = '}<b>{points(player.credited)}</b>
+                          </span>
+                        }
+                      />
+                    );
+                  })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <p className="footnote">
-        Tap a manager to see every round. Nothing here is stored — rosters and statistics go in, the
-        table comes out, so a corrected figure fixes the standings by being corrected.
+        Tap a manager for every round and every player behind the total. Nothing here is stored —
+        rosters and statistics go in and the table comes out, so a corrected figure fixes the
+        standings by being corrected.
       </p>
     </>
   );

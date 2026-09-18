@@ -423,6 +423,53 @@ td { font-variant-numeric: tabular-nums; }
 .side.out .clubcrest { filter: grayscale(1); opacity: 0.45; }
 .opened { background: var(--raised); }
 
+/* ---- The standings, in boxes of five ---------------------------------- */
+
+/**
+ * Three boxes across rather than one table fifteen rows deep.
+ *
+ * auto-fit rather than a fixed three, so eight managers give two boxes and twenty give four, and
+ * a phone gives one — the layout follows the league rather than assuming it.
+ */
+.boards {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(248px, 1fr));
+  gap: var(--gap); margin-bottom: var(--gap);
+}
+.board { margin-bottom: 0; }
+
+.placing {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  padding: 10px 13px; min-height: 54px;
+  background: none; border: 0; border-bottom: 1px solid var(--line); color: inherit;
+}
+.placing:last-child { border-bottom: 0; }
+.placing:hover, .placing.open { background: var(--raised); }
+
+.placerank {
+  flex: none; width: 20px; text-align: right;
+  font-size: 13px; font-weight: 750; color: var(--faint); font-variant-numeric: tabular-nums;
+}
+/* Whoever is top of the pile, which is the one number on this screen worth colouring. */
+.placing.leader .placerank { color: var(--gold); }
+
+.placename {
+  flex: 1 1 auto; min-width: 0; font-weight: 650; font-size: 13.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.placenums {
+  flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 0;
+  font-variant-numeric: tabular-nums;
+}
+.placenums b { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
+.placing.leader .placenums b { color: var(--gold); }
+
+.closedetail {
+  margin-left: auto; background: none; border: 0; padding: 0; color: var(--faint);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.closedetail:hover { color: var(--gold); }
+
 /* ---- The bracket ------------------------------------------------------ */
 
 /**
