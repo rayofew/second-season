@@ -1021,19 +1021,21 @@ td { font-variant-numeric: tabular-nums; }
    Seven of these have to fit on a screen, so it stays two lines — but a raised card with a real
    crest on it reads as a fixture, and a row of text reads as a spreadsheet. The club is named the
    way anybody watching would say it, with the abbreviation underneath for whoever is scanning. */
-.livetie { padding: 8px 12px; }
-.livetie + .livetie { padding-top: 0; }
+.livetie { padding: 10px 12px; }
+.livetie + .livetie { padding-top: 2px; }
 
 .tierow {
-  display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 12px;
-  max-width: 620px; margin: 0 auto; padding: 10px 12px;
+  display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 18px;
+  max-width: 680px; margin: 0 auto; padding: 14px 18px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10);
 }
 .livetie:hover .tierow { border-color: var(--line-strong); }
 
-.tieside { display: flex; align-items: center; gap: 10px; min-width: 0; justify-content: flex-end; }
-.tieside.mirrored { flex-direction: row-reverse; justify-content: flex-end; }
+.tieside { display: flex; align-items: center; gap: 13px; min-width: 0; }
+/* The number is pushed to the end of its half rather than trailing the name, so the two of them
+   sit a fixed distance apart however long the club is called. */
+.tiescore { margin-left: auto; }
 
 /* Framed, so fourteen logos at fourteen aspect ratios all sit the same. */
 .tiecrest {
@@ -1043,8 +1045,7 @@ td { font-variant-numeric: tabular-nums; }
 }
 .tiecrest img { display: block; width: 32px; height: 32px; object-fit: contain; }
 
-.tienames { display: flex; flex-direction: column; align-items: flex-end; gap: 0; min-width: 0; }
-.tieside.mirrored .tienames { align-items: flex-start; }
+.tienames { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; }
 .tieclub {
   font-size: 16px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
@@ -1056,7 +1057,7 @@ td { font-variant-numeric: tabular-nums; }
 
 /* The chip carries the live number. A dashed edge means it has not happened yet. */
 .tiescore {
-  flex: none; min-width: 56px; padding: 6px 10px; border-radius: 10px; text-align: center;
+  flex: none; min-width: 62px; padding: 8px 12px; border-radius: 10px; text-align: center;
   background: var(--raised); border: 1px solid var(--line);
   font-size: 20px; font-weight: 800; color: var(--ink);
   font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1.2;
@@ -1080,7 +1081,7 @@ td { font-variant-numeric: tabular-nums; }
 /* The second line: each club's own fixture, and what the pair currently means between them. */
 .tiefeet {
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: baseline; gap: 10px;
-  max-width: 620px; margin: 5px auto 0; padding: 0 14px;
+  max-width: 680px; margin: 9px auto 0; padding: 0 20px;
   font-size: 11px; color: var(--faint);
 }
 .tiefoot { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; min-width: 0; }
@@ -1101,13 +1102,14 @@ td { font-variant-numeric: tabular-nums; }
 
 @media (max-width: 520px) {
   .livetie { padding: 6px 8px; }
-  .tierow { gap: 7px; padding: 8px; border-radius: 12px; }
-  .tiecrest { width: 36px; height: 36px; border-radius: 10px; }
+  .tierow { gap: 10px; padding: 10px 11px; border-radius: 12px; }
+  .tieside { gap: 9px; }
+  .tiecrest { width: 38px; height: 38px; border-radius: 10px; }
   .tiecrest img { width: 25px; height: 25px; }
   .tieclub { font-size: 13px; }
   .tieabbr { display: none; }
   .tiescore { min-width: 44px; font-size: 16px; padding: 4px 7px; }
-  .tiefeet { font-size: 10px; gap: 6px; padding: 0 6px; }
+  .tiefeet { font-size: 10px; gap: 6px; padding: 0 8px; margin-top: 7px; }
   .tieopen { width: 24px; height: 24px; }
 }
 
