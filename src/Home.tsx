@@ -13,7 +13,6 @@ import { projections, stats } from './providers/sleeper.ts';
 import { clubGames } from './providers/schedule.ts';
 import type { ClubGame } from './providers/schedule.ts';
 import { fixtureLabel } from './domain/fixture.ts';
-import { Pool } from './Pool.tsx';
 import { Countdown } from './Countdown.tsx';
 import { Field } from './Field.tsx';
 import { GameDay } from './GameDay.tsx';
@@ -258,8 +257,6 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
           })}
         </div>
       )}
-
-      <Pool contest={contest} managers={managers} commissioner={false} onChange={() => undefined} />
     </>
   );
 }
