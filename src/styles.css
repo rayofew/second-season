@@ -450,7 +450,27 @@ td { font-variant-numeric: tabular-nums; }
 .door.new { border-color: var(--warn-line); }
 .door.new .doorgo { background: var(--gold); border-color: var(--gold); color: var(--on-accent); }
 
-.gatehead { margin: 4px 0 4px; font-size: 19px; font-weight: 750; }
+/**
+ * And the door itself, opened in front of them.
+ *
+ * A modal rather than a new screen, so the card that was pressed is still there behind it: what
+ * was chosen stays obvious, and so does the way back out. Sits at the bottom of a phone, where a
+ * thumb is, for the same reason the scoring breakdown does.
+ */
+.authbox {
+  margin: 0; width: 100%; max-width: 420px;
+  max-height: calc(100dvh - 40px); overflow-y: auto;
+  border-color: var(--gold); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+}
+.authbody { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 12px; }
+.authbody .gbtn, .authbody .signin { margin: 0; }
+.authbody .or { margin: 0; }
+.authsaid { margin: 0; font-size: 13px; line-height: 1.6; color: var(--dim); }
+.authbody .signinalts { margin: 0; }
+
+@media (max-width: 520px) {
+  .authbox { max-width: none; border-radius: var(--radius) var(--radius) 0 0; border-bottom: 0; }
+}
 
 /* ---- The standings, in boxes of five ---------------------------------- */
 

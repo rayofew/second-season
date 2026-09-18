@@ -78,10 +78,15 @@ function GoogleMark() {
  *
  * 'choose' is the one that was missing. Everything used to be on one screen at once — a heading
  * asking whether it was your first time, a Google button, and a form that signed you in — and a
- * person who had never been here had to work out which of the three was meant for them. Two doors
- * first, and then only the one they picked.
+ * person who had never been here had to work out which of the three was meant for them.
  */
 type Mode = 'choose' | 'in' | 'new' | 'lost';
+
+const TITLE: Record<Exclude<Mode, 'choose'>, string> = {
+  new: 'Create an account',
+  in: 'Sign in',
+  lost: 'Forgotten password',
+};
 
 export function SignIn() {
   const [mode, setMode] = useState<Mode>('choose');
@@ -96,6 +101,17 @@ export function SignIn() {
     setProblem(null);
     setSent(false);
   }
+
+  const close = () => change('choose');
+
+  // Escape closes it, because a modal that can only be dismissed by aiming at a button is a trap on
+  // a phone and an irritation everywhere else.
+  useEffect(() => {
+    if (mode === 'choose') return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') close(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [mode]);
 
   async function attempt(work: () => Promise<unknown>) {
     setBusy(true);
@@ -125,31 +141,106 @@ export function SignIn() {
     await enter(auth, email.trim(), password);
   });
 
-  if (sent) {
+  /**
+   * What is being asked for, whichever way in was chosen.
+   *
+   * One form rather than two almost identical ones. The difference between creating an account and
+   * using one is a single function call and three words on a button; written twice it would be two
+   * places to fix the next time the wording changes.
+   */
+  function Form() {
+    if (sent) {
+      return (
+        <div className="authbody">
+          <p className="authsaid">
+            If there is an account for <strong>{email.trim()}</strong>, a link to set a new password
+            is on its way. It expires in an hour, and it may land in spam.
+          </p>
+          <button className="ghost wide" onClick={() => change('in')}>Back to signing in</button>
+        </div>
+      );
+    }
+
     return (
-      <div className="card gate welcome">
-        <h2>Check your email</h2>
-        <p>
-          If there is an account for <strong>{email.trim()}</strong>, a link to set a new password is
-          on its way. It expires in an hour, and it may land in spam.
-        </p>
-        <button className="ghost wide" onClick={() => change('in')}>Back to sign in</button>
+      <div className="authbody">
+        {mode === 'new' && (
+          <p className="authsaid">
+            Signing up does not put you in the league — the commissioner still has to let you in.
+          </p>
+        )}
+        {mode === 'lost' && (
+          <p className="authsaid">
+            Your email address, and we will send you a link to set a new password.
+          </p>
+        )}
+
+        {mode !== 'lost' && (
+          <>
+            {/* The same call either way: Google makes the account the first time and knows you
+                after that. Only the word changes, because only the intention has. */}
+            <button className="gbtn" disabled={busy} onClick={() => void attempt(() => signInWithPopup(auth, google))}>
+              <GoogleMark />
+              <span>{mode === 'new' ? 'Sign up with Google' : 'Sign in with Google'}</span>
+            </button>
+
+            <div className="or"><span>or with an email address</span></div>
+          </>
+        )}
+
+        <form className="signin" onSubmit={(event) => { event.preventDefault(); withEmail(); }}>
+          <label>
+            <span>Email</span>
+            <input
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@example.com"
+            />
+          </label>
+
+          {mode !== 'lost' && (
+            <label>
+              <span>Password{mode === 'new' && <em>six characters or more</em>}</span>
+              <input
+                type="password"
+                // Telling the browser which it is, so it offers to save a new one and fills an old.
+                autoComplete={mode === 'new' ? 'new-password' : 'current-password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+          )}
+
+          {problem && <p className="problem">{problem}</p>}
+
+          <button className="submit wide" type="submit" disabled={busy}>
+            {busy ? 'One moment…'
+              : mode === 'new' ? 'Create account'
+              : mode === 'lost' ? 'Send the link'
+              : 'Sign in'}
+          </button>
+        </form>
+
+        {mode === 'in' && (
+          <div className="signinalts">
+            <button className="linky" onClick={() => change('lost')}>Forgot password?</button>
+          </div>
+        )}
       </div>
     );
   }
 
-  // Two doors, and nothing else to read.
-  if (mode === 'choose') {
-    return (
+  return (
+    <>
+      {/* The two doors stay where they were. Choosing one opens it in front of them rather than
+          replacing them, so it is obvious what was picked and obvious how to go back. */}
       <div className="card gate welcome">
         <img className="banner" src="/banner.jpg" alt="Eastside Second-Season Playoff Challenge" />
         <div className="doors">
           <button className="door new" onClick={() => change('new')}>
             <h2>Create an account</h2>
-            <p>
-              First time here. It takes a minute, and then the commissioner lets you into the
-              league.
-            </p>
+            <p>First time here. It takes a minute, and then the commissioner lets you into the league.</p>
             <span className="doorgo">Create an account</span>
           </button>
 
@@ -160,81 +251,25 @@ export function SignIn() {
           </button>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="card gate welcome">
-      <img className="banner" src="/banner.jpg" alt="Eastside Second-Season Playoff Challenge" />
-
-      <h2 className="gatehead">
-        {mode === 'new' ? 'Create an account' : mode === 'lost' ? 'Forgotten password' : 'Sign in'}
-      </h2>
-      {mode === 'lost' && (
-        <p>Your email address, and we will send you a link to set a new password.</p>
-      )}
-      {mode === 'new' && (
-        <p>Signing up does not put you in the league — the commissioner still has to let you in.</p>
-      )}
-
-      {mode !== 'lost' && (
-        <>
-          <div className="ways">
-            {/* The same call either way: Google makes the account the first time and knows you
-                after that. Only the word changes, because only the intention has. */}
-            <button className="gbtn" disabled={busy} onClick={() => void attempt(() => signInWithPopup(auth, google))}>
-              <GoogleMark />
-              <span>{mode === 'new' ? 'Sign up with Google' : 'Sign in with Google'}</span>
-            </button>
+      {mode !== 'choose' && (
+        <div className="backdrop" onClick={close} role="presentation">
+          <div
+            className="card authbox"
+            role="dialog"
+            aria-modal="true"
+            aria-label={sent ? 'Check your email' : TITLE[mode]}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="confhead">
+              {sent ? 'Check your email' : TITLE[mode]}
+              <button className="ghost small" onClick={close}>Close</button>
+            </div>
+            <Form />
           </div>
-
-          <div className="or"><span>or with an email address</span></div>
-        </>
+        </div>
       )}
-
-      <form
-        className="signin"
-        onSubmit={(event) => { event.preventDefault(); withEmail(); }}
-      >
-        <label>
-          <span>Email</span>
-          <input
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@example.com"
-          />
-        </label>
-
-        {mode !== 'lost' && (
-          <label>
-            <span>Password{mode === 'new' && <em>six characters or more</em>}</span>
-            <input
-              type="password"
-              // Telling the browser which it is, so it offers to save a new one and fills an old one.
-              autoComplete={mode === 'new' ? 'new-password' : 'current-password'}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </label>
-        )}
-
-        {problem && <p className="problem">{problem}</p>}
-
-        <button className="submit wide" type="submit" disabled={busy}>
-          {busy ? 'One moment…'
-            : mode === 'new' ? 'Create account'
-            : mode === 'lost' ? 'Send the link'
-            : 'Sign in'}
-        </button>
-      </form>
-
-      <div className="signinalts">
-        {mode === 'in' && <button className="linky" onClick={() => change('lost')}>Forgot password?</button>}
-        <button className="linky" onClick={() => change('choose')}>Back</button>
-      </div>
-    </div>
+    </>
   );
 }
 
