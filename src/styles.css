@@ -423,20 +423,83 @@ td { font-variant-numeric: tabular-nums; }
 .side.out .clubcrest { filter: grayscale(1); opacity: 0.45; }
 .opened { background: var(--raised); }
 
-/* ---- Bracket ladder --------------------------------------------------- */
+/* ---- The bracket ------------------------------------------------------ */
 
-/* One column on a phone. Four side by side on anything wider, which read left to right is a
-   bracket — the same markup, no second component to drift out of step with this one. */
-.ladder { display: grid; gap: var(--gap); }
+/**
+ * Four columns and the lines between them.
+ *
+ * The geometry is the whole trick and it is arithmetic rather than measurement. Every column is
+ * the same height and its slots divide it equally, so a round with four slots has slots twice as
+ * tall as the round with eight — which puts each one’s midpoint exactly level with the gap
+ * between the two that feed it. A stub out of each slot, a stub into the next, and a vertical
+ * joining each pair, and the tree draws itself at any width without a line of JavaScript.
+ *
+ * The vertical is one slot tall because consecutive midpoints are exactly one slot apart. That is
+ * the only thing in here that would break if slots stopped being equal height.
+ */
+.treescroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 4px 0 8px; }
+.tree { display: flex; align-items: stretch; min-width: 720px; padding: 10px 14px 4px; }
 
-.rung { margin-bottom: 0; }
-.rung.current { border-color: var(--line-strong); }
+.treeround { flex: 1 1 0; display: flex; flex-direction: column; min-width: 0; }
+.treeround:not(:last-child) { padding-right: 15px; }
+.treeround:not(:first-child) { padding-left: 15px; }
 
-.roundhead {
-  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
-  padding: 12px 15px; border-bottom: 1px solid var(--line);
+.treehead {
+  flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  padding: 0 2px 12px; min-height: 58px;
 }
-.roundhead strong { font-weight: 650; }
+.treehead strong { font-size: 13.5px; font-weight: 750; letter-spacing: -0.01em; }
+.treedate { font-size: 10.5px; color: var(--faint); }
+.treeround.current .treehead strong { color: var(--gold); }
+
+.treeslots { flex: 1 1 auto; display: flex; flex-direction: column; }
+.treeslot {
+  flex: 1 1 0; position: relative; display: flex; flex-direction: column; justify-content: center;
+  min-height: 62px;
+}
+
+/* Out of every slot, into every slot, and the vertical that joins a pair. */
+.treeround:not(:last-child) > .treeslots > .treeslot::after,
+.treeround:not(:first-child) > .treeslots > .treeslot::before {
+  content: ''; position: absolute; top: 50%; margin-top: -1px; height: 2px; width: 15px;
+  background: var(--line);
+}
+.treeround:not(:last-child) > .treeslots > .treeslot::after { right: -15px; }
+.treeround:not(:first-child) > .treeslots > .treeslot::before { left: -15px; }
+.joint {
+  position: absolute; right: -15px; top: 50%; margin-top: -1px; width: 2px; height: 100%;
+  background: var(--line);
+}
+
+/* The box itself: two clubs, or one resting, or a place nobody has reached. */
+.box {
+  background: var(--sunk); border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden;
+}
+.box .side {
+  display: flex; align-items: center; gap: 8px; padding: 7px 9px; min-width: 0;
+}
+.box .side + .side { border-top: 1px solid var(--line); }
+.box .side .club { font-size: 13px; }
+.box .side .seed { width: 19px; height: 19px; font-size: 10px; border-radius: 5px; }
+.box .clubcrest { width: 22px; height: 22px; }
+/* Decided: the club that went through is the one you read, the other is struck out. */
+.box.settled .side.won { background: var(--good-bg); }
+.box.resting { background: var(--panel); border-style: dashed; }
+.restinghint {
+  display: block; padding: 0 9px 7px; font-size: 10px; color: var(--faint);
+  letter-spacing: 0.04em;
+}
+.box.empty {
+  border-style: dashed; background: transparent;
+  display: flex; align-items: center; justify-content: center; min-height: 44px;
+}
+.waiting {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--faint);
+}
+
+.treefoot { padding: 0 16px 16px; margin: 0; }
 
 .state {
   font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
@@ -447,16 +510,6 @@ td { font-variant-numeric: tabular-nums; }
 .state.done { color: var(--live); border-color: var(--good-line); }
 
 .pending { padding: 18px 15px; color: var(--faint); font-size: 13px; }
-
-@media (min-width: 780px) {
-  .ladder { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; }
-  .ladder .tie, .ladder .bye { padding: 10px 12px; min-height: 46px; gap: 8px; flex-wrap: wrap; }
-  .ladder .side { gap: 7px; }
-  .ladder .at { display: none; }
-  .ladder .bye .hint { font-size: 11px; }
-  .ladder .roundhead { flex-direction: column; align-items: flex-start; gap: 4px; }
-}
-
 /* ---- Rules ------------------------------------------------------------ */
 
 .prose { padding: 4px 16px 18px; }

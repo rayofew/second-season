@@ -2,26 +2,24 @@ import { useEffect, useState } from 'react';
 import { readAllTeams, readContest } from './store/firestore.ts';
 import type { Contest, RoundTeams } from './store/firestore.ts';
 import { colorOf, crest } from './domain/clubs.ts';
-import { clubGames } from './providers/schedule.ts';
-import type { ClubGame } from './providers/schedule.ts';
-import { stats } from './providers/sleeper.ts';
-import type { StatLine } from './domain/scoring.ts';
-import { readPool } from './store/firestore.ts';
-import { LiveBracket } from './LiveBracket.tsx';
-import { useHeartbeat } from './useHeartbeat.ts';
+import { tree } from './domain/tree.ts';
+import type { Slot } from './domain/tree.ts';
 import { explain } from './domain/trouble.ts';
 
 /**
- * The whole bracket, all four rounds.
+ * The whole bracket, all four rounds, drawn as a bracket.
  *
- * One set of markup laid out two ways: stacked top to bottom on a phone, where a converging tree
- * would be unreadable, and four columns side by side on anything wider — which read left to right
- * is a bracket, without a second component that could drift out of step with this one.
+ * Four columns and the lines between them, which is the shape everybody already knows how to read.
+ * The arrangement — which slot sits above which — is worked out in domain/tree.ts, because the
+ * rounds are reseeded and a tree drawn in the order the ties happen to be stored would connect
+ * clubs that never played each other.
  *
- * Not decoration either way. A player is only worth holding if his club survives, so this is the
- * screen you consult before deciding whether a 1x replacement beats a 3x incumbent.
+ * No scores on this screen. What is happening right now is the Live tab's job, and it was doing it
+ * twice; this one answers the other question, which is who is still in and who they have to get
+ * past. A player is only worth holding if his club survives, so this is what you consult before
+ * deciding whether a 1x replacement beats a 3x incumbent.
  *
- * The ladder is split from the fetching so the design preview can drive it with invented clubs.
+ * Split from the fetching so the design preview can drive it with invented clubs.
  */
 
 const CONTEST = 'rehearsal-2026';
@@ -43,88 +41,86 @@ function Side({ club, seed, won }: { club: string; seed: number; won: boolean | 
   return (
     <div className={`side ${won === true ? 'won' : ''} ${won === false ? 'out' : ''}`}>
       <span className="seed">{seed}</span>
-      <img className="clubcrest" src={crest(club)} alt="" width="24" height="24" loading="lazy" />
+      <img className="clubcrest" src={crest(club)} alt="" width="22" height="22" loading="lazy" />
       <span className="club" style={won === false ? undefined : { color: colorOf(club) }}>{club}</span>
+    </div>
+  );
+}
+
+/** One box in the tree: a tie, a club resting, or a place nobody has reached yet. */
+function Box({ slot, seedOf }: { slot: Slot; seedOf: (club: string) => number }) {
+  if (slot.kind === 'empty') {
+    return <div className="box empty"><span className="waiting">to be drawn</span></div>;
+  }
+  if (slot.kind === 'bye') {
+    return (
+      <div className="box resting">
+        <Side club={slot.home} seed={seedOf(slot.home)} won={null} />
+        <span className="restinghint">resting — 2x next</span>
+      </div>
+    );
+  }
+  return (
+    <div className={`box ${slot.winner ? 'settled' : ''}`}>
+      <Side club={slot.away} seed={seedOf(slot.away)} won={slot.winner ? slot.winner === slot.away : null} />
+      <Side club={slot.home} seed={seedOf(slot.home)} won={slot.winner ? slot.winner === slot.home : null} />
     </div>
   );
 }
 
 export function BracketLadder({ contest, rounds }: { contest: Contest; rounds: (RoundTeams | null)[] }) {
   const seedOf = (club: string) => contest.field[club]?.seed ?? 0;
-  const conferenceOf = (club: string) => contest.field[club]?.conference ?? '';
+  const columns = tree(
+    contest.rounds.map((round) => rounds[round.round] ?? null),
+    contest.field,
+  );
 
   return (
-    <>
-      <div className="ladder">
-        {contest.rounds.map((round) => {
-          const teams = rounds[round.round];
-          const lock = contest.locks[String(round.round)];
-          const current = round.round === contest.currentRound;
-          const decided = teams?.matchups?.some((matchup) => matchup.winner) ?? false;
+    <div className="card">
+      {/* Wider than a phone, and a bracket squeezed to 375px is not a bracket. It scrolls. */}
+      <div className="treescroll">
+        <div className="tree">
+          {columns.map((column) => {
+            const config = contest.rounds[column.round];
+            const lock = contest.locks[String(column.round)];
+            const current = column.round === contest.currentRound;
+            const decided = column.slots.some((slot) => slot.winner && slot.kind === 'tie');
 
-          return (
-            <div className={`card rung ${current ? 'current' : ''}`} key={round.round}>
-              <div className="roundhead">
-                <div>
-                  <strong>{round.name}</strong>
-                  <span className="team"> · week {round.week}</span>
+            return (
+              <div className={`treeround ${current ? 'current' : ''}`} key={column.round}>
+                <div className="treehead">
+                  <strong>{config?.name}</strong>
+                  <span className={`state ${current ? 'now' : decided ? 'done' : ''}`}>
+                    {decided ? 'decided' : current ? (lock && lock > new Date() ? 'open' : 'in play') : 'to come'}
+                  </span>
                   {lock && (
-                    <div className="rounddate">
+                    <span className="treedate">
                       {decided ? `Decided ${shortDay(mondayAfter(lock))}` : `Locks ${lockDate(lock)}`}
-                    </div>
+                    </span>
                   )}
                 </div>
-                <span className={`state ${current ? 'now' : decided ? 'done' : ''}`}>
-                  {decided ? 'decided' : current ? (lock && lock > new Date() ? 'open' : 'in play') : 'to come'}
-                </span>
-              </div>
 
-              {!teams ? (
-                <div className="pending">Drawn once {contest.rounds[round.round - 1]?.name} is decided.</div>
-              ) : (
-                ['AFC', 'NFC'].map((conference) => {
-                  const resting = (teams.byes ?? []).filter((club) => conferenceOf(club) === conference);
-                  const ties = teams.matchups.filter((matchup) => conferenceOf(matchup.home) === conference);
-                  if (!resting.length && !ties.length) return null;
-
-                  return (
-                    <div key={conference}>
-                      <div className="confhead">{conference}</div>
-                      {resting.map((club) => (
-                        <div className="bye" key={club}>
-                          <Side club={club} seed={seedOf(club)} won={null} />
-                          <span className="hint">rests — nothing now, 2x next</span>
-                        </div>
-                      ))}
-                      {ties.map((matchup) => (
-                        <div className="tie" key={`${matchup.home}-${matchup.away}`}>
-                          <Side
-                            club={matchup.away}
-                            seed={seedOf(matchup.away)}
-                            won={matchup.winner ? matchup.winner === matchup.away : null}
-                          />
-                          <span className="at">at</span>
-                          <Side
-                            club={matchup.home}
-                            seed={seedOf(matchup.home)}
-                            won={matchup.winner ? matchup.winner === matchup.home : null}
-                          />
-                        </div>
-                      ))}
+                <div className="treeslots">
+                  {column.slots.map((slot, index) => (
+                    <div className="treeslot" key={`${column.round}-${index}`}>
+                      <Box slot={slot} seedOf={seedOf} />
+                      {/* The vertical that joins this slot to the one below, drawn once per pair. */}
+                      {index % 2 === 0 && column.round < columns.length - 1 && <span className="joint" />}
                     </div>
-                  );
-                })
-              )}
-            </div>
-          );
-        })}
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      <p className="footnote">
+      <p className="footnote treefoot">
         Clubs never actually meet. Whichever of the two scores more in its own real fixture goes
         through; tied on points, the quarterback with more passing yards; tied again, the better seed.
+        Each round is redrawn best surviving seed against worst, so the lines move as clubs go out.
       </p>
-    </>
+    </div>
   );
 }
 
@@ -132,10 +128,6 @@ export function Bracket() {
   const [contest, setContest] = useState<Contest | null>(null);
   const [rounds, setRounds] = useState<(RoundTeams | null)[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
-
-  const [fixtures, setFixtures] = useState<Map<string, ClubGame>>(new Map());
-  // Passing yards only matter when two clubs finish level, which is rare and worth getting right.
-  const [passing, setPassing] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     void (async () => {
@@ -149,60 +141,8 @@ export function Bracket() {
     })();
   }, []);
 
-  const going = [...fixtures.values()].some((game) => game.state !== 'final');
-  const beat = useHeartbeat(going, 45_000);
-
-  /**
-   * The football itself, refetched while any of it is happening.
-   *
-   * Only the public feeds are on the heartbeat; the bracket above comes from Firestore once, and
-   * cannot change between Monday nights.
-   */
-  useEffect(() => {
-    if (!contest) return;
-    const config = contest.rounds[contest.currentRound];
-    if (!config) return;
-    let live = true;
-
-    void (async () => {
-      const [games, board, lines] = await Promise.all([
-        clubGames(contest.season, config.week).catch(() => new Map<string, ClubGame>()),
-        readPool(CONTEST).catch(() => []),
-        stats(contest.season, config.seasonType, config.week)
-          .catch(() => ({}) as Record<string, StatLine>),
-      ]);
-      if (!live) return;
-      setFixtures(games);
-
-      // A club's busiest quarterback, which is what the tiebreaker asks for.
-      const yards = new Map<string, number>();
-      for (const player of board) {
-        if (player.position !== 'QB') continue;
-        const threw = lines[player.id]?.pass_yd ?? 0;
-        yards.set(player.team, Math.max(yards.get(player.team) ?? 0, threw));
-      }
-      setPassing(yards);
-    })();
-
-    return () => { live = false; };
-  }, [contest, beat]);
-
   if (problem) return <div className="card gate"><p className="problem">{problem}</p></div>;
   if (!contest) return <div className="card gate"><p>Loading the bracket…</p></div>;
 
-  const open = rounds[contest.currentRound];
-  const undecided = (open?.matchups ?? []).filter((matchup) => !matchup.winner);
-
-  return (
-    <>
-      <LiveBracket
-        matchups={undecided}
-        fixtures={fixtures}
-        field={contest.field}
-        passingYardsFor={(club) => passing.get(club) ?? 0}
-        roundName={contest.rounds[contest.currentRound]?.name ?? 'This round'}
-      />
-      <BracketLadder contest={contest} rounds={rounds} />
-    </>
-  );
+  return <BracketLadder contest={contest} rounds={rounds} />;
 }
