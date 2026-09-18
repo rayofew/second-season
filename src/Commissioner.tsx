@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { explain } from './domain/trouble.ts';
-import { admitManager, declineApplication, readApplications, readContest, readEntries, readStandIns, readSubmitted, removeManager, setCommissioners } from './store/firestore.ts';
+import { admitManager, declineApplication, readApplications, readContest, readEntries, readStandIns, readSubmitted, removeManager, setCommissioners, setPaid } from './store/firestore.ts';
 import type { Application, Contest, Manager, StandInRegister } from './store/firestore.ts';
 import { dialable, formatPhone } from './domain/phone.ts';
 import { Advance } from './Advance.tsx';
 import { Pool } from './Pool.tsx';
 import { RosterBuilder } from './RosterBuilder.tsx';
 import { Corrections } from './Corrections.tsx';
-import { Contacts } from './Contacts.tsx';
-import { Log } from './Log.tsx';
+import { Managers } from './Managers.tsx';
+import { StandIns } from './StandIns.tsx';
 
 /**
  * The commissioner's tab: who wants in, and who has not picked yet.
@@ -147,14 +147,35 @@ export function Commissioner({ uid }: { uid: string }) {
         )}
       </div>
 
-      <Contacts
+      <Managers
         managers={managers}
         applications={everyone}
         filled={filled}
         round={round?.name ?? 'This round'}
+        standIns={standIns}
+        uid={uid}
+        owner={owner}
+        commissioners={commissioners}
+        buyIn={contest.prizes?.buyIn ?? 0}
+        busy={busy}
+        confirming={confirming}
+        onConfirm={setConfirming}
+        onEdit={setEditing}
+        onCommish={(manager) =>
+          void act(manager.uid, () =>
+            setCommissioners(
+              CONTEST,
+              commissioners.includes(manager.uid)
+                ? commissioners.filter((id) => id !== manager.uid)
+                : [...commissioners, manager.uid],
+            ),
+          )
+        }
+        onRemove={(manager) =>
+          void act(manager.uid, () => removeManager(CONTEST, manager.uid, contest.rounds.length))
+        }
+        onPaid={(manager) => void act(manager.uid, () => setPaid(CONTEST, manager.uid, !manager.paid))}
       />
-
-      <Log managers={managers} standIns={standIns} uid={uid} />
 
       <Pool contest={contest} managers={managers} commissioner onChange={() => void load()} />
 
@@ -162,64 +183,9 @@ export function Commissioner({ uid }: { uid: string }) {
 
       <Corrections contest={contest} by={uid} />
 
-      <div className="card">
-        <div className="confhead">
-          Managers
-          <span className="colhead">{managers.length}</span>
-        </div>
-        {managers.map((manager) => (
-          <div className="row" key={manager.uid}>
-            {manager.logo ? <img className="badge" src={manager.logo} alt="" /> : <span className="badge empty" />}
-            <span className="rowmain">
-              <span className="rowname">{manager.teamName}</span>
-              <span className="rowmeta">
-                {manager.name}
-                {manager.uid === uid && <><span className="dot">·</span>you</>}
-                {standIns[manager.uid] && <span className="tag">stand-in</span>}
-              </span>
-            </span>
-            <span className="actions">
-
-              <button className="ghost small" onClick={() => setEditing(manager)}>Team</button>
-              {manager.uid === owner ? (
-                <span className="tag">owner</span>
-              ) : (
-                <button
-                  className={commissioners.includes(manager.uid) ? 'submit small' : 'ghost small'}
-                  disabled={busy === manager.uid}
-                  onClick={() =>
-                    void act(manager.uid, () =>
-                      setCommissioners(
-                        CONTEST,
-                        commissioners.includes(manager.uid)
-                          ? commissioners.filter((id) => id !== manager.uid)
-                          : [...commissioners, manager.uid],
-                      ),
-                    )
-                  }
-                >
-                  {commissioners.includes(manager.uid) ? 'Commish' : 'Make commish'}
-                </button>
-              )}
-              {manager.uid !== uid && (
-                <button
-                  className="danger small"
-                  disabled={busy === manager.uid}
-                  onClick={() =>
-                    confirming === manager.uid
-                      ? void act(manager.uid, () => removeManager(CONTEST, manager.uid, contest.rounds.length))
-                      : setConfirming(manager.uid)
-                  }
-                >
-                  {busy === manager.uid ? '…' : confirming === manager.uid ? 'Really remove?' : 'Remove'}
-                </button>
-              )}
-            </span>
-          </div>
-        ))}
-      </div>
-
-
+      {/* The bench. It lived on a Lab tab that existed to preview layouts against live football,
+          which the design preview at ?preview now covers without a tab of its own. */}
+      <StandIns />
     </>
   );
 }

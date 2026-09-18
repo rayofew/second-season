@@ -6,7 +6,6 @@ import { Live } from './Live.tsx';
 import { Rules } from './Rules.tsx';
 import { Register } from './Register.tsx';
 import { Commissioner } from './Commissioner.tsx';
-import { Lab } from './Lab.tsx';
 import { Moves } from './Moves.tsx';
 import { Version } from './Version.tsx';
 import { Home } from './Home.tsx';
@@ -18,7 +17,7 @@ import { isRefusal } from './domain/trouble.ts';
 
 const CONTEST = 'rehearsal-2026';
 
-type Tab = 'home' | 'team' | 'live' | 'bracket' | 'standings' | 'moves' | 'rules' | 'commish' | 'lab';
+type Tab = 'home' | 'team' | 'live' | 'bracket' | 'standings' | 'moves' | 'rules' | 'commish';
 
 export function App() {
   const [tab, setTab] = useState<Tab>('home');
@@ -104,10 +103,7 @@ export function App() {
             <button aria-current={tab === 'moves'} onClick={() => setTab('moves')}>Moves</button>
             <button aria-current={tab === 'rules'} onClick={() => setTab('rules')}>Rules</button>
             {commissioner && (
-              <>
-                <button aria-current={tab === 'commish'} onClick={() => setTab('commish')}>Commish</button>
-                <button aria-current={tab === 'lab'} onClick={() => setTab('lab')}>Lab</button>
-              </>
+              <button aria-current={tab === 'commish'} onClick={() => setTab('commish')}>Commish</button>
             )}
           </nav>
 
@@ -118,7 +114,6 @@ export function App() {
             : tab === 'moves' ? <Moves />
             : tab === 'rules' ? <Rules />
             : tab === 'commish' && commissioner ? <Commissioner uid={user.uid} />
-            : tab === 'lab' && commissioner ? <Lab />
             : <Standings uid={user.uid} />}
         </>
       )}

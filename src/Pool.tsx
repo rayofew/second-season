@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { collected, defaultShares, NO_PRIZES, placesFor, pot } from './domain/pool.ts';
 import type { Prizes } from './domain/pool.ts';
-import { setPaid, setPrizes } from './store/firestore.ts';
+import { setPrizes } from './store/firestore.ts';
 import type { Contest, Manager } from './store/firestore.ts';
 
 /**
@@ -48,16 +48,6 @@ export function Pool({
     try {
       await setPrizes(CONTEST, { ...draft, places, shares });
       setEditing(false);
-      onChange();
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function toggle(manager: Manager) {
-    setBusy(manager.uid);
-    try {
-      await setPaid(CONTEST, manager.uid, !manager.paid);
       onChange();
     } finally {
       setBusy(null);
@@ -185,27 +175,6 @@ export function Pool({
         </div>
       )}
 
-      {commissioner && saved.buyIn > 0 && (
-        <div className="card">
-          <div className="confhead">Who has paid</div>
-          {managers.map((manager) => (
-            <div className="row" key={manager.uid}>
-              {manager.logo ? <img className="badge" src={manager.logo} alt="" /> : <span className="badge empty" />}
-              <span className="rowmain">
-                <span className="rowname">{manager.teamName}</span>
-                <span className="rowmeta">{manager.name}</span>
-              </span>
-              <button
-                className={manager.paid ? 'submit small' : 'ghost small'}
-                disabled={busy === manager.uid}
-                onClick={() => void toggle(manager)}
-              >
-                {busy === manager.uid ? '…' : manager.paid ? `Paid ${money(saved.buyIn)}` : 'Not yet'}
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
     </>
   );
 }
