@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { explain } from './domain/trouble.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import type { Position } from './domain/rules.ts';
-import { newUid, pickFor, STAND_INS, STAND_IN_PREFIX, tasteOf, WHY } from './domain/standin.ts';
+import { newUid, pickFor, STAND_INS, STAND_IN_PREFIX, tasteOf, whenPicked, WHY } from './domain/standin.ts';
 import type { Candidate, StandIn, Temperament } from './domain/standin.ts';
 import { projectedPoints } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
@@ -11,7 +11,8 @@ import { standingsFor } from './domain/multiplier.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import {
-  addStandIn, readContest, readEntries, readHistory, readPool, readStandIns, readTeams, removeStandIn,
+  addStandIn, hasMoves, readContest, readEntries, readHistory, readPool, readStandIns, readTeams,
+  recordMoves, removeStandIn,
   writeRosterFor, writeStandIns,
 } from './store/firestore.ts';
 import type { Contest, Manager, PoolPlayer, StandInRegister } from './store/firestore.ts';
@@ -156,6 +157,7 @@ export function StandIns() {
       const candidates: Candidate[] = pool.map((player) => ({
         id: player.id, position: player.position, team: player.team,
       }));
+      const byId = new Map(pool.map((player) => [player.id, player]));
       const worth = (player: Candidate) =>
         projectedPoints(player.position as Position, expected[player.id], EASTSIDE);
 
@@ -202,6 +204,37 @@ export function StandIns() {
           continue;
         }
         await writeRosterFor(CONTEST, uid, round, players);
+
+        /*
+         * And the story of how he got there.
+         *
+         * A manager with a full nine and no moves behind him is a manager who has never touched
+         * the app — which is exactly what a stand-in is, and exactly what must not show. The diff
+         * against last round is the same one a real submission records, written at a plausible
+         * hour rather than all six in the same second.
+         *
+         * Skipped where he already has moves for the round, because the log is append only and
+         * playing a round twice would have him signing the same player twice in one afternoon.
+         */
+        if (!(await hasMoves(CONTEST, uid, round).catch(() => true))) {
+          const before = new Set(previous.map((held) => held.playerId));
+          const after = new Set(players.map((held) => held.playerId));
+          const named = (id: string) => byId.get(id)?.name ?? id;
+          const lock = contest.locks[String(round)] ?? new Date();
+
+          await recordMoves(CONTEST, [
+            ...players.filter((held) => !before.has(held.playerId)).map((held) => ({
+              uid, round, action: 'in' as const,
+              playerId: held.playerId, playerName: named(held.playerId), slot: held.slot,
+            })),
+            ...previous.filter((held) => !after.has(held.playerId)).map((held) => ({
+              uid, round, action: 'out' as const,
+              playerId: held.playerId, playerName: named(held.playerId), slot: held.slot,
+            })),
+            { uid, round, action: 'submitted' as const, playerId: '', playerName: '', slot: '' },
+          ], whenPicked(uid, round, lock)).catch(() => undefined);
+        }
+
         const kept = players.filter((held) => previous.some((was) => was.playerId === held.playerId)).length;
         notes.push(
           `${standIn.teamName} — ${players.length} in`

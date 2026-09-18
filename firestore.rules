@@ -152,9 +152,13 @@ service cloud.firestore {
       match /log/{entryId} {
         allow read: if isCommissioner(contestId)
                     || (isMember(contestId) && request.time >= lockFor(contestId, string(resource.data.round)));
-        allow create: if isMember(contestId)
-                      && request.resource.data.uid == request.auth.uid
-                      && request.resource.data.round == contest(contestId).currentRound;
+        // A commissioner may write one for anybody. He can already replace any roster outright
+        // from his own screen, so this grants no power he did not have — and without it the
+        // stand-ins have no history, which is the loudest thing about them.
+        allow create: if (isMember(contestId)
+                          && request.resource.data.uid == request.auth.uid
+                          && request.resource.data.round == contest(contestId).currentRound)
+                      || isCommissioner(contestId);
         allow update, delete: if false;
       }
 

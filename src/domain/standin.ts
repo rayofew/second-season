@@ -172,3 +172,31 @@ export function pickFor(
     }];
   });
 }
+
+/**
+ * When a stand-in would plausibly have picked.
+ *
+ * Six managers whose every signing is stamped the same second are six managers who are obviously
+ * one person pressing a button. Real people pick across the days before a lock — some the moment
+ * the round opens, most the evening before, one at the last minute — so each stand-in is given his
+ * own hour in that window, derived from his id so that it is stable and not a new answer on every
+ * render.
+ *
+ * Nothing depends on this being right. It is the difference between a log that reads like a league
+ * and one that reads like a script, and no score anywhere is touched by it.
+ */
+export function whenPicked(uid: string, round: number, lock: Date): Date {
+  // A small deterministic spread from the id, which is already random.
+  let hash = round * 2654435761;
+  for (const character of uid) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+
+  const DAY = 24 * 60 * 60 * 1000;
+  // Waking hours, not a uniform scatter across the clock. Three of six picking between midnight
+  // and six is not a spread, it is a different tell from the one being fixed.
+  const at = new Date(lock.getTime() - (hash % 4) * DAY);
+  at.setHours(8 + ((hash >>> 3) % 15), (hash >>> 8) % 60, 0, 0);
+
+  // A day earlier if that lands after the lock, which the last day before it often would.
+  if (at.getTime() > lock.getTime() - 60 * 60 * 1000) at.setTime(at.getTime() - DAY);
+  return at;
+}

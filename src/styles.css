@@ -1323,8 +1323,12 @@ td { font-variant-numeric: tabular-nums; }
 }
 .tiecrest img { display: block; width: 32px; height: 32px; object-fit: contain; }
 
-.tienames { display: flex; flex: 1 1 auto; flex-direction: column; align-items: flex-end; gap: 1px; min-width: 0; }
+/* Takes the slack, which is what holds the crest against the outside of the card. */
+.tienames { display: flex; flex: 1 1 auto; flex-direction: column; align-items: flex-end; min-width: 0; }
 .tieside.mirrored .tienames { align-items: flex-start; }
+/* And inside it, the two lines centred on each other rather than ranged along one edge — the
+   abbreviation belongs under the middle of the name, not under one end of it. */
+.tienamebox { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; max-width: 100%; }
 .tieclub {
   font-size: 16px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;

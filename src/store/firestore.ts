@@ -311,12 +311,37 @@ export interface Move {
 export async function recordMoves(
   contestId: string,
   moves: Omit<Move, 'at'>[],
+  /**
+   * When it happened, for the commissioner writing a stand-in's history.
+   *
+   * A manager's own moves take the server's clock, because his browser's is not evidence of
+   * anything. Nothing is being proved about a stand-in — he is not a person — and six managers
+   * stamped the same second are obviously one person pressing a button.
+   */
+  at?: Date,
 ): Promise<void> {
   await Promise.all(
     moves.map((move) =>
-      addDoc(collection(db, 'contests', contestId, 'log'), { ...move, at: serverTimestamp() }),
+      addDoc(collection(db, 'contests', contestId, 'log'), { ...move, at: at ?? serverTimestamp() }),
     ),
   );
+}
+
+/**
+ * Whether this manager already has moves recorded for this round.
+ *
+ * The log is append only, so playing a round twice would write a second set and leave somebody
+ * apparently signing the same player twice in an afternoon. Two equality filters need no composite
+ * index, so this costs one small read.
+ */
+export async function hasMoves(contestId: string, uid: string, round: number): Promise<boolean> {
+  const found = await getDocs(query(
+    collection(db, 'contests', contestId, 'log'),
+    where('uid', '==', uid),
+    where('round', '==', round),
+    limit(1),
+  ));
+  return !found.empty;
 }
 
 /**

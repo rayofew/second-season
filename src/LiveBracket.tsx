@@ -37,7 +37,20 @@ const kickoffAt = (side: Side) =>
 
 
 
-const rounded = (value: number) => Math.round(value * 10) / 10;
+/**
+ * A projected scoreline, as a scoreline.
+ *
+ * There is no feed of projected NFL scores in whole numbers — every one of them, ours included, is
+ * worked out from the betting line, and lines are quoted in half points because that is how a
+ * sportsbook avoids paying out on a push. So the halves are real arithmetic and they are also
+ * nonsense on a scoreboard: nobody has ever won a football match 23.5 to 21.5.
+ *
+ * Rounded, then, at the last possible moment. Nothing is decided on this number — the round is
+ * settled on what the clubs actually scored — so the only thing rounding can cost is a projection
+ * that reads 24 against 24 where the market had half a point in it, which is a fair description of
+ * a game the market thinks is even.
+ */
+const rounded = (value: number) => Math.round(value);
 
 /**
  * One half of a tie: crest, club, number.
@@ -65,8 +78,10 @@ function TieSide({
         <img src={crest(side.club)} alt="" width="34" height="34" loading="lazy" />
       </span>
       <span className="tienames">
-        <span className="tieclub" style={{ color: colorOf(side.club) }}>{nameOf(side.club)}</span>
-        <span className="tieabbr">{side.club}</span>
+        <span className="tienamebox">
+          <span className="tieclub" style={{ color: colorOf(side.club) }}>{nameOf(side.club)}</span>
+          <span className="tieabbr">{side.club}</span>
+        </span>
       </span>
       {/*
         * The chip holds the scoreboard once his game is on, and the market's expected score before
