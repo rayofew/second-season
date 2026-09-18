@@ -51,12 +51,16 @@ export function Contacts({
     const phone = found?.phone ?? '';
     const email = found?.email ?? '';
     const slots = slotsOf(manager);
+    // Two lines: who, and how to reach him. Fifteen of these at three lines each was a screen
+    // and a half of scrolling to answer a question about one Thursday evening.
     return (
-      <div className="row">
+      <div className="row contactrow">
         {manager.logo ? <img className="badge" src={manager.logo} alt="" /> : <span className="badge empty" />}
         <span className="rowmain">
-          <span className="rowname">{manager.teamName}</span>
-          <span className="rowmeta">{found?.name || manager.name}</span>
+          <span className="contacttop">
+            <span className="rowname">{manager.teamName}</span>
+            <span className="rowwho">{found?.name || manager.name}</span>
+          </span>
           <span className="contactlinks">
             {phone
               ? <a href={`sms:${dialable(phone)}`}>{formatPhone(phone)}</a>
