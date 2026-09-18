@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, deleteField, doc, getDoc, getDocs, increment, limit, orderBy, query, setDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, deleteField, doc, getDoc, getDocs, increment, limit, orderBy, query, setDoc, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore';
 import type { HeldPlayer } from '../domain/multiplier.ts';
 import type { StatLine } from '../domain/scoring.ts';
 import type { ContestSettings } from '../domain/rules.ts';
@@ -319,13 +319,33 @@ export async function recordMoves(
   );
 }
 
-/** Everything that has happened, newest first. Refused for rounds that have not locked. */
-export async function readMoves(contestId: string): Promise<Move[]> {
-  const snapshot = await getDocs(query(collection(db, 'contests', contestId, 'log'), orderBy('at', 'desc'), limit(300)));
-  return snapshot.docs.map((entry) => {
-    const data = entry.data();
-    return { ...data, at: (data.at as { toDate(): Date } | null)?.toDate() ?? new Date() } as Move;
-  });
+/**
+ * Everything that has happened, newest first.
+ *
+ * Rules are not filters. A manager may read a move only once its round has locked, and asking for
+ * the whole collection returns documents from the round still open — so Firestore refuses the
+ * entire query rather than quietly handing back the part he is allowed, and he sees nothing at all,
+ * including the weeks that finished a month ago.
+ *
+ * So `upTo` narrows the question to rounds that have locked, which makes every document it can
+ * return one he may have. A commissioner may read all of them and asks without it.
+ *
+ * Sorted here rather than by the database: a range on round and an order on time would want a
+ * composite index, and three hundred rows sort in no time at all.
+ */
+export async function readMoves(contestId: string, upTo?: number): Promise<Move[]> {
+  const log = collection(db, 'contests', contestId, 'log');
+  const asked = upTo === undefined
+    ? query(log, orderBy('at', 'desc'), limit(300))
+    : query(log, where('round', '<=', upTo), limit(300));
+
+  const snapshot = await getDocs(asked);
+  return snapshot.docs
+    .map((entry) => {
+      const data = entry.data();
+      return { ...data, at: (data.at as { toDate(): Date } | null)?.toDate() ?? new Date() } as Move;
+    })
+    .sort((first, second) => second.at.getTime() - first.at.getTime());
 }
 
 /**

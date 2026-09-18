@@ -37,8 +37,23 @@ export function Moves() {
       ]);
       setManagers(new Map(people.map((person) => [person.uid, person])));
       setPlayers(new Map(board.map((player) => [player.id, player])));
-      // Refused for rounds still open, which is the point rather than a failure.
-      setMoves(await readMoves(CONTEST).catch(() => []));
+      /*
+       * The whole log if the rules allow it, and otherwise only the rounds that have locked.
+       *
+       * A commissioner may read every move including the round being played. Everybody else may
+       * not, and because rules are not filters the unrestricted question is refused outright — so
+       * the fallback asks a narrower one that every answer to is allowed.
+       */
+      const locked = (found?.rounds ?? [])
+        .filter((entry) => (found?.locks[String(entry.round)] ?? new Date()) <= new Date())
+        .map((entry) => entry.round);
+      const last = locked.length > 0 ? Math.max(...locked) : -1;
+
+      setMoves(
+        await readMoves(CONTEST).catch(() =>
+          last < 0 ? [] : readMoves(CONTEST, last).catch(() => []),
+        ),
+      );
     })();
   }, []);
 
