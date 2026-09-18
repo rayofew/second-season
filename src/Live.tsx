@@ -22,6 +22,7 @@ import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
 import { LiveBracket } from './LiveBracket.tsx';
 import type { Held } from './LiveBracket.tsx';
 import { Games } from './Games.tsx';
+import { clubPoints } from './domain/clubpoints.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import { useHeartbeat } from './useHeartbeat.ts';
 
@@ -225,42 +226,40 @@ export function Live({ uid }: { uid: string }) {
    * what anybody else has done, and the bracket simply offers no way to ask.
    */
   const heldBy = loaded && (() => {
-    const byClub = new Map<string, Map<string, Held>>();
+    // Who has whom, and at what he is worth to each of them.
+    const owners = new Map<string, { name: string; multiplier: number; you: boolean }[]>();
     for (const [index, entry] of loaded.entries.entries()) {
       const row = inputs[index];
       if (!row) continue;
-      const mine = entry.entryId === uid;
       for (const player of row.players) {
-        const person = pool.get(player.playerId);
-        if (!person) continue;
-        const club = byClub.get(person.team) ?? new Map<string, Held>();
-        const already = club.get(player.playerId);
-        const owner = { name: entry.name, multiplier: player.multiplier, you: mine };
-        if (already) {
-          already.by.push(owner);
-        } else {
-          club.set(player.playerId, {
-            id: person.id,
-            name: person.name,
-            position: person.position,
-            team: person.team,
-            counting: player.counting,
-            projected: player.projected,
-            started: player.state !== 'upcoming',
-            by: [owner],
-          });
-        }
-        byClub.set(person.team, club);
+        const already = owners.get(player.playerId) ?? [];
+        already.push({ name: entry.name, multiplier: player.multiplier, you: entry.entryId === uid });
+        owners.set(player.playerId, already);
       }
     }
-    // Whoever is doing most first, and within a man the biggest multiplier first — the holder
-    // for whom the afternoon matters most.
+
+    // Every man in the pool, club by club, with the owners hung off him. Same function the
+    // football list uses, so the two cannot end up disagreeing about what anybody scored.
+    const clubs = clubPoints(
+      [...pool.values()],
+      actual,
+      expected,
+      (club) => games.get(club)?.state ?? 'upcoming',
+    );
     return new Map(
-      [...byClub].map(([club, men]) => [
+      [...clubs].map(([club, totals]): [string, Held[]] => [
         club,
-        [...men.values()]
-          .map((man) => ({ ...man, by: [...man.by].sort((a, b) => b.multiplier - a.multiplier) }))
-          .sort((first, second) => second.counting - first.counting),
+        totals.players.map((player) => ({
+          id: player.id,
+          name: player.name,
+          position: player.position,
+          team: player.team,
+          counting: player.counting,
+          projected: player.projected,
+          started: player.state !== 'upcoming',
+          // The biggest multiplier first: the holder for whom the afternoon matters most.
+          by: [...(owners.get(player.id) ?? [])].sort((a, b) => b.multiplier - a.multiplier),
+        })),
       ]),
     );
   })();

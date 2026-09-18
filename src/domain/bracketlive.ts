@@ -59,10 +59,7 @@ const blank = (club: string, seed: number): Side => ({
   club, seed, points: 0, against: '', home: false, state: 'upcoming', clock: '', kickoff: null,
 });
 
-const when = (side: Side) =>
-  side.kickoff
-    ? side.kickoff.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })
-    : 'a time to come';
+
 
 export function liveTie(
   matchup: Matchup,
@@ -95,15 +92,9 @@ export function liveTie(
   const settled = sides.every((side) => side.state === 'final');
   const waiting = sides.filter((side) => side.state === 'upcoming');
 
+  // Neither has taken the field. Both cards already say when they do, so there is nothing to add.
   if (played.length === 0) {
-    return {
-      ...matchup,
-      sides,
-      headToHead,
-      leading: null,
-      state: `Kicks off ${when(away)}`,
-      settled: false,
-    };
+    return { ...matchup, sides, headToHead, leading: null, state: '', settled: false };
   }
 
   const verdict = decide(
@@ -125,8 +116,7 @@ export function liveTie(
       sides,
       headToHead,
       leading: null,
-      state: `${played[0]!.club} ${played[0]!.points}${played[0]!.state === 'final' ? ' final' : ''}`
-        + ` · ${ahead.club} kicks off ${when(ahead)}`,
+      state: `${ahead.club} still to play`,
       settled: false,
     };
   }

@@ -107,24 +107,27 @@ export interface Held {
   counting: number;
   projected: number;
   started: boolean;
-  /** The managers holding him, each with the multiplier he is worth to that one. */
+  /** The managers holding him, each with the multiplier he is worth to that one. Empty is normal. */
   by: { name: string; multiplier: number; you: boolean }[];
 }
 
 /**
- * Everybody's men from one club, with who holds them.
+ * Every man from one club, and whoever has picked him.
  *
- * The pool is shared, so a club having an afternoon does not help one manager — it helps
- * however many picked from it, by different amounts. Seeing that a receiver is held by six
- * people at 1x and by one at 4x is the whole texture of this format, and it exists nowhere else
- * in the app.
+ * All of them rather than only the picked ones, because the question asked in front of a game
+ * is as often "who else is in this" as "who have I got". The ones nobody took simply carry no
+ * chips.
+ *
+ * The pool is shared, so a club having an afternoon does not help one manager — it helps however
+ * many picked from it, by different amounts. A receiver held by six people at 1x and by one at
+ * 4x is the whole texture of this format, and it exists nowhere else in the app.
  */
 function Squad({ club, held }: { club: string; held: Held[] }) {
   if (held.length === 0) {
     return (
       <div className="tiesquad">
         <div className="squadhead">{club}</div>
-        <div className="pending">Nobody has picked from this club.</div>
+        <div className="pending">Nobody from this club is in the pool.</div>
       </div>
     );
   }
@@ -132,10 +135,10 @@ function Squad({ club, held }: { club: string; held: Held[] }) {
     <div className="tiesquad">
       <div className="squadhead">
         {club}
-        <span className="colhead">{held.length} picked</span>
+        <span className="colhead">{held.filter((man) => man.by.length > 0).length} of {held.length} picked</span>
       </div>
       {held.map((man) => (
-        <div className="heldline" key={man.id}>
+        <div className={`heldline ${man.by.length > 0 ? 'taken' : ''}`} key={man.id}>
           <Face player={man} size={30} />
           <span className="heldmain">
             <span className="heldname">

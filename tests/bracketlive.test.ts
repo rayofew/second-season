@@ -61,19 +61,19 @@ describe('a bracket tie while the games are still going', () => {
     ]);
     const live = liveTie(tie, games, FIELD, noYards);
     assert.equal(live.leading, null, 'nobody is ahead of a team that has not played');
-    assert.match(live.state, /LAC 24 final/);
-    assert.match(live.state, /NE kicks off/);
+    // Each card carries its own kickoff, so the line names who is missing rather than when.
+    assert.equal(live.state, 'NE still to play');
     assert.equal(live.settled, false);
   });
 
-  it('says when the first of them starts, before anybody has played', () => {
+  it('says nothing at all before either has played, because both cards say when', () => {
     const games = new Map([
       ['LAC', fixture('LV', 0, 'upcoming', 17)],
       ['NE', fixture('MIA', 0, 'upcoming', 20)],
     ]);
     const live = liveTie(tie, games, FIELD, noYards);
     assert.equal(live.leading, null);
-    assert.match(live.state, /^Kicks off/);
+    assert.equal(live.state, '');
   });
 
   it('is provisional while both are still playing', () => {
