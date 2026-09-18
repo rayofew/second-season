@@ -200,7 +200,7 @@ export function LiveBracket({
             <div className="tierow">
               <TieSide side={away} leading={tie.leading === away.club} started={begun} />
               <span className="tievs">vs</span>
-              <TieSide side={home} leading={tie.leading === home.club} started={begun} />
+              <TieSide side={home} mirrored leading={tie.leading === home.club} started={begun} />
               {heldBy && (
                 <button
                   className="tieopen"
