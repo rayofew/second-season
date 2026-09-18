@@ -291,7 +291,7 @@ export function Live({ uid }: { uid: string }) {
 
       <div className="card">
         <div className="confhead">
-          {round?.name}
+          Manager scores — {round?.name ?? 'this round'}
           <span className="colhead">
             {asOf ? `updated ${asOf.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}` : 'loading'}
           </span>

@@ -30,13 +30,17 @@ export interface BoardRow extends BoardInput {
   banked: number;
   /** Raw points this round, multipliers ignored. The weekly prize. */
   raw: number;
-  /** What this row is ranked on, which depends on the race. Counts projections for the unplayed. */
+  /** What this row is running at, counting projections for anybody yet to play. */
   total: number;
   /**
    * Points that have actually been scored — nothing expected, nothing guessed.
    *
    * On a Sunday morning this is nought and the total is a hundred and forty, and a row showing
    * only the second is telling somebody he has a hundred and forty points. He has none yet.
+   *
+   * This is what the board is ranked on. Ranking on the projection instead put a man with
+   * seventeen points above one with fifty-two because a computer somewhere likes his afternoon,
+   * which is not a leaderboard, it is a forecast with places on it.
    */
   scored: number;
   /** How much of the total is real rather than expected, from 0 to 1. */
@@ -45,7 +49,7 @@ export interface BoardRow extends BoardInput {
   playing: number;
   left: number;
   rank: number;
-  /** Points behind the leader, or 0 for the leader. */
+  /** Points actually scored behind the leader, or 0 for the leader. */
   behind: number;
 }
 
@@ -86,11 +90,20 @@ export function board(entries: readonly BoardInput[], race: Race): BoardRow[] {
     };
   });
 
-  const sorted = [...rows].sort((first, second) => second.total - first.total);
-  const best = sorted[0]?.total ?? 0;
+  /**
+   * Ordered by what has actually been scored, best first.
+   *
+   * Where two managers have scored the same — which on a Sunday morning is everybody, on nought —
+   * the one running at more goes above. That is an order to read the list in, not a claim about
+   * who is ahead: the ranks below still share.
+   */
+  const sorted = [...rows].sort(
+    (first, second) => second.scored - first.scored || second.total - first.total,
+  );
+  const best = sorted[0]?.scored ?? 0;
 
   /**
-   * Equal totals share a rank and the next one skips, as places do everywhere else.
+   * Equal scores share a rank and the next one skips, as places do everywhere else.
    *
    * Nothing here breaks a tie. The contest has tiebreakers and they are settled figures applied at
    * the end; inventing an order mid-afternoon would show a separation that does not exist.
@@ -98,10 +111,10 @@ export function board(entries: readonly BoardInput[], race: Race): BoardRow[] {
   let rank = 0;
   let previous: number | null = null;
   return sorted.map((row, index) => {
-    if (previous === null || Math.abs(row.total - previous) > 1e-9) {
+    if (previous === null || Math.abs(row.scored - previous) > 1e-9) {
       rank = index + 1;
-      previous = row.total;
+      previous = row.scored;
     }
-    return { ...row, rank, behind: best - row.total };
+    return { ...row, rank, behind: best - row.scored };
   });
 }

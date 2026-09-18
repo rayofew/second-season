@@ -129,6 +129,29 @@ describe('the live leaderboard', () => {
     assert.equal(rows[1]?.behind, 0);
   });
 
+  it('orders by what has been scored, not by what is expected', () => {
+    // The board read 52, then 17, then 34 down the page, because it was sorted on projections
+    // and displaying the real figure. Whatever the big number is, the order has to follow it.
+    const rows = board([
+      entry('hyped', 0, [man('QB', 17, 1, 'playing'), man('RB1', 0, 1, 'upcoming', 134)]),
+      entry('scoring', 0, [man('QB', 52, 1, 'playing'), man('RB1', 0, 1, 'upcoming', 20)]),
+    ], 'contest');
+    assert.deepEqual(rows.map((row) => row.entryId), ['scoring', 'hyped']);
+    assert.equal(rows[0]?.behind, 0);
+    assert.equal(rows[1]?.behind, 35, 'and behind is measured in real points too');
+  });
+
+  it('reads in projection order while everybody is still on nought', () => {
+    // Nobody has kicked off, so nobody is ahead of anybody — but the list still has to come out
+    // in some order, and the most promising afternoon is the useful one to put at the top.
+    const rows = board([
+      entry('quiet', 0, [man('QB', 0, 1, 'upcoming', 40)]),
+      entry('loaded', 0, [man('QB', 0, 1, 'upcoming', 120)]),
+    ], 'contest');
+    assert.deepEqual(rows.map((row) => row.entryId), ['loaded', 'quiet']);
+    assert.deepEqual(rows.map((row) => row.rank), [1, 1], 'level, and said to be level');
+  });
+
   it('copes with a manager who submitted nothing', () => {
     const rows = board([
       entry('absent', 120, []),
