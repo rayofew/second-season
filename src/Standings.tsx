@@ -3,6 +3,7 @@ import { explain } from './domain/trouble.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import { points } from './domain/scoring.ts';
 import { table } from './domain/standings.ts';
+import { weeklyWins, winCounts } from './domain/weekly.ts';
 import type { Entry, Placing } from './domain/standings.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
 import type { StatLine } from './domain/scoring.ts';
@@ -136,6 +137,8 @@ export function Standings({ uid }: { uid: string }) {
   const leader = placings[0]?.credited ?? 0;
   const groups = inFives(placings);
   const showing = placings.find((placing) => placing.entryId === open) ?? null;
+  const weeks = weeklyWins(placings);
+  const wins = winCounts(weeks);
 
   return (
     <>
@@ -150,6 +153,11 @@ export function Standings({ uid }: { uid: string }) {
         * the whole league on one screen with the places kept next to each other, which is the
         * comparison anybody is actually making.
         */}
+      <h2 className="sectionhead">
+        Overall
+        <span>credited points — every round, multipliers and all</span>
+      </h2>
+
       <div className="boards">
         {groups.map((group) => (
           <div className="card board" key={group[0]!.entryId}>
@@ -170,9 +178,16 @@ export function Standings({ uid }: { uid: string }) {
                   {manager?.logo
                     ? <img className="badge small" src={manager.logo} alt="" />
                     : <span className="badge small empty" />}
-                  <span className="placename">
-                    {placing.name}
-                    {placing.entryId === uid && <span className="tag">you</span>}
+                  <span className="placemain">
+                    <span className="placename">
+                      {placing.name}
+                      {placing.entryId === uid && <span className="tag">you</span>}
+                    </span>
+                    {(wins.get(placing.entryId) ?? 0) > 0 && (
+                      <span className="placewins">
+                        won {wins.get(placing.entryId)} {wins.get(placing.entryId) === 1 ? 'week' : 'weeks'}
+                      </span>
+                    )}
                   </span>
                   <span className="placenums">
                     <b>{points(placing.credited)}</b>
@@ -226,6 +241,41 @@ export function Standings({ uid }: { uid: string }) {
           </div>
         </div>
       )}
+
+      <h2 className="sectionhead">
+        Weekly wins
+        <span>raw points for one round, multipliers ignored — so it stays winnable by anybody</span>
+      </h2>
+
+      <div className="card">
+        {weeks.map((week) => (
+          <div className={`weekrow ${week.winners.length === 0 ? 'unplayed' : ''}`} key={week.round}>
+            <span className="weekname">{roundNames[week.round] ?? `Round ${week.round + 1}`}</span>
+            {week.winners.length === 0 ? (
+              <span className="weeknobody">not played yet</span>
+            ) : (
+              <>
+                <span className="weekwinners">
+                  {week.winners.map((winner) => {
+                    const manager = managers.get(winner.entryId);
+                    return (
+                      <span className="weekwinner" key={winner.entryId}>
+                        {manager?.logo
+                          ? <img className="badge small" src={manager.logo} alt="" />
+                          : <span className="badge small empty" />}
+                        {winner.name}
+                        {winner.entryId === uid && <span className="tag">you</span>}
+                      </span>
+                    );
+                  })}
+                  {week.winners.length > 1 && <span className="weekshared">shared</span>}
+                </span>
+                <span className="weekraw">{points(week.raw)}</span>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
 
       <p className="footnote">
         Tap a manager for every round and every player behind the total. Nothing here is stored —

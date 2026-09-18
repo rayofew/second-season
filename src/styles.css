@@ -425,6 +425,16 @@ td { font-variant-numeric: tabular-nums; }
 
 /* ---- The standings, in boxes of five ---------------------------------- */
 
+/* Two contests run at once on this screen and they are scored differently. Without a heading over
+   each, they read as one long table of numbers that contradicts itself. */
+.sectionhead {
+  display: flex; flex-direction: column; gap: 2px;
+  margin: 4px 4px 10px; font-size: 16px; font-weight: 750; letter-spacing: -0.01em;
+}
+.sectionhead span {
+  font-size: 11.5px; font-weight: 400; color: var(--faint); letter-spacing: 0;
+}
+
 /**
  * Three boxes across rather than one table fifteen rows deep.
  *
@@ -452,9 +462,14 @@ td { font-variant-numeric: tabular-nums; }
 /* Whoever is top of the pile, which is the one number on this screen worth colouring. */
 .placing.leader .placerank { color: var(--gold); }
 
+.placemain { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .placename {
-  flex: 1 1 auto; min-width: 0; font-weight: 650; font-size: 13.5px;
+  min-width: 0; font-weight: 650; font-size: 13.5px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Under the name rather than beside it: in a box this narrow the name has nowhere to go sideways. */
+.placewins {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em; color: var(--gold);
 }
 
 .placenums {
@@ -463,6 +478,32 @@ td { font-variant-numeric: tabular-nums; }
 }
 .placenums b { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
 .placing.leader .placenums b { color: var(--gold); }
+
+/* ---- Weekly wins ------------------------------------------------------ */
+
+.weekrow {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 15px; border-bottom: 1px solid var(--line); min-height: 54px;
+}
+.weekrow:last-child { border-bottom: 0; }
+.weekrow.unplayed { background: var(--sunk); }
+
+.weekname {
+  flex: 0 0 34%; min-width: 0; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.weekwinners { flex: 1 1 auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.weekwinner { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 13.5px; }
+.weekshared {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--faint); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px;
+}
+.weekraw {
+  flex: none; font-size: 16px; font-weight: 800; color: var(--gold);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+}
+.weeknobody { flex: 1 1 auto; font-size: 12.5px; color: var(--faint); }
 
 .closedetail {
   margin-left: auto; background: none; border: 0; padding: 0; color: var(--faint);

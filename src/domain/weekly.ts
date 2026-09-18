@@ -1,67 +1,50 @@
+import type { EntryScore } from './standings.ts';
+
 /**
- * The weekly prize: whoever scored most in a round, before any multiplier.
+ * Who won each week, which is a different contest from who is winning.
  *
- * Deliberately raw rather than credited, so it is winnable by somebody having a bad contest. A
- * manager whose roster died in the first round is finished on the main prize by week two, and a
- * prize he cannot win is a prize that does not reach him.
+ * The weekly prize is raw points for one round with the multipliers ignored — deliberately, so a
+ * manager whose contest ended in the Wild Card round still has something to play for in January.
+ * Being ahead overall has nothing to do with it: forty raw points beats eighty credited.
  *
- * Ties are broken by walking down the roster: the better quarterback takes it; still tied, the
- * quarterback and the first running back together; and so on until somebody is ahead. Two managers
- * can only share it by having scored identically in every slot, which is a result worth sharing.
+ * A week nobody scored in has no winner rather than fifteen of them. That happens before a round is
+ * played, and the standings screen asks for every round including the one in progress.
  */
 
-export interface WeekEntry {
-  entryId: string;
-  /** Raw points, by slot id. */
-  bySlot: Readonly<Record<string, number>>;
-}
-
-export interface WeekPlacing extends WeekEntry {
+export interface WeekWin {
+  round: number;
+  /** Everybody who scored the most that week. Normally one; a dead heat is shared, not broken. */
+  winners: { entryId: string; name: string }[];
   raw: number;
-  rank: number;
-  /** The slot at which the tie broke, if one had to be broken. */
-  decidedAt: string | null;
 }
 
-const total = (entry: WeekEntry) => Object.values(entry.bySlot).reduce((sum, points) => sum + points, 0);
+export function weeklyWins(entries: readonly EntryScore[]): WeekWin[] {
+  const rounds = Math.max(0, ...entries.map((entry) => entry.rounds.length));
 
-/**
- * Positive when the second entry should place higher, so it can be handed straight to sort().
- * Also reports where a tie broke, which is the only part anybody will want explained.
- */
-export function compareWeek(
-  first: WeekEntry,
-  second: WeekEntry,
-  slotOrder: readonly string[],
-): { order: number; at: string | null } {
-  const gap = total(second) - total(first);
-  if (Math.abs(gap) > 1e-9) return { order: gap, at: null };
+  return Array.from({ length: rounds }, (_, round): WeekWin => {
+    const scores = entries.map((entry) => ({
+      entryId: entry.entryId,
+      name: entry.name,
+      raw: entry.rounds[round]?.raw ?? 0,
+    }));
+    const best = Math.max(0, ...scores.map((score) => score.raw));
 
-  let running = 0;
-  let theirs = 0;
-  for (const slot of slotOrder) {
-    running += first.bySlot[slot] ?? 0;
-    theirs += second.bySlot[slot] ?? 0;
-    if (Math.abs(running - theirs) > 1e-9) return { order: theirs - running, at: slot };
-  }
-  return { order: 0, at: null };
-}
-
-/** The week's table, best first. Entries nothing can separate share a rank. */
-export function weekTable(entries: readonly WeekEntry[], slotOrder: readonly string[]): WeekPlacing[] {
-  const ordered = [...entries].sort((first, second) => compareWeek(first, second, slotOrder).order);
-
-  const placings: WeekPlacing[] = [];
-  ordered.forEach((entry, index) => {
-    const above = ordered[index - 1];
-    const gap = above ? compareWeek(above, entry, slotOrder) : null;
-    const tied = gap !== null && gap.order === 0;
-    placings.push({
-      ...entry,
-      raw: total(entry),
-      rank: tied ? placings[index - 1]!.rank : index + 1,
-      decidedAt: gap && gap.order !== 0 ? gap.at : null,
-    });
+    return {
+      round,
+      // Nobody wins a week nobody has played.
+      winners: best > 0 ? scores.filter((score) => Math.abs(score.raw - best) < 1e-9) : [],
+      raw: best,
+    };
   });
-  return placings;
+}
+
+/** How many weeks each manager has won, for the chip beside a name in the table. */
+export function winCounts(wins: readonly WeekWin[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const week of wins) {
+    for (const winner of week.winners) {
+      counts.set(winner.entryId, (counts.get(winner.entryId) ?? 0) + 1);
+    }
+  }
+  return counts;
 }
