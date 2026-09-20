@@ -542,6 +542,35 @@ td { font-variant-numeric: tabular-nums; }
   color: var(--faint);
 }
 
+/* ---- The board --------------------------------------------------------- */
+
+.composer { padding: 12px 15px 14px; display: flex; flex-direction: column; gap: 10px; }
+.composer textarea {
+  width: 100%; resize: vertical; min-height: 78px; padding: 11px 12px; border-radius: 10px;
+  background: var(--ground); border: 1px solid var(--line); color: var(--ink);
+  font: inherit; font-size: 15px; line-height: 1.5;
+}
+.composer textarea:focus { border-color: var(--line-strong); outline: none; }
+.composerfoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+/* Asking is not sending, and the wording says which of the two this is. */
+.askemail { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--dim); cursor: pointer; }
+.askemail input { width: 17px; height: 17px; accent-color: var(--gold); flex: none; }
+
+.post { padding: 13px 15px 11px; }
+.posthead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.postwho { font-weight: 700; font-size: 14px; letter-spacing: -0.01em; }
+.postwhen { font-size: 11px; color: var(--faint); white-space: nowrap; }
+/* Whatever somebody typed, with the line breaks they typed. */
+.posttext { margin: 7px 0 10px; font-size: 14.5px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.postfoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.postmail { font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+.postmail .emailed { color: var(--live); }
+.postmail .asking { color: var(--gold); }
+.postacts { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+/* A link rather than a button, because a mailto has to be one to open a mail app. */
+.postacts a.ghost { text-decoration: none; display: inline-flex; align-items: center; }
+
 /* ---- Weekly wins ------------------------------------------------------ */
 
 .weekrow {

@@ -2,6 +2,7 @@ import { addDoc, collection, deleteDoc, deleteField, doc, getDoc, getDocs, incre
 import type { HeldPlayer } from '../domain/multiplier.ts';
 import type { StatLine } from '../domain/scoring.ts';
 import type { ContestSettings } from '../domain/rules.ts';
+import type { Post } from '../domain/post.ts';
 import type { Prizes } from '../domain/pool.ts';
 import { shortName, splitName } from '../domain/name.ts';
 import { db } from '../firebase.ts';
@@ -287,6 +288,49 @@ export async function readSubmitted(
     filled.set(uid, snapshot.exists() ? ((snapshot.data().players as unknown[]) ?? []).length : 0);
   });
   return filled;
+}
+
+/**
+ * The message board.
+ *
+ * Readable by the league and written by anybody in it, which is the whole point — a group chat
+ * that does not scroll away, kept next to the thing it is about. The writer's name is copied in
+ * rather than looked up, so renaming a team does not quietly rewrite what somebody said in January.
+ */
+export async function readPosts(contestId: string): Promise<Post[]> {
+  const snapshot = await getDocs(query(
+    collection(db, 'contests', contestId, 'posts'),
+    orderBy('at', 'desc'),
+    limit(200),
+  ));
+  return snapshot.docs.map((entry) => {
+    const data = entry.data();
+    return {
+      id: entry.id,
+      uid: data.uid as string,
+      name: (data.name as string) ?? 'Somebody',
+      text: (data.text as string) ?? '',
+      at: (data.at as { toDate(): Date } | null)?.toDate() ?? new Date(),
+      wantsEmail: Boolean(data.wantsEmail),
+      emailedAt: (data.emailedAt as { toDate?: () => Date } | undefined)?.toDate?.(),
+    };
+  });
+}
+
+export async function writePost(
+  contestId: string,
+  post: { uid: string; name: string; text: string; wantsEmail: boolean },
+): Promise<void> {
+  await addDoc(collection(db, 'contests', contestId, 'posts'), { ...post, at: serverTimestamp() });
+}
+
+export async function removePost(contestId: string, id: string): Promise<void> {
+  await deleteDoc(doc(db, 'contests', contestId, 'posts', id));
+}
+
+/** Noted once the commissioner has actually sent it, so nobody sends the same news twice. */
+export async function markEmailed(contestId: string, id: string): Promise<void> {
+  await updateDoc(doc(db, 'contests', contestId, 'posts', id), { emailedAt: serverTimestamp() });
 }
 
 export interface Move {

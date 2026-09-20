@@ -7,6 +7,7 @@ import { Rules } from './Rules.tsx';
 import { Register } from './Register.tsx';
 import { Commissioner } from './Commissioner.tsx';
 import { Moves } from './Moves.tsx';
+import { Board } from './Board.tsx';
 import { Version } from './Version.tsx';
 import { Home } from './Home.tsx';
 import { Theme } from './Theme.tsx';
@@ -17,7 +18,7 @@ import { isRefusal } from './domain/trouble.ts';
 
 const CONTEST = 'rehearsal-2026';
 
-type Tab = 'home' | 'team' | 'live' | 'bracket' | 'standings' | 'moves' | 'rules' | 'commish';
+type Tab = 'home' | 'team' | 'live' | 'bracket' | 'standings' | 'board' | 'moves' | 'rules' | 'commish';
 
 export function App() {
   const [tab, setTab] = useState<Tab>('home');
@@ -100,6 +101,7 @@ export function App() {
             <button aria-current={tab === 'live'} onClick={() => setTab('live')}>Live</button>
             <button aria-current={tab === 'bracket'} onClick={() => setTab('bracket')}>Bracket</button>
             <button aria-current={tab === 'standings'} onClick={() => setTab('standings')}>Standings</button>
+            <button aria-current={tab === 'board'} onClick={() => setTab('board')}>Board</button>
             <button aria-current={tab === 'moves'} onClick={() => setTab('moves')}>Moves</button>
             <button aria-current={tab === 'rules'} onClick={() => setTab('rules')}>Rules</button>
             {commissioner && (
@@ -111,6 +113,7 @@ export function App() {
             : tab === 'team' ? <RosterBuilder uid={user.uid} />
             : tab === 'live' ? <Live uid={user.uid} />
             : tab === 'bracket' ? <Bracket />
+            : tab === 'board' ? <Board uid={user.uid} commissioner={commissioner} />
             : tab === 'moves' ? <Moves />
             : tab === 'rules' ? <Rules />
             : tab === 'commish' && commissioner ? <Commissioner uid={user.uid} />

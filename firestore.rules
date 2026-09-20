@@ -163,6 +163,31 @@ service cloud.firestore {
       }
 
       /**
+       * The message board.
+       *
+       * Anybody in the league may post, and may post only as himself. He may delete his own; the
+       * commissioner may delete anybody's, which is the only moderation a league of people who know
+       * each other needs.
+       *
+       * Nothing is editable. A message that can be changed after it is read is not a message, it is
+       * an argument waiting to happen — and the delete is right there if somebody wants it gone.
+       *
+       * emailedAt is the commissioner's note that he has sent it on, so the same news does not go
+       * out twice; it is the only field anybody may write after the fact.
+       */
+      match /posts/{postId} {
+        allow read: if isMember(contestId) || isCommissioner(contestId);
+        allow create: if isMember(contestId)
+                      && request.resource.data.uid == request.auth.uid
+                      && request.resource.data.text is string
+                      && request.resource.data.text.size() > 0
+                      && request.resource.data.text.size() <= 2000;
+        allow update: if isCommissioner(contestId)
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['emailedAt']);
+        allow delete: if isCommissioner(contestId) || isOwner(resource.data.uid);
+      }
+
+      /**
        * Raw points the commissioner has set by hand.
        *
        * Kept apart from the imported scores, which no client may touch, so re-running the import

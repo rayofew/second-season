@@ -96,6 +96,7 @@ const locked = (contest.rounds ?? [])
 console.log(`Rounds that have locked: ${locked.length ? locked.join(', ') : 'none'}\n`);
 
 await get('the contest itself', `contests/${CONTEST}`);
+await ask('the message board', { from: [{ collectionId: 'posts' }], limit: 200 });
 await get('the player pool', `contests/${CONTEST}/pool/current`);
 
 // The shape the app asks for, and the two shapes that are refused — kept because the difference
