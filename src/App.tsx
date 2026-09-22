@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { RosterBuilder } from './RosterBuilder.tsx';
 import { Bracket } from './Bracket.tsx';
 import { Standings } from './Standings.tsx';
@@ -12,7 +12,7 @@ import { Version } from './Version.tsx';
 import { Home } from './Home.tsx';
 import { Theme } from './Theme.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
-import { noteVisit, readContest, readEntries, rememberEmail } from './store/firestore.ts';
+import { noteVisit, readContest, readEntries, readPosts, rememberEmail } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
 import { isRefusal } from './domain/trouble.ts';
 
@@ -27,6 +27,21 @@ export function App() {
   const [managers, setManagers] = useState(0);
   // null while we find out; false means signed in but not in this league.
   const [member, setMember] = useState<boolean | null>(null);
+  /**
+   * Messages said since this manager last looked, counted on the tab.
+   *
+   * On the tab rather than only on Home, because Home is one screen out of nine and somebody who
+   * lands on his team and goes straight to picking never sees it. A number next to the word Board
+   * is visible from wherever he happens to be.
+   */
+  const [unread, setUnread] = useState(0);
+  /**
+   * Stable, because the Board reloads whenever this changes identity.
+   *
+   * An arrow written at the call site is a new function on every render, and the Board's loader
+   * depends on it — which is a fetch per render and then a render per fetch.
+   */
+  const clearUnread = useCallback(() => setUnread(0), []);
   // Hiding the tab is courtesy. What a commissioner may actually do is decided by the rules.
   const commissioner = Boolean(user && contest?.commissioners?.includes(user.uid));
 
@@ -43,6 +58,7 @@ export function App() {
     setMember(null);
     setContest(null);
     setManagers(0);
+    setUnread(0);
     setTab('home');
     if (!user) return;
 
@@ -60,6 +76,13 @@ export function App() {
         void rememberEmail(CONTEST, user.uid, user.email).catch(() => undefined);
         // And a note that he was here, so the commissioner can see who has never opened it.
         void noteVisit(CONTEST, user.uid).catch(() => undefined);
+
+        // His own posts are not news to him, which is the difference between a notice and a
+        // receipt. Five is plenty: past that the number is "several" either way.
+        const posts = await readPosts(CONTEST, 5).catch(() => []);
+        const read = people.find((person) => person.uid === user.uid)?.lastReadBoard;
+        if (!current) return;
+        setUnread(posts.filter((post) => post.uid !== user.uid && (!read || post.at > read)).length);
       } catch (cause) {
         // The rules refuse anyone without an entry, which is how we learn they are not in yet.
         if (current) setMember(isRefusal(cause) ? false : true);
@@ -101,7 +124,10 @@ export function App() {
             <button aria-current={tab === 'live'} onClick={() => setTab('live')}>Live</button>
             <button aria-current={tab === 'bracket'} onClick={() => setTab('bracket')}>Bracket</button>
             <button aria-current={tab === 'standings'} onClick={() => setTab('standings')}>Standings</button>
-            <button aria-current={tab === 'board'} onClick={() => setTab('board')}>Board</button>
+            <button aria-current={tab === 'board'} onClick={() => setTab('board')}>
+              Board
+              {unread > 0 && <span className="tabcount">{unread}</span>}
+            </button>
             <button aria-current={tab === 'moves'} onClick={() => setTab('moves')}>Moves</button>
             <button aria-current={tab === 'rules'} onClick={() => setTab('rules')}>Rules</button>
             {commissioner && (
@@ -119,7 +145,9 @@ export function App() {
             : tab === 'team' ? <RosterBuilder uid={user.uid} />
             : tab === 'live' ? <Live uid={user.uid} />
             : tab === 'bracket' ? <Bracket />
-            : tab === 'board' ? <Board uid={user.uid} commissioner={commissioner} />
+            : tab === 'board' ? (
+              <Board uid={user.uid} commissioner={commissioner} onRead={clearUnread} />
+            )
             : tab === 'moves' ? <Moves />
             : tab === 'rules' ? <Rules />
             : tab === 'commish' && commissioner ? <Commissioner uid={user.uid} />

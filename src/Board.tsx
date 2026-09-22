@@ -24,7 +24,16 @@ import type { Manager } from './store/firestore.ts';
 
 const CONTEST = 'rehearsal-2026';
 
-export function Board({ uid, commissioner }: { uid: string; commissioner: boolean }) {
+export function Board({
+  uid,
+  commissioner,
+  onRead,
+}: {
+  uid: string;
+  commissioner: boolean;
+  /** Clears the count on the tab, which is this screen's business rather than the tab's. */
+  onRead: () => void;
+}) {
   const [posts, setPosts] = useState<Post[] | null>(null);
   const [me, setMe] = useState<Manager | null>(null);
   const [hasText, setHasText] = useState(false);
@@ -39,13 +48,14 @@ export function Board({ uid, commissioner }: { uid: string; commissioner: boolea
       setMe(people.find((person) => person.uid === uid) ?? null);
       setPosts(written);
 
-      // Seen, so Home stops saying there is something to see. Failing is no reason to stop
-      // reading the board, so it is allowed to fail quietly.
+      // Seen, so Home and the tab stop saying there is something to see. Failing is no reason to
+      // stop reading the board, so it is allowed to fail quietly.
+      onRead();
       void noteBoardRead(CONTEST, uid).catch(() => undefined);
     } catch (cause) {
       setProblem(explain(cause));
     }
-  }, [uid]);
+  }, [uid, onRead]);
 
   useEffect(() => { void load(); }, [load]);
 
