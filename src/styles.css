@@ -1702,3 +1702,26 @@ td { font-variant-numeric: tabular-nums; }
   font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--faint);
 }
+
+/* The two things that have to be true before a round can be decided. Both have been wrong once. */
+.checklist { padding: 10px 15px 4px; display: flex; flex-direction: column; gap: 6px; }
+.checkline { display: flex; align-items: baseline; gap: 9px; font-size: 13px; }
+.checkline span { flex: none; width: 14px; font-weight: 800; }
+.checkline.ok { color: var(--dim); }
+.checkline.ok span { color: var(--live); }
+.checkline.no { color: var(--ink); font-weight: 600; }
+.checkline.no span { color: var(--gone); }
+
+/* A command to run, which is not prose and should not look like it. */
+.runthis {
+  display: block; margin: 8px 0 6px; padding: 9px 11px; border-radius: 8px;
+  background: var(--sunk); border: 1px solid var(--line); color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px;
+  overflow-x: auto; white-space: nowrap;
+}
+
+/* What one press is about to do. It cannot be undone from any screen. */
+.willdo {
+  padding: 12px 15px; font-size: 12.5px; line-height: 1.6; color: var(--dim);
+  border-top: 1px solid var(--line); background: var(--sunk);
+}
