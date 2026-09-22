@@ -139,6 +139,13 @@ export function Standings({ uid }: { uid: string }) {
   const showing = placings.find((placing) => placing.entryId === open) ?? null;
   const weeks = weeklyWins(placings);
   const wins = winCounts(weeks);
+  /**
+   * What a week is worth, which is why anybody reads this section twice.
+   *
+   * Nought when the league is not collecting anything, and then the money disappears entirely
+   * rather than showing a row of dollar signs with no dollars behind them.
+   */
+  const weekly = contest?.prizes?.weekly ?? 0;
 
   return (
     <>
@@ -245,7 +252,10 @@ export function Standings({ uid }: { uid: string }) {
 
       <h2 className="sectionhead">
         Weekly wins
-        <span>raw points for one round, multipliers ignored — so it stays winnable by anybody</span>
+        <span>
+          raw points for one round, multipliers ignored — so it stays winnable by anybody
+          {weekly > 0 && ` · $${weekly} a week`}
+        </span>
       </h2>
 
       <div className="card">
@@ -272,6 +282,14 @@ export function Standings({ uid }: { uid: string }) {
                   {week.winners.length > 1 && <span className="weekshared">shared</span>}
                 </span>
                 <span className="weekraw">{points(week.raw)}</span>
+                {/* Split on a dead heat, because two winners and one prize is not two prizes. */}
+                {weekly > 0 && (
+                  <span className="weekmoney">
+                    {week.winners.length > 1
+                      ? `$${Math.round((weekly / week.winners.length) * 100) / 100} each`
+                      : `$${weekly}`}
+                  </span>
+                )}
               </>
             )}
           </div>

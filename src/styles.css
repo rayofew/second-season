@@ -1725,3 +1725,9 @@ td { font-variant-numeric: tabular-nums; }
   padding: 12px 15px; font-size: 12.5px; line-height: 1.6; color: var(--dim);
   border-top: 1px solid var(--line); background: var(--sunk);
 }
+
+/* What a week is worth. Sits beside the score because the two together are the whole sentence. */
+.weekmoney {
+  flex: none; font-size: 12.5px; font-weight: 800; white-space: nowrap;
+  color: var(--on-accent); background: var(--gold); border-radius: 999px; padding: 3px 9px;
+}
