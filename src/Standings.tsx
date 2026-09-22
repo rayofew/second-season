@@ -219,6 +219,11 @@ export function Standings({ uid }: { uid: string }) {
             {showing.rounds.map((round) => (
               <div key={round.round}>
                 <h3>{roundNames[round.round]} — {points(round.credited)} points</h3>
+                {/* Nought with nothing under it looks like a failure to load. It was a failure to
+                    submit, which is a different thing and worth saying. */}
+                {round.players.length === 0 && (
+                  <div className="pending">No team submitted for this round.</div>
+                )}
                 {[...round.players]
                   .sort((first, second) => second.credited - first.credited)
                   .map((player) => {

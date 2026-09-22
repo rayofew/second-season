@@ -370,9 +370,14 @@ function Standing({
             <span style={{ width: `${Math.round(row.settled * 100)}%` }} />
           </span>
           <span className="standingstate">
-            {row.done} done
-            {row.playing > 0 && ` · ${row.playing} playing`}
-            {row.left > 0 && ` · ${row.left} to come`}
+            {/* "0 done" reads as nine men who have not started. Nobody submitted anything. */}
+            {row.players.length === 0 ? 'no team submitted' : (
+              <>
+                {row.done} done
+                {row.playing > 0 && ` · ${row.playing} playing`}
+                {row.left > 0 && ` · ${row.left} to come`}
+              </>
+            )}
           </span>
         </span>
         <span className="standingnums">
