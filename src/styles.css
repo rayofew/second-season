@@ -561,8 +561,38 @@ td { font-variant-numeric: tabular-nums; }
 .posthead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .postwho { font-weight: 700; font-size: 14px; letter-spacing: -0.01em; }
 .postwhen { font-size: 11px; color: var(--faint); white-space: nowrap; }
-/* Whatever somebody typed, with the line breaks they typed. */
-.posttext { margin: 7px 0 10px; font-size: 14.5px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* Whatever somebody typed, in the shape they typed it. */
+.posttext { margin: 7px 0 10px; font-size: 14.5px; line-height: 1.6; overflow-wrap: anywhere; }
+.posttext p { margin: 0 0 8px; }
+.posttext > :last-child { margin-bottom: 0; }
+.posttext strong { font-weight: 800; color: var(--ink); }
+.posttext em { font-style: italic; }
+.posttext a { color: var(--gold); text-decoration: underline; text-underline-offset: 2px; }
+.postbig { margin: 10px 0 6px; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
+.postsub { margin: 10px 0 5px; font-size: 14px; font-weight: 750; color: var(--dim); }
+.posttext > :first-child { margin-top: 0; }
+.postlist { margin: 0 0 8px; padding-left: 20px; }
+.postlist li { margin: 2px 0; }
+
+/* The marks, and a button for each so nobody has to learn them to use them. */
+.marks { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.marks button {
+  width: 30px; height: 30px; flex: none; border-radius: 8px; padding: 0; font-size: 13px;
+  background: var(--sunk); border: 1px solid var(--line); color: var(--dim);
+}
+.marks button:hover { border-color: var(--gold); color: var(--gold); }
+.markhint {
+  font-size: 10.5px; color: var(--faint); margin-left: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* What it will look like, while it can still be changed. */
+.preview { border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px 4px; background: var(--sunk); }
+.previewlabel {
+  display: block; font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--faint); margin-bottom: 4px;
+}
+.preview .posttext { margin: 0; }
 .postfoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .postmail { font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
 .postmail .emailed { color: var(--live); }

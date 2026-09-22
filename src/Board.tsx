@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { mailtoFor, subjectFor } from './domain/post.ts';
 import type { Post } from './domain/post.ts';
 import { explain } from './domain/trouble.ts';
+import { Markup } from './Markup.tsx';
 import { sinceWords } from './domain/seen.ts';
 import {
   markEmailed, readApplications, readContest, readEntries, readPosts, removePost, writePost,
@@ -38,6 +39,35 @@ export function Board({ uid, commissioner }: { uid: string; commissioner: boolea
   const [busy, setBusy] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
+  const box = useRef<HTMLTextAreaElement>(null);
+
+  /**
+   * Wraps whatever is selected, or opens a pair of marks where the cursor is.
+   *
+   * A toolbar that only tells you the marks exist is a help page. One that puts them in is the
+   * difference between people using bold and people meaning to.
+   */
+  function wrap(mark: string) {
+    const field = box.current;
+    if (!field) return;
+    const { selectionStart: from, selectionEnd: to } = field;
+    const chosen = text.slice(from, to);
+    setText(`${text.slice(0, from)}${mark}${chosen}${mark}${text.slice(to)}`);
+    // Back inside the marks, so typing continues where the writer was looking.
+    requestAnimationFrame(() => {
+      field.focus();
+      field.setSelectionRange(from + mark.length, to + mark.length);
+    });
+  }
+
+  function bullet() {
+    const field = box.current;
+    if (!field) return;
+    const at = field.selectionStart;
+    const lineStart = text.lastIndexOf('\n', at - 1) + 1;
+    setText(`${text.slice(0, lineStart)}- ${text.slice(lineStart)}`);
+    requestAnimationFrame(() => { field.focus(); field.setSelectionRange(at + 2, at + 2); });
+  }
 
   const load = useCallback(async () => {
     try {
@@ -112,13 +142,30 @@ export function Board({ uid, commissioner }: { uid: string; commissioner: boolea
         </div>
 
         <div className="composer">
+          <div className="marks">
+            <button type="button" onClick={() => wrap('**')} title="Bold"><b>B</b></button>
+            <button type="button" onClick={() => wrap('_')} title="Italic"><i>I</i></button>
+            <button type="button" onClick={bullet} title="Bullet">•</button>
+            <button type="button" onClick={() => wrap('\n# ')} title="Heading">H</button>
+            <span className="markhint">**bold** · _italic_ · # heading · - list</span>
+          </div>
+
           <textarea
+            ref={box}
             value={text}
-            rows={3}
+            rows={4}
             maxLength={2000}
-            placeholder="Picks are due Thursday at 5:15…"
+            placeholder="**Picks are due Thursday at 5:15.**"
             onChange={(event) => setText(event.target.value)}
           />
+
+          {/* What it will look like, while it can still be changed. */}
+          {text.trim() && (
+            <div className="preview">
+              <span className="previewlabel">Preview</span>
+              <Markup text={text} />
+            </div>
+          )}
 
           <div className="composerfoot">
             {/* Asking is not sending. Anybody may ask; only the commissioner has the addresses. */}
@@ -168,7 +215,7 @@ export function Board({ uid, commissioner }: { uid: string; commissioner: boolea
                 <span className="postwhen">{sinceWords(entry.at)}</span>
               </div>
 
-              <p className="posttext">{entry.text}</p>
+              <Markup text={entry.text} />
 
               <div className="postfoot">
                 <span className="postmail">
