@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { mailtoFor, subjectFor } from './domain/post.ts';
 import type { Post } from './domain/post.ts';
 import { explain } from './domain/trouble.ts';
+import { Editor } from './Editor.tsx';
+import type { EditorHandle } from './Editor.tsx';
 import { Markup } from './Markup.tsx';
 import { sinceWords } from './domain/seen.ts';
-import {
-  markEmailed, readApplications, readContest, readEntries, readPosts, removePost, writePost,
-} from './store/firestore.ts';
-import type { Contest, Manager } from './store/firestore.ts';
+import { readEntries, readPosts, removePost, writePost } from './store/firestore.ts';
+import type { Manager } from './store/firestore.ts';
 
 /**
  * The board: what the group chat was for, kept next to the thing it is about.
@@ -17,83 +16,37 @@ import type { Contest, Manager } from './store/firestore.ts';
  * scroll away behind photographs of dogs. Here they stay, in order, beside the bracket they are
  * about.
  *
- * Posting and emailing are deliberately two acts rather than one. Everything goes on the board;
- * only the things worth interrupting somebody's evening for go out as mail, and the second is the
- * commissioner's decision even when the asking is not.
- *
- * There is no server here, so nothing can send mail on the league's behalf — that wants a Cloud
- * Function or the Trigger Email extension, and both want the paid plan. What exists instead is a
- * link that opens the commissioner's own mail app with the league already in the blind copy. It is
- * one press rather than none, and it arrives from a person rather than from a robot.
+ * Emailing is off for now. The mailto route worked but put a button on every post to do a thing
+ * the app cannot actually do by itself, which is a lot of furniture for one press of send in
+ * somebody else's mail app. domain/post.ts still has the whole of it, and the wantsEmail field is
+ * still written, so it comes back on the day there is a plan that can send properly.
  */
 
 const CONTEST = 'rehearsal-2026';
 
 export function Board({ uid, commissioner }: { uid: string; commissioner: boolean }) {
   const [posts, setPosts] = useState<Post[] | null>(null);
-  const [contest, setContest] = useState<Contest | null>(null);
   const [me, setMe] = useState<Manager | null>(null);
-  const [addresses, setAddresses] = useState<string[]>([]);
-  const [text, setText] = useState('');
-  const [wantsEmail, setWantsEmail] = useState(false);
+  const [hasText, setHasText] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
-  const box = useRef<HTMLTextAreaElement>(null);
-
-  /**
-   * Wraps whatever is selected, or opens a pair of marks where the cursor is.
-   *
-   * A toolbar that only tells you the marks exist is a help page. One that puts them in is the
-   * difference between people using bold and people meaning to.
-   */
-  function wrap(mark: string) {
-    const field = box.current;
-    if (!field) return;
-    const { selectionStart: from, selectionEnd: to } = field;
-    const chosen = text.slice(from, to);
-    setText(`${text.slice(0, from)}${mark}${chosen}${mark}${text.slice(to)}`);
-    // Back inside the marks, so typing continues where the writer was looking.
-    requestAnimationFrame(() => {
-      field.focus();
-      field.setSelectionRange(from + mark.length, to + mark.length);
-    });
-  }
-
-  function bullet() {
-    const field = box.current;
-    if (!field) return;
-    const at = field.selectionStart;
-    const lineStart = text.lastIndexOf('\n', at - 1) + 1;
-    setText(`${text.slice(0, lineStart)}- ${text.slice(lineStart)}`);
-    requestAnimationFrame(() => { field.focus(); field.setSelectionRange(at + 2, at + 2); });
-  }
+  const editor = useRef<EditorHandle | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [found, people, written] = await Promise.all([
-        readContest(CONTEST),
-        readEntries(CONTEST),
-        readPosts(CONTEST),
-      ]);
-      setContest(found);
+      const [people, written] = await Promise.all([readEntries(CONTEST), readPosts(CONTEST)]);
       setMe(people.find((person) => person.uid === uid) ?? null);
       setPosts(written);
-
-      // Only the commissioner may read an address, which is also the only person who can send.
-      if (commissioner) {
-        const applications = await readApplications(CONTEST).catch(() => []);
-        setAddresses(applications.map((application) => application.email).filter(Boolean));
-      }
     } catch (cause) {
       setProblem(explain(cause));
     }
-  }, [uid, commissioner]);
+  }, [uid]);
 
   useEffect(() => { void load(); }, [load]);
 
   async function post() {
-    const said = text.trim();
+    const said = editor.current?.marks().trim() ?? '';
     if (!said) return;
     setBusy('post');
     setProblem(null);
@@ -102,10 +55,9 @@ export function Board({ uid, commissioner }: { uid: string; commissioner: boolea
         uid,
         name: me?.teamName || me?.name || 'Somebody',
         text: said,
-        wantsEmail,
+        wantsEmail: false,
       });
-      setText('');
-      setWantsEmail(false);
+      editor.current?.clear();
       await load();
     } catch (cause) {
       setProblem(explain(cause));
@@ -131,8 +83,6 @@ export function Board({ uid, commissioner }: { uid: string; commissioner: boolea
   if (problem) return <div className="card gate"><p className="problem">{problem}</p></div>;
   if (!posts) return <div className="card gate"><p>Loading the board…</p></div>;
 
-  const waiting = posts.filter((entry) => entry.wantsEmail && !entry.emailedAt).length;
-
   return (
     <>
       <div className="card">
@@ -142,60 +92,22 @@ export function Board({ uid, commissioner }: { uid: string; commissioner: boolea
         </div>
 
         <div className="composer">
-          <div className="marks">
-            <button type="button" onClick={() => wrap('**')} title="Bold"><b>B</b></button>
-            <button type="button" onClick={() => wrap('_')} title="Italic"><i>I</i></button>
-            <button type="button" onClick={bullet} title="Bullet">•</button>
-            <button type="button" onClick={() => wrap('\n# ')} title="Heading">H</button>
-            <span className="markhint">**bold** · _italic_ · # heading · - list</span>
-          </div>
-
-          <textarea
-            ref={box}
-            value={text}
-            rows={4}
-            maxLength={2000}
-            placeholder="**Picks are due Thursday at 5:15.**"
-            onChange={(event) => setText(event.target.value)}
+          <Editor
+            handle={editor}
+            placeholder="Picks are due Thursday at 5:15."
+            onChange={setHasText}
           />
 
-          {/* What it will look like, while it can still be changed. */}
-          {text.trim() && (
-            <div className="preview">
-              <span className="previewlabel">Preview</span>
-              <Markup text={text} />
-            </div>
-          )}
-
           <div className="composerfoot">
-            {/* Asking is not sending. Anybody may ask; only the commissioner has the addresses. */}
-            <label className="askemail">
-              <input
-                type="checkbox"
-                checked={wantsEmail}
-                onChange={(event) => setWantsEmail(event.target.checked)}
-              />
-              <span>
-                {commissioner
-                  ? 'Worth emailing to the league'
-                  : 'Ask the commissioner to email this to the league'}
-              </span>
-            </label>
-
-            <button className="submit small" disabled={busy === 'post' || !text.trim()} onClick={() => void post()}>
+            <span className="composerhint">
+              Select what you want changed and press a button, or paste it in already formatted.
+            </span>
+            <button className="submit small" disabled={busy === 'post' || !hasText} onClick={() => void post()}>
               {busy === 'post' ? 'Posting…' : 'Post'}
             </button>
           </div>
         </div>
       </div>
-
-      {commissioner && waiting > 0 && (
-        <div className="card notice">
-          <strong>{waiting} {waiting === 1 ? 'message is' : 'messages are'} waiting to be emailed.</strong>{' '}
-          Each has a button below. It opens your own mail app with the league in the blind copy —
-          nothing is sent until you press send there.
-        </div>
-      )}
 
       {posts.length === 0 ? (
         <div className="card gate">
@@ -218,24 +130,7 @@ export function Board({ uid, commissioner }: { uid: string; commissioner: boolea
               <Markup text={entry.text} />
 
               <div className="postfoot">
-                <span className="postmail">
-                  {entry.emailedAt
-                    ? <span className="emailed">emailed to the league</span>
-                    : entry.wantsEmail
-                      ? <span className="asking">asked to be emailed</span>
-                      : null}
-                </span>
-
                 <span className="postacts">
-                  {commissioner && !entry.emailedAt && (
-                    <a
-                      className="ghost small"
-                      href={mailtoFor(entry, addresses, subjectFor(entry, contest?.name ?? 'Second Season'))}
-                      onClick={() => void act(entry.id, () => markEmailed(CONTEST, entry.id))}
-                    >
-                      Email to the league
-                    </a>
-                  )}
                   {(mine || commissioner) && (
                     <button
                       className="danger small"
@@ -257,10 +152,6 @@ export function Board({ uid, commissioner }: { uid: string; commissioner: boolea
       <p className="footnote">
         Everything said here stays here, in order, next to the bracket it is about. Nothing is
         editable once posted — the delete is there if it needs to go.
-        {commissioner && addresses.length === 0 && (
-          <> No email addresses are on file yet, so there is nobody to send to. They fill in on
-          their own as people sign in.</>
-        )}
       </p>
     </>
   );
