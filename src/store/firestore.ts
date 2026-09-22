@@ -132,6 +132,8 @@ export interface Manager {
   lastSeen?: Date;
   /** How many times they have opened it, ever. */
   visits: number;
+  /** When they last looked at the board, so Home can say what has been said since. */
+  lastReadBoard?: Date;
 }
 
 /** Who is in the league. Readable by any member — but never their phone number, which stays on the application. */
@@ -148,6 +150,7 @@ export async function readEntries(contestId: string): Promise<Manager[]> {
       paid: Boolean(data.paid),
       lastSeen: (data.lastSeen as { toDate?: () => Date } | undefined)?.toDate?.(),
       visits: Number(data.visits) || 0,
+      lastReadBoard: (data.lastReadBoard as { toDate?: () => Date } | undefined)?.toDate?.(),
     };
   });
 }
@@ -297,11 +300,11 @@ export async function readSubmitted(
  * that does not scroll away, kept next to the thing it is about. The writer's name is copied in
  * rather than looked up, so renaming a team does not quietly rewrite what somebody said in January.
  */
-export async function readPosts(contestId: string): Promise<Post[]> {
+export async function readPosts(contestId: string, count = 200): Promise<Post[]> {
   const snapshot = await getDocs(query(
     collection(db, 'contests', contestId, 'posts'),
     orderBy('at', 'desc'),
-    limit(200),
+    limit(count),
   ));
   return snapshot.docs.map((entry) => {
     const data = entry.data();
@@ -322,6 +325,21 @@ export async function writePost(
   post: { uid: string; name: string; text: string; wantsEmail: boolean },
 ): Promise<void> {
   await addDoc(collection(db, 'contests', contestId, 'posts'), { ...post, at: serverTimestamp() });
+}
+
+/**
+ * Notes that this manager has looked at the board.
+ *
+ * On his own entry, which is the one document he is allowed to write about himself, so what he has
+ * read follows him from his phone to his desk rather than living in one browser's storage. The
+ * worst a lie here can do is hide a notice from the person telling it.
+ */
+export async function noteBoardRead(contestId: string, uid: string): Promise<void> {
+  await setDoc(
+    doc(db, 'contests', contestId, 'entries', uid),
+    { lastReadBoard: serverTimestamp() },
+    { merge: true },
+  );
 }
 
 export async function removePost(contestId: string, id: string): Promise<void> {

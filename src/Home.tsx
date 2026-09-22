@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { EASTSIDE } from './domain/rules.ts';
 import { standingsFor } from './domain/multiplier.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
-import { readContest, readEntries, readHistory, readPool, readTeams } from './store/firestore.ts';
+import { readContest, readEntries, readHistory, readPool, readPosts, readTeams } from './store/firestore.ts';
 import type { Contest, Manager, PoolPlayer, RoundTeams } from './store/firestore.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import { liveRoster } from './domain/live.ts';
@@ -17,6 +17,9 @@ import { Countdown } from './Countdown.tsx';
 import { Field } from './Field.tsx';
 import { GameDay } from './GameDay.tsx';
 import { silence } from './domain/resting.ts';
+import { plain } from './domain/markup.ts';
+import { sinceWords } from './domain/seen.ts';
+import type { Post } from './domain/post.ts';
 import { useHeartbeat } from './useHeartbeat.ts';
 
 /**
@@ -42,13 +45,24 @@ const CONTEST = 'rehearsal-2026';
  */
 const HEARTBEAT = 45_000;
 
-export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void }) {
+export function Home({
+  uid,
+  onGoToTeam,
+  onGoToBoard,
+}: {
+  uid: string;
+  onGoToTeam: () => void;
+  onGoToBoard: () => void;
+}) {
   const [contest, setContest] = useState<Contest | null>(null);
   const [teams, setTeams] = useState<RoundTeams | null>(null);
   const [pool, setPool] = useState<Map<string, PoolPlayer>>(new Map());
   const [roster, setRoster] = useState<HeldPlayer[]>([]);
   const [history, setHistory] = useState<HeldPlayer[][]>([]);
   const [managers, setManagers] = useState<Manager[]>([]);
+  /** The last few messages, and when this manager last looked at them. */
+  const [recent, setRecent] = useState<Post[]>([]);
+  const [lastRead, setLastRead] = useState<Date | null>(null);
   const [now, setNow] = useState(new Date());
   const [live, setLive] = useState<LiveTotal | null>(null);
   const [projectedTotal, setProjectedTotal] = useState<number | null>(null);
@@ -67,17 +81,21 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
       if (!found) return;
       setContest(found);
       const round = found.currentRound;
-      const [roundTeams, board, past, people] = await Promise.all([
+      const [roundTeams, board, past, people, posts] = await Promise.all([
         readTeams(CONTEST, round).catch(() => null),
         readPool(CONTEST).catch(() => []),
         readHistory(CONTEST, uid, round).catch(() => []),
         readEntries(CONTEST).catch(() => []),
+        // Five is plenty: the question is whether to go and look, not what was said.
+        readPosts(CONTEST, 5).catch(() => []),
       ]);
       setTeams(roundTeams);
       setPool(new Map(board.map((player) => [player.id, player])));
       setHistory(past);
       setManagers(people);
       setRoster(past[round] ?? []);
+      setRecent(posts);
+      setLastRead(people.find((person) => person.uid === uid)?.lastReadBoard ?? null);
     })();
   }, [uid]);
 
@@ -173,8 +191,33 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
   const alive = new Set(teams?.alive ?? []);
   const gone = roster.filter((held) => !alive.has(pool.get(held.playerId)?.team ?? ''));
 
+  /**
+   * What has been said since this manager last looked.
+   *
+   * His own posts never count as news to him, which is the difference between a notice and a
+   * receipt. Somebody who has never opened the board sees everything on it as new, which is right:
+   * he has not read any of it.
+   */
+  const unread = recent.filter((post) => post.uid !== uid && (!lastRead || post.at > lastRead));
+  const newest = unread[0];
+
   return (
     <>
+      {newest && (
+        <button className="card newpost" onClick={onGoToBoard}>
+          <span className="newpostflag">
+            {unread.length === 1 ? 'New on the board' : `${unread.length} new on the board`}
+          </span>
+          <span className="newpostwho">
+            {newest.name}
+            <span className="newpostwhen">{sinceWords(newest.at)}</span>
+          </span>
+          {/* The marks come off: a headline is not the place for a row of asterisks. */}
+          <span className="newpostsaid">{plain(newest.text).replace(/\s+/g, ' ').slice(0, 140)}</span>
+          <span className="newpostgo">Read it →</span>
+        </button>
+      )}
+
       <div className={`card countdown ${locked ? 'shut' : submitted ? 'ready' : 'urgent'}`}>
         <div className="cdround">
           <strong>{round?.name}</strong>

@@ -85,9 +85,10 @@ service cloud.firestore {
       match /entries/{uid} {
         allow read: if isMember(contestId) || isCommissioner(contestId);
         allow create: if isCommissioner(contestId);
-        // lastSeen and visits are his own browser saying he was here. He could lie about them;
-        // nobody fakes never having opened an app, which is the only thing they are read for.
-        allow update: if (isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'teamName', 'lastSeen', 'visits']))
+        // lastSeen, visits and lastReadBoard are his own browser saying where he has been. He
+        // could lie about any of them; nobody fakes never having opened an app, and the worst a
+        // lie about the board can do is hide a notice from the person telling it.
+        allow update: if (isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'teamName', 'lastSeen', 'visits', 'lastReadBoard']))
                       || isCommissioner(contestId);
         allow delete: if isCommissioner(contestId);
 

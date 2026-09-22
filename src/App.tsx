@@ -109,7 +109,13 @@ export function App() {
             )}
           </nav>
 
-          {tab === 'home' ? <Home uid={user.uid} onGoToTeam={() => setTab('team')} />
+          {tab === 'home' ? (
+            <Home
+              uid={user.uid}
+              onGoToTeam={() => setTab('team')}
+              onGoToBoard={() => setTab('board')}
+            />
+          )
             : tab === 'team' ? <RosterBuilder uid={user.uid} />
             : tab === 'live' ? <Live uid={user.uid} />
             : tab === 'bracket' ? <Bracket />

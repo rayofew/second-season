@@ -1781,3 +1781,33 @@ td { font-variant-numeric: tabular-nums; }
   flex: none; font-size: 12.5px; font-weight: 800; white-space: nowrap;
   color: var(--on-accent); background: var(--gold); border-radius: 999px; padding: 3px 9px;
 }
+
+/**
+ * Something was said while you were away.
+ *
+ * A whole card rather than a line, and the first thing on the page, because the reason it exists
+ * is that a league runs on half a dozen messages a season and every one of them matters on the day
+ * it is written. A button, not a link with a card drawn round it — the whole thing is the target.
+ */
+.newpost {
+  display: block; width: 100%; text-align: left; padding: 13px 15px 12px;
+  background: var(--panel); border: 1px solid var(--warn-line); color: inherit;
+  border-radius: var(--radius); margin-bottom: var(--gap);
+}
+.newpost:hover { background: var(--raised); border-color: var(--gold); }
+.newpostflag {
+  display: block; font-size: 10px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--gold); margin-bottom: 5px;
+}
+.newpostwho {
+  display: flex; align-items: baseline; gap: 9px; font-size: 14px; font-weight: 700;
+}
+.newpostwhen { font-size: 11px; font-weight: 400; color: var(--faint); }
+/* One line of it, cut off wherever it ends. Enough to know whether it can wait. */
+.newpostsaid {
+  display: block; margin-top: 3px; font-size: 13px; line-height: 1.5; color: var(--dim);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.newpostgo {
+  display: block; margin-top: 8px; font-size: 12px; font-weight: 700; color: var(--gold);
+}

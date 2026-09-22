@@ -5,7 +5,7 @@ import { Editor } from './Editor.tsx';
 import type { EditorHandle } from './Editor.tsx';
 import { Markup } from './Markup.tsx';
 import { sinceWords } from './domain/seen.ts';
-import { readEntries, readPosts, removePost, writePost } from './store/firestore.ts';
+import { noteBoardRead, readEntries, readPosts, removePost, writePost } from './store/firestore.ts';
 import type { Manager } from './store/firestore.ts';
 
 /**
@@ -38,6 +38,10 @@ export function Board({ uid, commissioner }: { uid: string; commissioner: boolea
       const [people, written] = await Promise.all([readEntries(CONTEST), readPosts(CONTEST)]);
       setMe(people.find((person) => person.uid === uid) ?? null);
       setPosts(written);
+
+      // Seen, so Home stops saying there is something to see. Failing is no reason to stop
+      // reading the board, so it is allowed to fail quietly.
+      void noteBoardRead(CONTEST, uid).catch(() => undefined);
     } catch (cause) {
       setProblem(explain(cause));
     }
