@@ -79,6 +79,14 @@ export interface PoolPlayer {
   position: string;
   team: string;
   form: number;
+  /**
+   * The same man's id at ESPN, for his career page.
+   *
+   * Absent for a team defense, which has no career, and for the handful of men ESPN's current
+   * rosters do not list. Put there by scripts/add-espn-ids.ts rather than by seeding, because
+   * re-seeding decides who is in the pool and that must not change mid-contest.
+   */
+  espnId?: string;
 }
 
 /** The whole board in a single read, rather than a query a phone pays for repeatedly. */

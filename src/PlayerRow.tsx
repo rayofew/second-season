@@ -20,6 +20,8 @@ export interface RowPlayer {
   name: string;
   position: string;
   team: string;
+  /** His id at ESPN, where his career is. Absent for a defence and for the odd man ESPN mislays. */
+  espnId?: string;
 }
 
 export function Face({ player, size = 44 }: { player: RowPlayer; size?: number }) {
