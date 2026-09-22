@@ -92,6 +92,7 @@ export function GameDay({
                     player={person ?? null}
                     multiplier={entry.multiplier}
                     stats={person ? statLine(person.position as Position, entry.line) : undefined}
+                    card={{ line: entry.line, projected: entry.state === 'upcoming' }}
                     onClick={onGoToTeam}
                     right={
                       <span className={`livepts ${entry.state}`}>
@@ -121,6 +122,7 @@ export function GameDay({
                 player={pool.get(entry.playerId) ?? null}
                 multiplier={entry.multiplier}
                 hint="resting — the round still counts towards holding him"
+                card={{ line: undefined, projected: false }}
                 onClick={onGoToTeam}
               />
             ))}

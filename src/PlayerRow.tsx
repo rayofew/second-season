@@ -1,4 +1,8 @@
+import { useState } from 'react';
 import { colorOf, crest, headshot } from './domain/clubs.ts';
+import { Breakdown } from './Breakdown.tsx';
+import type { Position } from './domain/rules.ts';
+import type { StatLine } from './domain/scoring.ts';
 
 /**
  * One player, wherever he appears: on a roster, in the picker, in a scoring breakdown.
@@ -51,6 +55,7 @@ export function PlayerRow({
   right,
   onClick,
   dim,
+  card,
 }: {
   slot?: string;
   player: RowPlayer | null;
@@ -64,7 +69,17 @@ export function PlayerRow({
   right?: React.ReactNode;
   onClick?: () => void;
   dim?: boolean;
+  /**
+   * What he did, which makes his name worth pressing.
+   *
+   * Given one, the name becomes a button that opens his card — the box score, every line of the
+   * scoring and what the multiplier makes of it. Handled here rather than by each screen, because
+   * six screens wiring the same modal is six chances to wire it differently.
+   */
+  card?: { line: StatLine | undefined; projected: boolean };
 }) {
+  const [showing, setShowing] = useState(false);
+
   return (
     <div className={`row ${dim ? 'dim' : ''}`} onClick={onClick}>
       {slot && <span className="rowslot">{slot}</span>}
@@ -72,7 +87,19 @@ export function PlayerRow({
         <>
           <Face player={player} />
           <span className="rowmain">
-            <span className="rowname">{player.name}</span>
+            <span className="rowname">
+              {card ? (
+                <button
+                  className="namebtn"
+                  title="His stats"
+                  // The row underneath usually does something of its own — picking him, opening a
+                  // team — and asking about a man is not asking for either of those.
+                  onClick={(event) => { event.stopPropagation(); setShowing(true); }}
+                >
+                  {player.name}
+                </button>
+              ) : player.name}
+            </span>
             <span className="rowmeta">
               <span className="pos" style={{ color: colorOf(player.team) }}>{player.position}</span>
               <span className="dot">·</span>
@@ -94,6 +121,19 @@ export function PlayerRow({
       {trailing}
       {multiplier !== undefined && <span className={`mult mult-${multiplier}`}>{multiplier}x</span>}
       {right}
+
+      {showing && player && card && (
+        <Breakdown
+          name={player.name}
+          position={player.position as Position}
+          line={card.line}
+          multiplier={multiplier ?? 1}
+          projected={card.projected}
+          player={player}
+          hint={hint}
+          onClose={() => setShowing(false)}
+        />
+      )}
     </div>
   );
 }

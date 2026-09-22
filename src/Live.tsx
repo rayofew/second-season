@@ -405,6 +405,7 @@ function Standing({
                 player={person ?? null}
                 multiplier={player.multiplier}
                 stats={person ? statLine(person.position as Position, player.line) : undefined}
+                card={{ line: player.line, projected: player.state === 'upcoming' }}
                 right={
                   <span className={`livepts ${player.state}`}>
                     <b>{points(player.credited)}</b>

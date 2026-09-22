@@ -3,6 +3,9 @@ import { breakdown, breakdownTotal } from './domain/breakdown.ts';
 import type { Position } from './domain/rules.ts';
 import { points } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
+import { statLine } from './domain/statline.ts';
+import { Face } from './PlayerRow.tsx';
+import type { RowPlayer } from './PlayerRow.tsx';
 
 /**
  * How a figure was arrived at, shown because somebody tapped it.
@@ -23,6 +26,8 @@ export function Breakdown({
   line,
   multiplier,
   projected,
+  player,
+  hint,
   onClose,
 }: {
   name: string;
@@ -31,6 +36,10 @@ export function Breakdown({
   multiplier: number;
   /** True when this is an expectation rather than something that happened. */
   projected: boolean;
+  /** Who he is, when the caller knows. Opened from a name, this is the point of the thing. */
+  player?: RowPlayer;
+  /** Where he is playing and when, or that his club is resting. */
+  hint?: string;
   onClose: () => void;
 }) {
   const lines = breakdown(position, line);
@@ -54,8 +63,28 @@ export function Breakdown({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="confhead">
-          {name}
+          {projected ? 'Expected' : 'Scored'}
           <button className="ghost small" onClick={onClose}>Close</button>
+        </div>
+
+        {/*
+          * Who he is, before what he did.
+          *
+          * Opened from a number this was a heading with a name in it; opened from the name it has
+          * to answer "who is this" first — the face, the club and the fixture — and only then the
+          * arithmetic somebody scrolled down for.
+          */}
+        <div className="cardhead">
+          {player && <Face player={player} size={52} />}
+          <span className="cardwho">
+            <span className="cardname">{name}</span>
+            <span className="cardmeta">
+              {player ? `${player.position} · ${player.team}` : position}
+              {hint && <> · {hint}</>}
+            </span>
+            {/* The box score in words, which is the most read line on any fantasy screen. */}
+            <span className="cardline">{statLine(position, line) || 'Nothing recorded yet.'}</span>
+          </span>
         </div>
 
         <div className="breakdownbody">

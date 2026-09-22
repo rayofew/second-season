@@ -276,6 +276,7 @@ export function RosterBuilder({
                       ? fixtureLabel(games.get(person.team))
                       : `${fixtureLabel(games.get(person.team))} · ${standing?.retained ? 'kept' : 'new'}`
                 }
+                card={person ? { line: lines[person.id], projected: true } : undefined}
                 trailing={person && !resting ? (
                   <button
                     className="proj asked"
@@ -340,6 +341,7 @@ export function RosterBuilder({
                               ? 'resting this round'
                               : fixtureLabel(games.get(candidate.team))
                           }
+                          card={{ line: lines[candidate.id], projected: true }}
                           trailing={
                             byes.has(candidate.team) ? undefined : (
                               <button
