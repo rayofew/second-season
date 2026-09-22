@@ -1872,3 +1872,23 @@ td { font-variant-numeric: tabular-nums; }
   text-decoration: underline; text-decoration-color: var(--line-strong);
   text-decoration-thickness: 1px; text-underline-offset: 3px;
 }
+
+/* A season that can be opened. The arrow is the only hint it needs; the row is the target. */
+.careertable tr.openable { cursor: pointer; }
+.careertable tr.openable:hover td { background: var(--raised); }
+.careertable tr.openable.open td { background: var(--raised); }
+.careertable td.drill { width: 18px; color: var(--faint); font-size: 10px; padding-left: 0; }
+
+/* Its weeks, under the totals rather than instead of them — the totals are the thing being
+   explained, and taking them away to explain them leaves nothing to compare against. */
+.weeks {
+  margin: 8px 0 4px; padding: 9px 10px 4px; border-radius: 9px;
+  background: var(--sunk); border: 1px solid var(--line);
+}
+.weekshead {
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--faint); margin-bottom: 4px;
+}
+.weeks td { font-size: 12px; padding: 5px 4px; }
+.weeks th { font-size: 9px; padding: 2px 4px; }
+.weeks tbody tr:first-child td { font-weight: 400; }

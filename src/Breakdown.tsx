@@ -6,7 +6,9 @@ import type { StatLine } from './domain/scoring.ts';
 import { statLine } from './domain/statline.ts';
 import { career } from './domain/career.ts';
 import type { CareerTable, RawCategory } from './domain/career.ts';
-import { careerOf } from './providers/career.ts';
+import { gameLog } from './domain/gamelog.ts';
+import type { GameLog } from './domain/gamelog.ts';
+import { careerOf, seasonOf } from './providers/career.ts';
 import { Face } from './PlayerRow.tsx';
 import type { RowPlayer } from './PlayerRow.tsx';
 
@@ -58,6 +60,9 @@ export function Breakdown({
   const [tab, setTab] = useState<'career' | 'week'>('career');
   const [tables, setTables] = useState<CareerTable[] | null>(null);
   const [noCareer, setNoCareer] = useState(false);
+  /** The season somebody has opened, and its weeks once they arrive. */
+  const [year, setYear] = useState<number | null>(null);
+  const [weeks, setWeeks] = useState<GameLog | null>(null);
 
   // Asked for when the card opens, once per player per page. A career does not change while
   // somebody is deciding on a flex.
@@ -73,6 +78,24 @@ export function Breakdown({
       .catch(() => { if (wanted) setNoCareer(true); });
     return () => { wanted = false; };
   }, [player?.espnId, position]);
+
+  /**
+   * And the weeks of whichever season was pressed.
+   *
+   * A season total says a receiver had eleven hundred yards. It does not say whether that was
+   * fourteen quiet afternoons and three enormous ones, which is the thing actually being asked.
+   */
+  useEffect(() => {
+    const espnId = player?.espnId;
+    if (!espnId || year === null) return;
+
+    let wanted = true;
+    setWeeks(null);
+    void seasonOf(espnId, year)
+      .then((raw) => { if (wanted) setWeeks(gameLog(raw, position)); })
+      .catch(() => { if (wanted) setWeeks({ labels: [], games: [] }); });
+    return () => { wanted = false; };
+  }, [player?.espnId, position, year]);
 
   // Escape closes it, because a modal that can only be dismissed by aiming at a button is a trap
   // on a phone and an irritation everywhere else.
@@ -145,21 +168,66 @@ export function Breakdown({
                     <thead>
                       <tr>
                         <th>Year</th>
-                        {table.labels.map((label) => <th key={label}>{label}</th>)}
+                        {table.labels.map((label, at) => <th key={`${label}-${at}`}>{label}</th>)}
+                        <th />
                       </tr>
                     </thead>
                     <tbody>
                       {table.seasons.map((season) => (
-                        <tr key={`${table.name}-${season.year}`}>
+                        <tr
+                          key={`${table.name}-${season.year}`}
+                          className={`openable ${year === season.year ? 'open' : ''}`}
+                          onClick={() => setYear(year === season.year ? null : season.year)}
+                        >
                           <td>
                             {season.year}
                             {season.team && <span className="careerclub">{season.team}</span>}
                           </td>
                           {season.figures.map((figure, at) => <td key={at}>{figure}</td>)}
+                          <td className="drill">{year === season.year ? '▴' : '▾'}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+
+                  {/*
+                    * The weeks of whichever season is open, under the table it came from.
+                    *
+                    * Under rather than in place of: the totals are the thing being explained, and
+                    * taking them away to explain them leaves nothing to compare the weeks against.
+                    */}
+                  {year !== null && (
+                    <div className="weeks">
+                      <div className="weekshead">{year}, week by week</div>
+                      {weeks === null ? (
+                        <div className="pending">Looking up the season…</div>
+                      ) : weeks.games.length === 0 ? (
+                        <div className="pending">No weekly record for that season.</div>
+                      ) : (
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>Wk</th>
+                              <th>Game</th>
+                              {weeks.labels.map((label, at) => <th key={`${label}-${at}`}>{label}</th>)}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {weeks.games.map((game) => (
+                              <tr key={game.week}>
+                                <td>{game.week}</td>
+                                <td>
+                                  {game.against}
+                                  {game.result && <span className="careerclub">{game.result}</span>}
+                                </td>
+                                {game.figures.map((figure, at) => <td key={at}>{figure}</td>)}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))
             )}
