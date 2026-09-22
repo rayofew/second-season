@@ -1695,3 +1695,10 @@ td { font-variant-numeric: tabular-nums; }
   flex-wrap: wrap; padding: 12px 14px; border-top: 1px solid var(--hairline);
 }
 .restingwhy { font-size: 11.5px; color: var(--faint); }
+
+/* Why a nought is a nought. A resting club scores nothing, and a zero with no reason beside it
+   reads as a bug rather than a rule. */
+.math .resting {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--faint);
+}

@@ -41,6 +41,8 @@ export interface Standing {
   retained: boolean;
   /** Index of the round the current run began, so a screen can say "held since Wild Card". */
   heldSince: number;
+  /** His club was resting this round, which under these rules means he scored nothing. */
+  onBye: boolean;
 }
 
 const heldIn = (roster: RoundRoster, playerId: string): HeldPlayer | undefined =>
@@ -98,6 +100,8 @@ export function standingsFor(
       multiplier: Math.min(Math.max(streak, 1), MAX_MULTIPLIER),
       retained: round > 0 && heldIn(history[round - 1] ?? [], held.playerId) !== undefined,
       heldSince,
+      // Carried through so the scorer can give him nought without needing to know the bracket.
+      onBye: held.onBye ?? false,
     };
   });
 }

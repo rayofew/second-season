@@ -16,6 +16,7 @@ import { fixtureLabel } from './domain/fixture.ts';
 import { Countdown } from './Countdown.tsx';
 import { Field } from './Field.tsx';
 import { GameDay } from './GameDay.tsx';
+import { silence } from './domain/resting.ts';
 import { useHeartbeat } from './useHeartbeat.ts';
 
 /**
@@ -105,13 +106,24 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
         standingsFor([...history.slice(0, roundNow), roster], roundNow, EASTSIDE)
           .map((entry) => [entry.slot, entry]),
       );
-      const [clubs, expected] = await Promise.all([
+      const [clubs, forecast] = await Promise.all([
         clubGames(contest.season, config.week).catch(() => new Map<string, ClubGame>()),
         projections(contest.season, config.seasonType, config.week)
           .catch(() => ({}) as Record<string, StatLine>),
       ]);
       if (cancelled) return;
       setGames(clubs);
+
+      /*
+       * A resting club scores nothing, so it has no statistics — see domain/resting.ts.
+       *
+       * Applied to the projection as well as the score, because a man whose club is resting should
+       * read as nought on the Sunday morning too. Telling somebody to expect eighteen points from
+       * a club that is not playing is the same lie a day earlier.
+       */
+      const resting = new Set<string>(teams?.byes ?? []);
+      const clubOf = (playerId: string) => pool.get(playerId)?.team;
+      const expected = silence(forecast, clubOf, resting);
 
       // Before the lock there is nothing to watch, but there is something to expect.
       const shutNow = (contest.locks[String(roundNow)] ?? new Date()) <= new Date();
@@ -123,9 +135,10 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
         return;
       }
 
-      const actual = await stats(contest.season, config.seasonType, config.week)
+      const imported = await stats(contest.season, config.seasonType, config.week)
         .catch(() => ({}) as Record<string, StatLine>);
       if (cancelled) return;
+      const actual = silence(imported, clubOf, resting);
       setLive(liveRoster(roster.map((held) => {
         const person = pool.get(held.playerId);
         const state = person ? (clubs.get(person.team)?.state ?? 'upcoming') : 'final';
@@ -142,7 +155,7 @@ export function Home({ uid, onGoToTeam }: { uid: string; onGoToTeam: () => void 
     })();
 
     return () => { cancelled = true; };
-  }, [contest, roster, history, pool, roundNow, beat]);
+  }, [contest, roster, history, pool, teams, roundNow, beat]);
 
   if (!contest) return <div className="card gate"><p>Loading…</p></div>;
 

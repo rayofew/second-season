@@ -11,6 +11,7 @@ import type { StatLine } from './domain/scoring.ts';
 import { statLine } from './domain/statline.ts';
 import type { Position } from './domain/rules.ts';
 import { explain } from './domain/trouble.ts';
+import { silence } from './domain/resting.ts';
 import { projections, stats } from './providers/sleeper.ts';
 import { clubGames } from './providers/schedule.ts';
 import type { ClubGame } from './providers/schedule.ts';
@@ -181,6 +182,19 @@ export function Live({ uid }: { uid: string }) {
   }
 
 
+  /**
+   * The statistics, with the resting clubs taken out of them.
+   *
+   * Done here rather than where they are fetched because the bye list and the pool arrive from
+   * Firestore on a different errand from the feeds, and silencing the moment both are to hand is
+   * one fewer order for two effects to get wrong. The passing yards above are deliberately not
+   * silenced: they settle a tie between two clubs that played, and a resting club is in no tie.
+   */
+  const resting = new Set(teams?.byes ?? []);
+  const clubOf = (playerId: string) => pool.get(playerId)?.team;
+  const scored = silence(actual, clubOf, resting);
+  const guessed = silence(expected, clubOf, resting);
+
   // Needed by the leaderboard and by the bracket alike, so it is worked out before either.
   const inputs: BoardInput[] = (loaded?.entries ?? []).map((entry) => {
     const standing = new Map(
@@ -198,10 +212,10 @@ export function Live({ uid }: { uid: string }) {
           playerId: held.playerId,
           slot: held.slot,
           multiplier: standing.get(held.slot) ?? 1,
-          raw: rawPoints(held.position, actual[held.playerId], EASTSIDE),
-          projected: projectedPoints(held.position, expected[held.playerId], EASTSIDE),
+          raw: rawPoints(held.position, scored[held.playerId], EASTSIDE),
+          projected: projectedPoints(held.position, guessed[held.playerId], EASTSIDE),
           state,
-          line: state === 'upcoming' ? expected[held.playerId] : actual[held.playerId],
+          line: state === 'upcoming' ? guessed[held.playerId] : scored[held.playerId],
         };
       })).players,
     };
@@ -230,8 +244,8 @@ export function Live({ uid }: { uid: string }) {
     // football list uses, so the two cannot end up disagreeing about what anybody scored.
     const clubs = clubPoints(
       [...pool.values()],
-      actual,
-      expected,
+      scored,
+      guessed,
       (club) => games.get(club)?.state ?? 'upcoming',
     );
     return new Map(

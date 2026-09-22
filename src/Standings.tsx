@@ -225,6 +225,7 @@ export function Standings({ uid }: { uid: string }) {
                         right={
                           <span className="math">
                             <span className={player.raw === 0 ? 'zero' : undefined}>{points(player.raw)}</span>
+                            {player.onBye && <span className="resting"> resting</span>}
                             {player.corrected && (
                               <span className="fixed" title={`Imported as ${points(player.imported ?? 0)}`}>
                                 {' '}corrected

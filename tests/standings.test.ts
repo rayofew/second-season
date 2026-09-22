@@ -213,3 +213,53 @@ describe('a correction by hand', () => {
     assert.equal(score.rounds[0]!.credited, 0, 'zero is a correction, not a missing one');
   });
 });
+
+describe('a club that is resting', () => {
+  /** One man held for three rounds, resting in the middle one, with a big afternoon every week. */
+  const entry = (onBye: boolean[]): Entry => ({
+    entryId: 'holder',
+    name: 'holder',
+    history: onBye.map((resting) => [
+      { playerId: 'man', position: 'RB' as const, slot: 'RB1', onBye: resting },
+    ]),
+  });
+
+  const contest: Contest = {
+    statsByRound: [0, 1, 2].map(() => ({ man: { rush_yd: 100, rush_td: 1 } as StatLine })),
+  };
+
+  it('scores nothing for him however his real afternoon went', () => {
+    // The rehearsal's byes are invented over a real NFL week, so the feed has a hundred rushing
+    // yards for a man who by our rules was not playing. He gets nought.
+    const scored = scoreEntry(entry([false, true, false]), contest, EASTSIDE);
+    assert.ok(scored.rounds[0]!.raw > 0, 'the weeks he played');
+    assert.equal(scored.rounds[1]!.raw, 0, 'and the week his club rested');
+    assert.ok(scored.rounds[2]!.raw > 0);
+  });
+
+  it('still counts the round towards holding him', () => {
+    // Keeping a man through his club's bye is the patience the format exists to reward. Resetting
+    // him for a week he could do nothing about would be a strange punishment.
+    const scored = scoreEntry(entry([false, true, false]), contest, EASTSIDE);
+    assert.deepEqual(
+      scored.rounds.map((round) => round.players[0]!.multiplier),
+      [1, 2, 3],
+      'the streak runs straight through the bye',
+    );
+  });
+
+  it('says so on the player, so a screen can explain the nought', () => {
+    const scored = scoreEntry(entry([false, true, false]), contest, EASTSIDE);
+    assert.equal(scored.rounds[1]!.players[0]!.onBye, true);
+    assert.equal(scored.rounds[0]!.players[0]!.onBye, false);
+  });
+
+  it('lets the commissioner overrule it, because a correction is his last word', () => {
+    const scored = scoreEntry(entry([true]), {
+      ...contest,
+      correctionsByRound: [{ man: 14 }],
+    }, EASTSIDE);
+    assert.equal(scored.rounds[0]!.raw, 14);
+    assert.equal(scored.rounds[0]!.players[0]!.imported, 0, 'and the import still reads nought');
+  });
+});

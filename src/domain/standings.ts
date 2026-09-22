@@ -50,6 +50,8 @@ export interface PlayerScore {
   streak: number;
   multiplier: number;
   retained: boolean;
+  /** His club was resting, so he scored nothing however his real afternoon went. */
+  onBye: boolean;
   raw: number;
   credited: number;
 }
@@ -90,7 +92,14 @@ export function scoreEntry(
     const players = standingsFor(entry.history, round, settings).map((standing): PlayerScore => {
       // Raw first, always. The multiplier is applied to a figure that is already final — and a
       // correction, where one exists, is that figure.
-      const imported = rawPoints(standing.position, lines[standing.playerId], settings);
+      /*
+       * A club that is resting scores nothing — see domain/resting.ts for why that has to be said
+       * out loud rather than falling out of a missing stat line. Here it comes from the roster's
+       * own record of who was resting when it was submitted, which is the fact as it stood.
+       */
+      const imported = standing.onBye
+        ? 0
+        : rawPoints(standing.position, lines[standing.playerId], settings);
       const corrected = corrections[standing.playerId];
       const raw = corrected ?? imported;
       return {
@@ -102,6 +111,7 @@ export function scoreEntry(
         streak: standing.streak,
         multiplier: standing.multiplier,
         retained: standing.retained,
+        onBye: standing.onBye,
         raw,
         credited: creditedPoints(raw, standing.multiplier),
       };
