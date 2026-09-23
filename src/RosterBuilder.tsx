@@ -7,6 +7,7 @@ import type { HeldPlayer } from './domain/multiplier.ts';
 import { readContest, readHistory, readPool, readTeams, recordMoves, saveRoster } from './store/firestore.ts';
 import type { Move } from './store/firestore.ts';
 import { PlayerRow } from './PlayerRow.tsx';
+import { changed } from './domain/unsaved.ts';
 import { projections } from './providers/sleeper.ts';
 import { clubGames } from './providers/schedule.ts';
 import type { ClubGame } from './providers/schedule.ts';
@@ -34,8 +35,11 @@ export function RosterBuilder({
   uid,
   onBehalfOf,
   onDone,
+  onUnsaved,
 }: {
   uid: string;
+  /** Told whenever the lineup stops or starts matching what was last submitted. */
+  onUnsaved?: (unsaved: boolean) => void;
   /** Set when the commissioner is fixing somebody else's team, which ignores the lock. */
   onBehalfOf?: { name: string };
   onDone?: () => void;
@@ -50,6 +54,20 @@ export function RosterBuilder({
   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
   // What the roster looked like when it was last saved, so a submission can say what changed.
   const [baseline, setBaseline] = useState<HeldPlayer[]>([]);
+  const unsaved = changed(roster, baseline);
+
+  /**
+   * Told upwards, so the app can object on the way out.
+   *
+   * Reported from an effect rather than from each edit: there are half a dozen ways to change a
+   * lineup and every one of them would have to remember, whereas the comparison is the same
+   * question however it was arrived at. Leaving the screen says no — whatever happens next, this
+   * component is not the one holding the work any more.
+   */
+  useEffect(() => {
+    onUnsaved?.(unsaved);
+    return () => onUnsaved?.(false);
+  }, [unsaved, onUnsaved]);
   // What each man is expected to do this week, in our scoring. The reason to pick him.
   const [projected, setProjected] = useState<Map<string, number>>(new Map());
   // The stat lines the projections came from, so a figure can be opened up and argued with.

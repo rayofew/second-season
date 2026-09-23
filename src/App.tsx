@@ -25,6 +25,15 @@ export function App() {
   const [tab, setTab] = useState<Tab>(() => tabFromHash(window.location.hash));
   /** Who was signed in last time this ran, to tell a swap from the first answer. */
   const was = useRef<string | null>(null);
+  /**
+   * Whether the lineup has changes nobody has sent.
+   *
+   * A ref rather than state: it is read at the moment somebody tries to leave and never drawn, so
+   * re-rendering the whole app every time a man is swapped would be work for nothing.
+   */
+  const unsaved = useRef(false);
+  /** Stable, so the builder is not told again on every render of everything above it. */
+  const noteUnsaved = useCallback((pending: boolean) => { unsaved.current = pending; }, []);
   const { user, checking } = useUser();
   const [contest, setContest] = useState<Contest | null>(null);
   const [managers, setManagers] = useState(0);
@@ -52,20 +61,59 @@ export function App() {
    * A history entry per tab, so back walks them. Back from the first one leaves the app, which is
    * right — that is where somebody came in, and on a phone it is usually a text message.
    */
+  /**
+   * Whether it is all right to go.
+   *
+   * Asked before every way out of the lineup — a tab, the back button, closing the window — because
+   * the one thing worse than picking a team is picking it twice.
+   */
+  const mayLeave = useCallback((from: Tab, to: Tab) => {
+    if (from !== 'team' || to === 'team' || !unsaved.current) return true;
+    return window.confirm(
+      'Your lineup has changes you have not submitted.\n\n'
+      + 'Leave without submitting? Nothing you changed will be saved.',
+    );
+  }, []);
+
   const go = useCallback((next: Tab) => {
+    if (!mayLeave(tabFromHash(window.location.hash), next)) return;
     // Against the address rather than the previous state: a state updater is not the place for a
     // side effect, and React runs them twice in development to prove it.
     if (window.location.hash !== hashFor(next)) {
       window.history.pushState({ tab: next }, '', hashFor(next));
     }
     setTab(next);
-  }, []);
+  }, [mayLeave]);
 
-  // Back and forward. The address is the only thing that knows where we are after one of these.
+  /**
+   * Back and forward. The address is the only thing that knows where we are after one of these.
+   *
+   * Back has already happened by the time we hear about it, so refusing means going forward again
+   * — which puts the address back where it was and leaves the lineup on screen.
+   */
   useEffect(() => {
-    const onPop = () => setTab(tabFromHash(window.location.hash));
+    const onPop = () => {
+      const next = tabFromHash(window.location.hash);
+      if (!mayLeave('team', next)) { window.history.forward(); return; }
+      setTab(next);
+    };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
+  }, [mayLeave]);
+
+  /**
+   * And closing the window, which the app cannot intercept — only object to.
+   *
+   * Browsers ignore the message and show their own words. Registered only while there is something
+   * to lose, because a page that always argues about being closed is a page people stop reading.
+   */
+  useEffect(() => {
+    const onLeave = (event: BeforeUnloadEvent) => {
+      if (!unsaved.current) return;
+      event.preventDefault();
+    };
+    window.addEventListener('beforeunload', onLeave);
+    return () => window.removeEventListener('beforeunload', onLeave);
   }, []);
   // Hiding the tab is courtesy. What a commissioner may actually do is decided by the rules.
   const commissioner = Boolean(user && contest?.commissioners?.includes(user.uid));
@@ -179,7 +227,12 @@ export function App() {
               onGoToBoard={() => go('board')}
             />
           )
-            : tab === 'team' ? <RosterBuilder uid={user.uid} />
+            : tab === 'team' ? (
+              <RosterBuilder
+                uid={user.uid}
+                onUnsaved={noteUnsaved}
+              />
+            )
             : tab === 'live' ? <Live uid={user.uid} />
             : tab === 'bracket' ? <Bracket />
             : tab === 'board' ? (
