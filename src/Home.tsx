@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { EASTSIDE } from './domain/rules.ts';
 import { standingsFor } from './domain/multiplier.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
-import { readContest, readEntries, readHistory, readPool, readPosts, readTeams } from './store/firestore.ts';
+import {
+  readAllRosters, readContest, readEntries, readHistory, readPool, readPosts, readTeams,
+} from './store/firestore.ts';
 import type { Contest, Manager, PoolPlayer, RoundTeams } from './store/firestore.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import { liveRoster } from './domain/live.ts';
@@ -61,6 +63,15 @@ export function Home({
   const [history, setHistory] = useState<HeldPlayer[][]>([]);
   const [managers, setManagers] = useState<Manager[]>([]);
   /** The last few messages, and when this manager last looked at them. */
+  /**
+   * Everybody's last played team, and which round that was.
+   *
+   * Readable because it has locked — the rules refuse one manager another's roster right up to the
+   * first kickoff and not a moment before, so this asks for the last round that has shut rather
+   * than the one being played.
+   */
+  const [played, setPlayed] = useState<Map<string, HeldPlayer[]>>(new Map());
+  const [playedRound, setPlayedRound] = useState<string | null>(null);
   const [recent, setRecent] = useState<Post[]>([]);
   const [lastRead, setLastRead] = useState<Date | null>(null);
   const [now, setNow] = useState(new Date());
@@ -96,6 +107,17 @@ export function Home({
       setRoster(past[round] ?? []);
       setRecent(posts);
       setLastRead(people.find((person) => person.uid === uid)?.lastReadBoard ?? null);
+
+      // The most recent round whose lock has passed, which is the most recent one anybody may see.
+      const shut = found.rounds
+        .filter((entry) => (found.locks[String(entry.round)] ?? new Date()) <= new Date())
+        .sort((first, second) => second.round - first.round)[0];
+      if (shut) {
+        setPlayedRound(shut.name);
+        setPlayed(new Map(Object.entries(
+          await readAllRosters(CONTEST, people.map((person) => person.uid), shut.round).catch(() => ({})),
+        )));
+      }
     })();
   }, [uid]);
 
@@ -268,7 +290,14 @@ export function Home({
         )}
       </div>
 
-      <Field managers={managers} you={uid} />
+      <Field
+        managers={managers}
+        you={uid}
+        rosters={played}
+        pool={pool}
+        alive={alive}
+        roundName={playedRound ?? undefined}
+      />
 
       {gone.length > 0 && !locked && (
         <div className="card notice">

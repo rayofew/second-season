@@ -1892,3 +1892,47 @@ td { font-variant-numeric: tabular-nums; }
 .weeks td { font-size: 12px; padding: 5px 4px; }
 .weeks th { font-size: 9px; padding: 2px 4px; }
 .weeks tbody tr:first-child td { font-weight: 400; }
+
+/* A manager worth pressing, and the team he is left with. */
+.fieldone { cursor: pointer; text-align: left; width: 100%; }
+.fieldone:disabled { cursor: default; opacity: 0.75; }
+.fieldone:not(:disabled):hover { border-color: var(--line-strong); background: var(--raised); }
+.fieldone.open { border-color: var(--gold); background: var(--raised); }
+
+.squadcard { margin: 2px 12px 12px; border: 1px solid var(--line); border-radius: 11px; overflow: hidden; }
+.squadtop {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: 10px 12px; background: var(--sunk); border-bottom: 1px solid var(--line);
+}
+.squadtop strong { font-size: 14px; font-weight: 750; }
+.squadwhen { font-size: 11px; color: var(--faint); }
+
+/* The point of the whole card: the slots he has to fill before Thursday. */
+.squadneeds {
+  padding: 9px 12px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+  color: var(--gone); background: var(--bad-bg); border-bottom: 1px solid var(--bad-line);
+  text-transform: uppercase;
+}
+.squadneeds.whole {
+  color: var(--live); background: var(--good-bg); border-bottom-color: var(--good-line);
+  text-transform: none; letter-spacing: 0; font-weight: 600;
+}
+
+.squadlist { padding: 4px 0; }
+.squadrow {
+  display: flex; align-items: center; gap: 9px; padding: 5px 12px; min-height: 40px; font-size: 13px;
+}
+.squadslot {
+  flex: none; width: 34px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--faint);
+}
+.squadname { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.squadname.empty { color: var(--faint); font-style: italic; font-weight: 400; }
+.squadclub { font-size: 11px; color: var(--faint); margin-left: auto; }
+.squadout {
+  flex: none; font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--gone); border: 1px solid var(--bad-line); border-radius: 999px; padding: 1px 6px;
+}
+/* Struck through rather than removed: knowing who he lost is half of knowing what he needs. */
+.squadrow.out .squadname { color: var(--faint); text-decoration: line-through; }
+.squadrow.out .face { filter: grayscale(1); opacity: 0.55; }
