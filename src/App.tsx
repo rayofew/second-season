@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { RosterBuilder } from './RosterBuilder.tsx';
 import { Bracket } from './Bracket.tsx';
 import { Standings } from './Standings.tsx';
@@ -15,13 +15,16 @@ import { SignIn, SignOut, useUser } from './Auth.tsx';
 import { noteVisit, readContest, readEntries, readPosts, rememberEmail } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
 import { isRefusal } from './domain/trouble.ts';
+import { hashFor, tabFromHash } from './domain/tabs.ts';
+import type { Tab } from './domain/tabs.ts';
 
 const CONTEST = 'rehearsal-2026';
 
-type Tab = 'home' | 'team' | 'live' | 'bracket' | 'standings' | 'board' | 'moves' | 'rules' | 'commish';
-
 export function App() {
-  const [tab, setTab] = useState<Tab>('home');
+  // Whatever the address says, so a link to a tab opens that tab.
+  const [tab, setTab] = useState<Tab>(() => tabFromHash(window.location.hash));
+  /** Who was signed in last time this ran, to tell a swap from the first answer. */
+  const was = useRef<string | null>(null);
   const { user, checking } = useUser();
   const [contest, setContest] = useState<Contest | null>(null);
   const [managers, setManagers] = useState(0);
@@ -42,6 +45,28 @@ export function App() {
    * depends on it — which is a fetch per render and then a render per fetch.
    */
   const clearUnread = useCallback(() => setUnread(0), []);
+
+  /**
+   * Going somewhere, in a way the browser can undo.
+   *
+   * A history entry per tab, so back walks them. Back from the first one leaves the app, which is
+   * right — that is where somebody came in, and on a phone it is usually a text message.
+   */
+  const go = useCallback((next: Tab) => {
+    // Against the address rather than the previous state: a state updater is not the place for a
+    // side effect, and React runs them twice in development to prove it.
+    if (window.location.hash !== hashFor(next)) {
+      window.history.pushState({ tab: next }, '', hashFor(next));
+    }
+    setTab(next);
+  }, []);
+
+  // Back and forward. The address is the only thing that knows where we are after one of these.
+  useEffect(() => {
+    const onPop = () => setTab(tabFromHash(window.location.hash));
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
   // Hiding the tab is courtesy. What a commissioner may actually do is decided by the rules.
   const commissioner = Boolean(user && contest?.commissioners?.includes(user.uid));
 
@@ -59,7 +84,19 @@ export function App() {
     setContest(null);
     setManagers(0);
     setUnread(0);
-    setTab('home');
+
+    /*
+     * Home, but only when somebody has actually been swapped for somebody else.
+     *
+     * Doing it on every change of this effect would undo the address on the way in: the first run
+     * happens before Firebase has said who is signed in, and forcing home there means a link to
+     * #board opens on Home — which is most of the point of having the link.
+     */
+    if (was.current && was.current !== user?.uid) {
+      setTab('home');
+      window.history.replaceState({ tab: 'home' }, '', hashFor('home'));
+    }
+    was.current = user?.uid ?? null;
     if (!user) return;
 
     let current = true;
@@ -119,27 +156,27 @@ export function App() {
       ) : (
         <>
           <nav>
-            <button aria-current={tab === 'home'} onClick={() => setTab('home')}>Home</button>
-            <button aria-current={tab === 'team'} onClick={() => setTab('team')}>My Team</button>
-            <button aria-current={tab === 'live'} onClick={() => setTab('live')}>Live</button>
-            <button aria-current={tab === 'bracket'} onClick={() => setTab('bracket')}>Bracket</button>
-            <button aria-current={tab === 'standings'} onClick={() => setTab('standings')}>Standings</button>
-            <button aria-current={tab === 'board'} onClick={() => setTab('board')}>
+            <button aria-current={tab === 'home'} onClick={() => go('home')}>Home</button>
+            <button aria-current={tab === 'team'} onClick={() => go('team')}>My Team</button>
+            <button aria-current={tab === 'live'} onClick={() => go('live')}>Live</button>
+            <button aria-current={tab === 'bracket'} onClick={() => go('bracket')}>Bracket</button>
+            <button aria-current={tab === 'standings'} onClick={() => go('standings')}>Standings</button>
+            <button aria-current={tab === 'board'} onClick={() => go('board')}>
               Board
               {unread > 0 && <span className="tabcount">{unread}</span>}
             </button>
-            <button aria-current={tab === 'moves'} onClick={() => setTab('moves')}>Moves</button>
-            <button aria-current={tab === 'rules'} onClick={() => setTab('rules')}>Rules</button>
+            <button aria-current={tab === 'moves'} onClick={() => go('moves')}>Moves</button>
+            <button aria-current={tab === 'rules'} onClick={() => go('rules')}>Rules</button>
             {commissioner && (
-              <button aria-current={tab === 'commish'} onClick={() => setTab('commish')}>Commish</button>
+              <button aria-current={tab === 'commish'} onClick={() => go('commish')}>Commish</button>
             )}
           </nav>
 
           {tab === 'home' ? (
             <Home
               uid={user.uid}
-              onGoToTeam={() => setTab('team')}
-              onGoToBoard={() => setTab('board')}
+              onGoToTeam={() => go('team')}
+              onGoToBoard={() => go('board')}
             />
           )
             : tab === 'team' ? <RosterBuilder uid={user.uid} />
