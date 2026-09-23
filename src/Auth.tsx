@@ -144,92 +144,89 @@ export function SignIn() {
   /**
    * What is being asked for, whichever way in was chosen.
    *
-   * One form rather than two almost identical ones. The difference between creating an account and
-   * using one is a single function call and three words on a button; written twice it would be two
-   * places to fix the next time the wording changes.
+   * Written out here rather than as a nested component. A component declared during a render is a
+   * new type on every render, so React threw the input away and built a new one on each keystroke —
+   * and the focus went with it. Typing a second character into the email box was impossible.
+   *
+   * One form rather than two almost identical ones, too. The difference between creating an account
+   * and using one is a single function call and three words on a button.
    */
-  function Form() {
-    if (sent) {
-      return (
-        <div className="authbody">
-          <p className="authsaid">
-            If there is an account for <strong>{email.trim()}</strong>, a link to set a new password
-            is on its way. It expires in an hour, and it may land in spam.
-          </p>
-          <button className="ghost wide" onClick={() => change('in')}>Back to signing in</button>
-        </div>
-      );
-    }
-
-    return (
-      <div className="authbody">
-        {mode === 'new' && (
-          <p className="authsaid">
-            Signing up does not put you in the league — the commissioner still has to let you in.
-          </p>
-        )}
-        {mode === 'lost' && (
-          <p className="authsaid">
-            Your email address, and we will send you a link to set a new password.
-          </p>
-        )}
-
-        {mode !== 'lost' && (
-          <>
-            {/* The same call either way: Google makes the account the first time and knows you
-                after that. Only the word changes, because only the intention has. */}
-            <button className="gbtn" disabled={busy} onClick={() => void attempt(() => signInWithPopup(auth, google))}>
-              <GoogleMark />
-              <span>{mode === 'new' ? 'Sign up with Google' : 'Sign in with Google'}</span>
-            </button>
-
-            <div className="or"><span>or with an email address</span></div>
-          </>
-        )}
-
-        <form className="signin" onSubmit={(event) => { event.preventDefault(); withEmail(); }}>
-          <label>
-            <span>Email</span>
-            <input
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-            />
-          </label>
-
-          {mode !== 'lost' && (
-            <label>
-              <span>Password{mode === 'new' && <em>six characters or more</em>}</span>
-              <input
-                type="password"
-                // Telling the browser which it is, so it offers to save a new one and fills an old.
-                autoComplete={mode === 'new' ? 'new-password' : 'current-password'}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </label>
+  const form = sent ? (
+    <div className="authbody">
+            <p className="authsaid">
+              If there is an account for <strong>{email.trim()}</strong>, a link to set a new password
+              is on its way. It expires in an hour, and it may land in spam.
+            </p>
+            <button className="ghost wide" onClick={() => change('in')}>Back to signing in</button>
+          </div>
+  ) : (
+    <div className="authbody">
+          {mode === 'new' && (
+            <p className="authsaid">
+              Signing up does not put you in the league — the commissioner still has to let you in.
+            </p>
+          )}
+          {mode === 'lost' && (
+            <p className="authsaid">
+              Your email address, and we will send you a link to set a new password.
+            </p>
           )}
 
-          {problem && <p className="problem">{problem}</p>}
+          {mode !== 'lost' && (
+            <>
+              {/* The same call either way: Google makes the account the first time and knows you
+                  after that. Only the word changes, because only the intention has. */}
+              <button className="gbtn" disabled={busy} onClick={() => void attempt(() => signInWithPopup(auth, google))}>
+                <GoogleMark />
+                <span>{mode === 'new' ? 'Sign up with Google' : 'Sign in with Google'}</span>
+              </button>
 
-          <button className="submit wide" type="submit" disabled={busy}>
-            {busy ? 'One moment…'
-              : mode === 'new' ? 'Create account'
-              : mode === 'lost' ? 'Send the link'
-              : 'Sign in'}
-          </button>
-        </form>
+              <div className="or"><span>or with an email address</span></div>
+            </>
+          )}
 
-        {mode === 'in' && (
-          <div className="signinalts">
-            <button className="linky" onClick={() => change('lost')}>Forgot password?</button>
-          </div>
-        )}
-      </div>
-    );
-  }
+          <form className="signin" onSubmit={(event) => { event.preventDefault(); withEmail(); }}>
+            <label>
+              <span>Email</span>
+              <input
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@example.com"
+              />
+            </label>
+
+            {mode !== 'lost' && (
+              <label>
+                <span>Password{mode === 'new' && <em>six characters or more</em>}</span>
+                <input
+                  type="password"
+                  // Telling the browser which it is, so it offers to save a new one and fills an old.
+                  autoComplete={mode === 'new' ? 'new-password' : 'current-password'}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </label>
+            )}
+
+            {problem && <p className="problem">{problem}</p>}
+
+            <button className="submit wide" type="submit" disabled={busy}>
+              {busy ? 'One moment…'
+                : mode === 'new' ? 'Create account'
+                : mode === 'lost' ? 'Send the link'
+                : 'Sign in'}
+            </button>
+          </form>
+
+          {mode === 'in' && (
+            <div className="signinalts">
+              <button className="linky" onClick={() => change('lost')}>Forgot password?</button>
+            </div>
+          )}
+        </div>
+  );
 
   return (
     <>
@@ -265,7 +262,7 @@ export function SignIn() {
               {sent ? 'Check your email' : TITLE[mode]}
               <button className="ghost small" onClick={close}>Close</button>
             </div>
-            <Form />
+            {form}
           </div>
         </div>
       )}

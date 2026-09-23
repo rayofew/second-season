@@ -27,6 +27,157 @@ import type { Application, Manager, StandInRegister } from './store/firestore.ts
 const FULL = EASTSIDE.slots.length;
 const money = (amount: number) => `$${amount.toLocaleString()}`;
 
+
+/**
+ * One manager, and everything that can be done about him.
+ *
+ * Declared out here rather than inside the screen. A component defined during a render is a new
+ * type on every render, so React throws the whole list away and builds it again whenever anything
+ * at all changes — which loses a press that lands while it is doing so, and is why the arrow
+ * sometimes did nothing.
+ */
+function Row({
+  manager,
+  detail,
+  slots,
+  standIn,
+  showing,
+  onToggle,
+  uid,
+  owner,
+  commissioners,
+  buyIn,
+  busy,
+  confirming,
+  onConfirm,
+  onEdit,
+  onCommish,
+  onRemove,
+  onPaid,
+}: {
+  manager: Manager;
+  detail: Application | undefined;
+  slots: number;
+  standIn: boolean;
+  showing: boolean;
+  onToggle: () => void;
+  uid: string;
+  owner: string | undefined;
+  commissioners: string[];
+  buyIn: number;
+  busy: string | null;
+  confirming: string | null;
+  onConfirm: (uid: string | null) => void;
+  onEdit: (manager: Manager) => void;
+  onCommish: (manager: Manager) => void;
+  onRemove: (manager: Manager) => void;
+  onPaid: (manager: Manager) => void;
+}) {
+  const phone = detail?.phone ?? '';
+  const email = detail?.email ?? '';
+
+  return (
+    <div className={`row contactrow ${showing ? 'open' : ''}`}>
+      <div className="contactline">
+        {manager.logo ? <img className="badge" src={manager.logo} alt="" /> : <span className="badge empty" />}
+
+        <span className="rowmain">
+          <span className="contacttop">
+            <span className="rowname">{manager.teamName}</span>
+            <span className="rowwho">{detail?.name || manager.name}</span>
+            {manager.uid === uid && <span className="tag">you</span>}
+            {manager.uid === owner ? (
+              <span className="tag">owner</span>
+            ) : commissioners.includes(manager.uid) ? (
+              <span className="tag">commish</span>
+            ) : null}
+            {standIn && <span className="tag">stand-in</span>}
+          </span>
+
+          <span className="contactlinks">
+            {phone
+              ? <a href={`sms:${dialable(phone)}`}>{formatPhone(phone)}</a>
+              : <span className="nocontact">no number</span>}
+            {email
+              ? <a href={`mailto:${email}`}>{email}</a>
+              : <span className="nocontact">no email yet</span>}
+          </span>
+
+          {/* A stand-in is played from this screen and will never sign in, so it is not news. */}
+          <span className="rowfacts">
+            {!standIn && (
+              <span className={manager.lastSeen ? '' : 'cold'}>
+                {manager.lastSeen ? `last in ${sinceWords(manager.lastSeen)}` : 'never opened it'}
+              </span>
+            )}
+            {!standIn && manager.visits > 0 && (
+              <span>{manager.visits} visit{manager.visits === 1 ? '' : 's'}</span>
+            )}
+          </span>
+        </span>
+
+        {/*
+          * The money, on the line and one press away.
+          *
+          * It was behind the arrow with the other controls, which is the right place for removing
+          * somebody and the wrong one for the thing done fifteen times in an evening while
+          * standing in a kitchen. Press it to pay, press it again to unpay.
+          */}
+        {buyIn > 0 && (
+          <button
+            className={`paidtoggle ${manager.paid ? 'paid' : 'owing'}`}
+            disabled={busy === manager.uid}
+            title={manager.paid ? 'Mark him unpaid' : 'Mark him paid'}
+            onClick={() => onPaid(manager)}
+          >
+            {busy === manager.uid ? '…' : manager.paid ? `Paid ${money(buyIn)}` : `Owes ${money(buyIn)}`}
+          </button>
+        )}
+
+        <span className={slots >= FULL ? 'keeps' : 'resets'}>
+          {slots >= FULL ? 'in' : slots === 0 ? 'nothing' : `${slots} of ${FULL}`}
+        </span>
+
+        <button
+          className="rowmore"
+          type="button"
+          aria-expanded={showing}
+          aria-label={`Things to do with ${manager.teamName}`}
+          onClick={onToggle}
+        >
+          {showing ? '▴' : '▾'}
+        </button>
+      </div>
+
+      {showing && (
+        <div className="rowactions">
+          <button className="ghost small" onClick={() => onEdit(manager)}>Team</button>
+
+          {manager.uid !== owner && (
+            <button
+              className={commissioners.includes(manager.uid) ? 'submit small' : 'ghost small'}
+              disabled={busy === manager.uid}
+              onClick={() => onCommish(manager)}
+            >
+              {commissioners.includes(manager.uid) ? 'Stand down' : 'Make commish'}
+            </button>
+          )}
+
+          {manager.uid !== uid && (
+            <button
+              className="danger small"
+              disabled={busy === manager.uid}
+              onClick={() => (confirming === manager.uid ? onRemove(manager) : onConfirm(manager.uid))}
+            >
+              {confirming === manager.uid ? 'Sure? Remove' : 'Remove'}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Managers({
   managers,
   applications,
@@ -83,112 +234,6 @@ export function Managers({
     .filter((phone): phone is string => Boolean(phone))
     .map(dialable);
 
-  function Row({ manager }: { manager: Manager }) {
-    const found = detail.get(manager.uid);
-    const phone = found?.phone ?? '';
-    const email = found?.email ?? '';
-    const slots = slotsOf(manager);
-    const standIn = Boolean(standIns[manager.uid]);
-    const showing = open === manager.uid;
-
-    return (
-      <div className={`row contactrow ${showing ? 'open' : ''}`}>
-        <div className="contactline">
-          {manager.logo ? <img className="badge" src={manager.logo} alt="" /> : <span className="badge empty" />}
-
-          <span className="rowmain">
-            <span className="contacttop">
-              <span className="rowname">{manager.teamName}</span>
-              <span className="rowwho">{found?.name || manager.name}</span>
-              {manager.uid === uid && <span className="tag">you</span>}
-              {manager.uid === owner ? (
-                <span className="tag">owner</span>
-              ) : commissioners.includes(manager.uid) ? (
-                <span className="tag">commish</span>
-              ) : null}
-              {standIn && <span className="tag">stand-in</span>}
-            </span>
-
-            <span className="contactlinks">
-              {phone
-                ? <a href={`sms:${dialable(phone)}`}>{formatPhone(phone)}</a>
-                : <span className="nocontact">no number</span>}
-              {email
-                ? <a href={`mailto:${email}`}>{email}</a>
-                : <span className="nocontact">no email yet</span>}
-            </span>
-
-            {/* A stand-in is played from this screen and will never sign in, so it is not news. */}
-            <span className="rowfacts">
-              {!standIn && (
-                <span className={manager.lastSeen ? '' : 'cold'}>
-                  {manager.lastSeen ? `last in ${sinceWords(manager.lastSeen)}` : 'never opened it'}
-                </span>
-              )}
-              {!standIn && manager.visits > 0 && (
-                <span>{manager.visits} visit{manager.visits === 1 ? '' : 's'}</span>
-              )}
-              {buyIn > 0 && (
-                <span className={manager.paid ? 'settled' : 'owing'}>
-                  {manager.paid ? `paid ${money(buyIn)}` : `owes ${money(buyIn)}`}
-                </span>
-              )}
-            </span>
-          </span>
-
-          <span className={slots >= FULL ? 'keeps' : 'resets'}>
-            {slots >= FULL ? 'in' : slots === 0 ? 'nothing' : `${slots} of ${FULL}`}
-          </span>
-
-          <button
-            className="rowmore"
-            aria-expanded={showing}
-            aria-label={`Things to do with ${manager.teamName}`}
-            onClick={() => { setOpen(showing ? null : manager.uid); onConfirm(null); }}
-          >
-            {showing ? '▴' : '▾'}
-          </button>
-        </div>
-
-        {showing && (
-          <div className="rowactions">
-            {buyIn > 0 && (
-              <button
-                className={manager.paid ? 'submit small' : 'ghost small'}
-                disabled={busy === manager.uid}
-                onClick={() => onPaid(manager)}
-              >
-                {busy === manager.uid ? '…' : manager.paid ? `Paid ${money(buyIn)}` : 'Mark paid'}
-              </button>
-            )}
-
-            <button className="ghost small" onClick={() => onEdit(manager)}>Team</button>
-
-            {manager.uid !== owner && (
-              <button
-                className={commissioners.includes(manager.uid) ? 'submit small' : 'ghost small'}
-                disabled={busy === manager.uid}
-                onClick={() => onCommish(manager)}
-              >
-                {commissioners.includes(manager.uid) ? 'Stand down' : 'Make commish'}
-              </button>
-            )}
-
-            {manager.uid !== uid && (
-              <button
-                className="danger small"
-                disabled={busy === manager.uid}
-                onClick={() => (confirming === manager.uid ? onRemove(manager) : onConfirm(manager.uid))}
-              >
-                {confirming === manager.uid ? 'Sure? Remove' : 'Remove'}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="card">
       <div className="confhead">
@@ -215,14 +260,56 @@ export function Managers({
               <a className="textall" href={`sms:${texts.join(',')}`}>Text all {texts.length}</a>
             )}
           </div>
-          {waiting.map((manager) => <Row key={manager.uid} manager={manager} />)}
+          {waiting.map((manager) => (
+            <Row
+              key={manager.uid}
+              manager={manager}
+              detail={detail.get(manager.uid)}
+              slots={slotsOf(manager)}
+              standIn={Boolean(standIns[manager.uid])}
+              showing={open === manager.uid}
+              onToggle={() => { setOpen(open === manager.uid ? null : manager.uid); onConfirm(null); }}
+              uid={uid}
+              owner={owner}
+              commissioners={commissioners}
+              buyIn={buyIn}
+              busy={busy}
+              confirming={confirming}
+              onConfirm={onConfirm}
+              onEdit={onEdit}
+              onCommish={onCommish}
+              onRemove={onRemove}
+              onPaid={onPaid}
+            />
+          ))}
         </>
       )}
 
       {ready.length > 0 && (
         <>
           <div className="grouphead">In — {ready.length}</div>
-          {ready.map((manager) => <Row key={manager.uid} manager={manager} />)}
+          {ready.map((manager) => (
+            <Row
+              key={manager.uid}
+              manager={manager}
+              detail={detail.get(manager.uid)}
+              slots={slotsOf(manager)}
+              standIn={Boolean(standIns[manager.uid])}
+              showing={open === manager.uid}
+              onToggle={() => { setOpen(open === manager.uid ? null : manager.uid); onConfirm(null); }}
+              uid={uid}
+              owner={owner}
+              commissioners={commissioners}
+              buyIn={buyIn}
+              busy={busy}
+              confirming={confirming}
+              onConfirm={onConfirm}
+              onEdit={onEdit}
+              onCommish={onCommish}
+              onRemove={onRemove}
+              onPaid={onPaid}
+            />
+          ))}
         </>
       )}
 

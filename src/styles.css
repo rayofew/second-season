@@ -1936,3 +1936,20 @@ td { font-variant-numeric: tabular-nums; }
 /* Struck through rather than removed: knowing who he lost is half of knowing what he needs. */
 .squadrow.out .squadname { color: var(--faint); text-decoration: line-through; }
 .squadrow.out .face { filter: grayscale(1); opacity: 0.55; }
+
+/**
+ * Paid or not, on the line.
+ *
+ * It lived behind the arrow with the other controls, which is the right place for removing
+ * somebody and the wrong one for the thing done fifteen times in one evening while standing in a
+ * kitchen. One press pays, the next unpays.
+ */
+.paidtoggle {
+  flex: none; padding: 5px 10px; border-radius: 999px; white-space: nowrap;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.03em;
+  border: 1px solid var(--line); background: var(--sunk); color: var(--dim);
+}
+.paidtoggle.paid { background: var(--good-bg); border-color: var(--good-line); color: var(--live); }
+.paidtoggle.owing { background: var(--bad-bg); border-color: var(--bad-line); color: var(--gone); }
+.paidtoggle:hover:not(:disabled) { border-color: var(--gold); }
+.paidtoggle:disabled { opacity: 0.6; }
