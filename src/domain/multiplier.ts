@@ -76,6 +76,26 @@ function streakAt(
 }
 
 /**
+ * What a man would be worth if he were picked into this round.
+ *
+ * The picker needs it before anybody has been picked, so it cannot come from a roster that does
+ * not exist yet: it walks the rounds already played and adds the one being chosen. A new signing
+ * is 1x, somebody held once is 2x, and the cap is the cap.
+ *
+ * Exported because "keeps streak" is true and says nothing — the whole reason to keep a man who
+ * is projected for nought is that he is about to be worth three times what he scores.
+ */
+export function wouldBeWorth(
+  history: RosterHistory,
+  playerId: string,
+  round: number,
+  settings: ContestSettings = EASTSIDE,
+): number {
+  const { streak } = streakAt(history, playerId, round - 1, settings);
+  return Math.min(Math.max(streak + 1, 1), MAX_MULTIPLIER);
+}
+
+/**
  * Every player's standing for one round.
  *
  * A rostered player is never shown below 1x, even in the one case where his streak is genuinely

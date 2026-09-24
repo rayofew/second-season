@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { creditedPoints, standingsFor } from '../src/domain/multiplier.ts';
+import { creditedPoints, standingsFor, wouldBeWorth } from '../src/domain/multiplier.ts';
 import type { HeldPlayer, RosterHistory } from '../src/domain/multiplier.ts';
 import { display, rawPoints } from '../src/domain/scoring.ts';
 import { EASTSIDE } from '../src/domain/rules.ts';
@@ -146,5 +146,32 @@ describe('raw points first, multiplier second', () => {
     assert.equal(veteran, 24);
     assert.equal(newcomer, 18);
     assert.ok(veteran > newcomer, 'which is the entire point of the game');
+  });
+});
+
+describe('what a man would be worth if picked now', () => {
+  const history = [
+    [{ playerId: 'kept', position: 'RB' as const, slot: 'RB1' }],
+    [{ playerId: 'kept', position: 'RB' as const, slot: 'RB1' }],
+  ];
+
+  it('is one for somebody nobody has held', () => {
+    // The picker asks before anybody has been picked, so it cannot read a roster that does not
+    // exist yet — it walks the rounds already played and adds the one being chosen.
+    assert.equal(wouldBeWorth(history, 'stranger', 2), 1);
+  });
+
+  it('is one more than the rounds he has already been held', () => {
+    assert.equal(wouldBeWorth(history, 'kept', 2), 3, 'two rounds held, third coming');
+    assert.equal(wouldBeWorth([history[0]!], 'kept', 1), 2);
+  });
+
+  it('never promises more than the cap', () => {
+    const long = Array.from({ length: 8 }, () => [{ playerId: 'kept', position: 'RB' as const, slot: 'RB1' }]);
+    assert.equal(wouldBeWorth(long, 'kept', 8), 4);
+  });
+
+  it('is one in the opening round, when nobody has been held at all', () => {
+    assert.equal(wouldBeWorth([], 'anybody', 0), 1);
   });
 });

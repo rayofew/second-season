@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { explain } from './domain/trouble.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import type { Position } from './domain/rules.ts';
-import { standingsFor } from './domain/multiplier.ts';
+import { standingsFor, wouldBeWorth } from './domain/multiplier.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
 import { readContest, readHistory, readPool, readTeams, recordMoves, saveRoster } from './store/firestore.ts';
 import type { Move } from './store/firestore.ts';
@@ -383,6 +383,9 @@ export function RosterBuilder({
                   <div className="options">
                     {candidatesFor(slot.id).map((candidate) => {
                       const incumbent = previous.some((entry) => entry.playerId === candidate.id);
+                      // What keeping him is actually worth, which is the whole reason to keep
+                      // somebody projected for nought.
+                      const worth = wouldBeWorth(history, candidate.id, round, EASTSIDE);
                       return (
                         <PlayerRow
                           key={candidate.id}
@@ -405,7 +408,11 @@ export function RosterBuilder({
                               </button>
                             )
                           }
-                          right={<span className={incumbent ? 'keeps' : 'resets'}>{incumbent ? 'keeps streak' : '1x'}</span>}
+                          right={
+                            <span className={incumbent ? 'keeps' : 'resets'}>
+                              {incumbent ? `keeps streak · ${worth}x` : '1x'}
+                            </span>
+                          }
                           onClick={() => choose(slot.id, candidate)}
                         />
                       );

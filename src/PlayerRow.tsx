@@ -5,6 +5,8 @@ import type { Position } from './domain/rules.ts';
 import type { StatLine } from './domain/scoring.ts';
 import { gravity, injuryOf } from './domain/injury.ts';
 import { useInjuries } from './providers/injuries.ts';
+import { storiesFor } from './domain/news.ts';
+import { useNews } from './providers/news.ts';
 
 /**
  * One player, wherever he appears: on a roster, in the picker, in a scoring breakdown.
@@ -92,6 +94,15 @@ export function PlayerRow({
    */
   const injured = useInjuries();
   const hurt = player ? injuryOf(injured, player) : undefined;
+  /**
+   * And whether anybody has written about him lately.
+   *
+   * Beside the designation, because they answer the same question from two directions: the
+   * designation says he is questionable and the story says his coach called him a game-time
+   * decision on Friday, which is the half that decides whether to start him.
+   */
+  const stories = storiesFor(useNews(), player?.espnId);
+  const [at, setAt] = useState<'career' | 'week' | 'news'>('career');
 
   return (
     <div className={`row ${dim ? 'dim' : ''}`} onClick={onClick}>
@@ -107,7 +118,7 @@ export function PlayerRow({
                   title="His stats"
                   // The row underneath usually does something of its own — picking him, opening a
                   // team — and asking about a man is not asking for either of those.
-                  onClick={(event) => { event.stopPropagation(); setShowing(true); }}
+                  onClick={(event) => { event.stopPropagation(); setAt('career'); setShowing(true); }}
                 >
                   {player.name}
                 </button>
@@ -119,6 +130,15 @@ export function PlayerRow({
                 >
                   {hurt.mark}
                 </span>
+              )}
+              {stories.length > 0 && (
+                <button
+                  className="newsmark"
+                  title={`${stories.length} recent ${stories.length === 1 ? 'story' : 'stories'}`}
+                  onClick={(event) => { event.stopPropagation(); setAt('news'); setShowing(true); }}
+                >
+                  {stories.length}
+                </button>
               )}
             </span>
             <span className="rowmeta">
@@ -152,6 +172,7 @@ export function PlayerRow({
           projected={card.projected}
           player={player}
           hint={hint}
+          at={at}
           onClose={() => setShowing(false)}
         />
       )}

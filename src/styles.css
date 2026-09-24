@@ -1984,3 +1984,35 @@ td { font-variant-numeric: tabular-nums; }
 .hurt.maybe { color: var(--gold); background: var(--glow); border-color: var(--warn-line); }
 .hurt.doubt { color: var(--gone); background: var(--bad-bg); border-color: var(--bad-line); }
 .hurt.gone { color: var(--on-accent); background: var(--gone); border-color: var(--gone); }
+
+/**
+ * Something has been written about him.
+ *
+ * Beside the designation, because the two answer the same question from opposite directions: the
+ * mark says he is questionable and the story says his coach called him a game-time decision on
+ * Friday, which is the half that decides whether to start him.
+ */
+.newsmark {
+  display: inline-flex; align-items: center; justify-content: center; margin-left: 5px;
+  min-width: 17px; height: 16px; padding: 0 4px; border-radius: 5px; vertical-align: 1px;
+  font-size: 9.5px; font-weight: 800; cursor: pointer;
+  background: var(--two-bg); border: 1px solid var(--two-line); color: var(--two-ink);
+}
+.newsmark:hover { border-color: var(--gold); color: var(--gold); }
+.tabcount.small { min-width: 15px; height: 15px; font-size: 9.5px; margin-left: 5px; }
+
+/* A headline, what it said, and how long ago. */
+.story {
+  display: block; padding: 11px 15px; border-bottom: 1px solid var(--hairline);
+  color: inherit; text-decoration: none;
+}
+.story:last-child { border-bottom: 0; }
+.story:hover { background: var(--raised); }
+.storyhead { display: block; font-size: 13.5px; font-weight: 700; line-height: 1.45; }
+.storysaid {
+  display: block; margin-top: 3px; font-size: 12.5px; line-height: 1.5; color: var(--dim);
+}
+.storywhen {
+  display: block; margin-top: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--faint);
+}

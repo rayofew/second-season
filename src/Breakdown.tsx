@@ -4,11 +4,14 @@ import type { Position } from './domain/rules.ts';
 import { points } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
 import { statLine } from './domain/statline.ts';
+import { sinceWords } from './domain/seen.ts';
 import { career } from './domain/career.ts';
 import type { CareerTable, RawCategory } from './domain/career.ts';
 import { gameLog } from './domain/gamelog.ts';
 import type { GameLog } from './domain/gamelog.ts';
 import { careerOf, seasonOf } from './providers/career.ts';
+import { storiesFor } from './domain/news.ts';
+import { useNews } from './providers/news.ts';
 import { Face } from './PlayerRow.tsx';
 import type { RowPlayer } from './PlayerRow.tsx';
 
@@ -33,6 +36,7 @@ export function Breakdown({
   projected,
   player,
   hint,
+  at,
   onClose,
 }: {
   name: string;
@@ -45,19 +49,23 @@ export function Breakdown({
   player?: RowPlayer;
   /** Where he is playing and when, or that his club is resting. */
   hint?: string;
+  /** Which tab to open on, since the row has two ways in and they mean different questions. */
+  at?: 'career' | 'week' | 'news';
   onClose: () => void;
 }) {
   const lines = breakdown(position, line);
   const raw = breakdownTotal(lines);
 
   /**
-   * Two questions, two tabs.
+   * Three questions, three tabs, and the row decides which one was being asked.
    *
-   * What he has done over his career is the one people open a card to ask, so it opens on that.
-   * What he is worth this week is the other half, and the app has always been able to answer it —
-   * it was just buried under a number nobody thought to press.
+   * Pressing the name means "who is this" and opens on his career. Pressing the marker beside the
+   * designation means "what has happened to him" and opens on the news. What he is worth this week
+   * is the third, and the app could always answer it — it was buried under a number nobody thought
+   * to press.
    */
-  const [tab, setTab] = useState<'career' | 'week'>('career');
+  const [tab, setTab] = useState<'career' | 'week' | 'news'>(at ?? 'career');
+  const stories = storiesFor(useNews(), player?.espnId);
   const [tables, setTables] = useState<CareerTable[] | null>(null);
   const [noCareer, setNoCareer] = useState(false);
   /** The season somebody has opened, and its weeks once they arrive. */
@@ -146,6 +154,9 @@ export function Breakdown({
           <button className={tab === 'week' ? 'on' : ''} onClick={() => setTab('week')}>
             {projected ? 'Expected' : 'This round'}
           </button>
+          <button className={tab === 'news' ? 'on' : ''} onClick={() => setTab('news')}>
+            News{stories.length > 0 && <span className="tabcount small">{stories.length}</span>}
+          </button>
         </div>
 
         {tab === 'career' && (
@@ -168,7 +179,7 @@ export function Breakdown({
                     <thead>
                       <tr>
                         <th>Year</th>
-                        {table.labels.map((label, at) => <th key={`${label}-${at}`}>{label}</th>)}
+                        {table.labels.map((label, column) => <th key={`${label}-${column}`}>{label}</th>)}
                         <th />
                       </tr>
                     </thead>
@@ -183,7 +194,7 @@ export function Breakdown({
                             {season.year}
                             {season.team && <span className="careerclub">{season.team}</span>}
                           </td>
-                          {season.figures.map((figure, at) => <td key={at}>{figure}</td>)}
+                          {season.figures.map((figure, column) => <td key={column}>{figure}</td>)}
                           <td className="drill">{year === season.year ? '▴' : '▾'}</td>
                         </tr>
                       ))}
@@ -209,7 +220,7 @@ export function Breakdown({
                             <tr>
                               <th>Wk</th>
                               <th>Game</th>
-                              {weeks.labels.map((label, at) => <th key={`${label}-${at}`}>{label}</th>)}
+                              {weeks.labels.map((label, column) => <th key={`${label}-${column}`}>{label}</th>)}
                             </tr>
                           </thead>
                           <tbody>
@@ -220,7 +231,7 @@ export function Breakdown({
                                   {game.against}
                                   {game.result && <span className="careerclub">{game.result}</span>}
                                 </td>
-                                {game.figures.map((figure, at) => <td key={at}>{figure}</td>)}
+                                {game.figures.map((figure, column) => <td key={column}>{figure}</td>)}
                               </tr>
                             ))}
                           </tbody>
@@ -229,6 +240,30 @@ export function Breakdown({
                     </div>
                   )}
                 </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {tab === 'news' && (
+          <div className="breakdownbody">
+            {stories.length === 0 ? (
+              <div className="pending">Nothing written about him in the last day or two.</div>
+            ) : (
+              stories.map((story) => (
+                <a
+                  className="story"
+                  key={story.headline}
+                  href={story.href}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  <span className="storyhead">{story.headline}</span>
+                  {story.summary && story.summary !== story.headline && (
+                    <span className="storysaid">{story.summary}</span>
+                  )}
+                  <span className="storywhen">{sinceWords(story.at)}</span>
+                </a>
               ))
             )}
           </div>
