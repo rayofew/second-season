@@ -3,6 +3,8 @@ import { colorOf, crest, headshot } from './domain/clubs.ts';
 import { Breakdown } from './Breakdown.tsx';
 import type { Position } from './domain/rules.ts';
 import type { StatLine } from './domain/scoring.ts';
+import { gravity, injuryOf } from './domain/injury.ts';
+import { useInjuries } from './providers/injuries.ts';
 
 /**
  * One player, wherever he appears: on a roster, in the picker, in a scoring breakdown.
@@ -81,6 +83,15 @@ export function PlayerRow({
   card?: { line: StatLine | undefined; projected: boolean };
 }) {
   const [showing, setShowing] = useState(false);
+  /**
+   * Whether he is hurt, asked once for the whole page.
+   *
+   * Here rather than in each screen, for the same reason the card is: a mark that appears on the
+   * picker and not on the roster is worse than no mark, because it teaches people that a name
+   * without one is fit.
+   */
+  const injured = useInjuries();
+  const hurt = player ? injuryOf(injured, player) : undefined;
 
   return (
     <div className={`row ${dim ? 'dim' : ''}`} onClick={onClick}>
@@ -101,6 +112,14 @@ export function PlayerRow({
                   {player.name}
                 </button>
               ) : player.name}
+              {hurt && (
+                <span
+                  className={`hurt ${gravity(hurt.mark)}`}
+                  title={hurt.detail ? `${hurt.status} — ${hurt.detail}` : hurt.status}
+                >
+                  {hurt.mark}
+                </span>
+              )}
             </span>
             <span className="rowmeta">
               <span className="pos" style={{ color: colorOf(player.team) }}>{player.position}</span>

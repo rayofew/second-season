@@ -1966,3 +1966,21 @@ td { font-variant-numeric: tabular-nums; }
 .paidtoggle.owing { background: var(--bad-bg); border-color: var(--bad-line); color: var(--gone); }
 .paidtoggle:hover:not(:disabled) { border-color: var(--gold); }
 .paidtoggle:disabled { opacity: 0.6; }
+
+/**
+ * Hurt, and how badly.
+ *
+ * A projection of eighteen points for a man who is doubtful is not a projection, it is a trap, and
+ * the feeds go on publishing one right up until he is ruled out on the Sunday morning. Three
+ * weights rather than one colour: out and reserve are decided, doubtful is bad news, questionable
+ * is a Sunday morning problem.
+ */
+.hurt {
+  display: inline-flex; align-items: center; justify-content: center; margin-left: 7px;
+  min-width: 18px; height: 16px; padding: 0 5px; border-radius: 5px; vertical-align: 1px;
+  font-size: 9.5px; font-weight: 800; letter-spacing: 0.04em;
+  border: 1px solid transparent;
+}
+.hurt.maybe { color: var(--gold); background: var(--glow); border-color: var(--warn-line); }
+.hurt.doubt { color: var(--gone); background: var(--bad-bg); border-color: var(--bad-line); }
+.hurt.gone { color: var(--on-accent); background: var(--gone); border-color: var(--gone); }
