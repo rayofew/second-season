@@ -139,7 +139,15 @@ export function RosterBuilder({
   const alive = new Set(teams.alive);
   const byes = new Set(teams.byes);
   const previous = history[round - 1] ?? [];
+  /**
+   * Who went out from under him, and whether he has done anything about it yet.
+   *
+   * The names come from last round, because that is where the men who are gone still are. Whether
+   * it still matters comes from this round: a slot he has already refilled is not a problem, and a
+   * banner that keeps saying it is teaches him to stop reading banners.
+   */
   const lost = previous.filter((held) => !alive.has(byId.get(held.playerId)?.team ?? ''));
+  const gaps = EASTSIDE.slots.filter((slot) => !roster.some((held) => held.slot === slot.id));
   const projectedRaw = roster.reduce((sum, held) => sum + (projected.get(held.playerId) ?? 0), 0);
   const projectedCredited = roster.reduce(
     (sum, held) => sum + (projected.get(held.playerId) ?? 0) * (standings.get(held.slot)?.multiplier ?? 1),
@@ -264,13 +272,38 @@ export function RosterBuilder({
         </div>
       </div>
 
-      {lost.length > 0 && (
+      {/*
+        * One banner, saying whichever of three things is true.
+        *
+        * Something to fix, everything fixed but not sent, or sent. The third is worth saying out
+        * loud: a screen that only ever speaks up when something is wrong leaves somebody who has
+        * done everything right wondering whether it took.
+        */}
+      {!locked && gaps.length > 0 ? (
         <div className="card notice">
-          <strong>{lost.length} of your nine are out.</strong>{' '}
-          {lost.map((held) => byId.get(held.playerId)?.name ?? held.playerId).join(', ')} — their clubs lost.
+          <strong>
+            {gaps.length === 1 ? 'One slot to fill' : `${gaps.length} slots to fill`}
+            {': '}{gaps.map((slot) => slot.id).join(', ')}.
+          </strong>{' '}
+          {lost.length > 0 && (
+            <>
+              {lost.map((held) => byId.get(held.playerId)?.name ?? held.playerId).join(', ')}
+              {lost.length === 1 ? ' is out — his club lost.' : ' are out — their clubs lost.'}{' '}
+            </>
+          )}
           Whoever replaces them starts again at 1x.
         </div>
-      )}
+      ) : !locked && unsaved ? (
+        <div className="card notice ready">
+          <strong>All nine picked.</strong>{' '}
+          Nothing is saved until you submit — the button is at the bottom.
+        </div>
+      ) : !locked && saving === 'saved' ? (
+        <div className="card notice done">
+          <strong>You are good to go.</strong>{' '}
+          Your nine are in. You can still change them until it locks.
+        </div>
+      ) : null}
 
       <div className="rowlist">
         {EASTSIDE.slots.map((slot) => {

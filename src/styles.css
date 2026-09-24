@@ -177,6 +177,12 @@ nav button[aria-current="true"] {
 }
 .notice strong { color: var(--gone); }
 
+/* The same banner when there is nothing wrong, which is worth saying rather than saying nothing. */
+.notice.ready { border-color: var(--warn-line); background: var(--glow); }
+.notice.ready strong { color: var(--gold); }
+.notice.done { border-color: var(--good-line); background: var(--good-bg); }
+.notice.done strong { color: var(--live); }
+
 .gate { padding: 30px 22px; text-align: center; }
 .gate h2 { margin: 0 0 8px; font-size: 18px; font-weight: 650; }
 .gate p { margin: 0 0 18px; color: var(--dim); font-size: 14px; line-height: 1.6; }
@@ -1538,7 +1544,14 @@ td { font-variant-numeric: tabular-nums; }
   display: flex; align-items: baseline; gap: 6px; justify-content: center;
   font-size: 11.5px; font-weight: 700; text-align: center; white-space: nowrap;
 }
-.tiestate:empty { display: none; }
+/*
+ * Emptied rather than removed.
+ *
+ * display:none takes it out of the grid, and the three columns are then filled by two items — so
+ * the fixture meant for the right-hand column landed in the middle one and every kickoff time on
+ * a round nobody had played yet sat in the centre of the card.
+ */
+.tiestate:empty { min-height: 0; }
 .tiestate.leading { color: var(--gold); }
 .tiestate.done { color: var(--live); }
 .tiestate.waiting { color: var(--dim); font-weight: 500; }
