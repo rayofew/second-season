@@ -108,16 +108,6 @@ export function Home({
       setRecent(posts);
       setLastRead(people.find((person) => person.uid === uid)?.lastReadBoard ?? null);
 
-      // The most recent round whose lock has passed, which is the most recent one anybody may see.
-      const shut = found.rounds
-        .filter((entry) => (found.locks[String(entry.round)] ?? new Date()) <= new Date())
-        .sort((first, second) => second.round - first.round)[0];
-      if (shut) {
-        setPlayedRound(shut.name);
-        setPlayed(new Map(Object.entries(
-          await readAllRosters(CONTEST, people.map((person) => person.uid), shut.round).catch(() => ({})),
-        )));
-      }
     })();
   }, [uid]);
 
@@ -127,6 +117,35 @@ export function Home({
   // Nothing to refresh on a Tuesday, and nothing to refresh once every game has finished.
   const stillGoing = [...games.values()].some((game) => game.state !== 'final');
   const beat = useHeartbeat(shut && stillGoing, HEARTBEAT);
+
+  /**
+   * Everybody's teams, for the most recent round anybody is allowed to see.
+   *
+   * Its own effect, and keyed on whether the round has locked, because that is the one thing on
+   * this screen that changes without anybody pressing anything. Fetched once at load, it left a
+   * page that had been open since the afternoon showing last week's teams an hour after the lock
+   * had passed — and the person looking at it had no way to know the screen was out of date.
+   *
+   * Before the lock it is last round's team, which is the rule rather than a shortcut: the database
+   * refuses one manager another's roster right up to the first kickoff.
+   */
+  useEffect(() => {
+    if (!contest || managers.length === 0) return;
+    const round = shut ? roundNow : roundNow - 1;
+    const config = contest.rounds[round];
+    if (!config) { setPlayed(new Map()); setPlayedRound(null); return; }
+
+    let cancelled = false;
+    void (async () => {
+      const rosters = await readAllRosters(CONTEST, managers.map((person) => person.uid), round)
+        .catch(() => ({}));
+      if (cancelled) return;
+      setPlayedRound(config.name);
+      setPlayed(new Map(Object.entries(rosters)));
+    })();
+    return () => { cancelled = true; };
+  }, [contest, managers, shut, roundNow]);
+
 
   /**
    * The live half, asked for again on every heartbeat.
@@ -297,6 +316,7 @@ export function Home({
         pool={pool}
         alive={alive}
         roundName={playedRound ?? undefined}
+        live={shut}
       />
 
       {gone.length > 0 && !locked && (

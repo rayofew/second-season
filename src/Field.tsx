@@ -28,6 +28,7 @@ export function Field({
   pool,
   alive,
   roundName,
+  live,
 }: {
   managers: Manager[];
   you: string;
@@ -38,6 +39,8 @@ export function Field({
   alive?: Set<string>;
   /** The round those teams were played in, so the card can say which one it is showing. */
   roundName?: string;
+  /** Whether that round is the one being played, which changes what the card is saying. */
+  live?: boolean;
 }) {
   const [showing, setShowing] = useState<string | null>(null);
   if (managers.length === 0) return null;
@@ -95,15 +98,24 @@ export function Field({
         <div className="squadcard">
           <div className="squadtop">
             <strong>{open.teamName}</strong>
-            <span className="squadwhen">as played in {roundName ?? 'the last round'}</span>
+            <span className="squadwhen">
+              {live
+                ? `playing in ${roundName ?? 'this round'}`
+                : `as played in ${roundName ?? 'the last round'}`}
+            </span>
           </div>
 
+          {/* Before the lock this is what he has to fix; after it, what he never fixed. */}
           {needed.length > 0 ? (
             <div className="squadneeds">
-              Needs {needed.map((entry) => entry.slot).join(', ')}
+              {live
+                ? `Playing ${lineup.length - needed.length} of ${lineup.length} — ${needed.map((entry) => entry.slot).join(', ')} empty`
+                : `Needs ${needed.map((entry) => entry.slot).join(', ')}`}
             </div>
           ) : (
-            <div className="squadneeds whole">Nobody to replace — all nine survived.</div>
+            <div className="squadneeds whole">
+              {live ? 'A full nine in.' : 'Nobody to replace — all nine survived.'}
+            </div>
           )}
 
           <div className="squadlist">
@@ -125,8 +137,9 @@ export function Field({
           </div>
 
           <div className="pending">
-            What they had last round. Nobody sees anybody's picks for the round being played until
-            it locks — which is why there is still a point in thinking about yours.
+            {live
+              ? 'Everybody’s team for the round being played. Rosters open to the league at the first kickoff and not a moment before.'
+              : 'What they had last round. Nobody sees anybody’s picks for the round being played until it locks — which is why there is still a point in thinking about yours.'}
           </div>
         </div>
       )}
