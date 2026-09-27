@@ -1626,20 +1626,30 @@ td { font-variant-numeric: tabular-nums; }
 }
 .standingnum.forecast { min-width: 44px; }
 
-/* Which of the two figures the table is standing on. Smaller than the races, because it is a
-   second question about the same list rather than a different list. */
-.sortby {
-  display: flex; align-items: center; gap: 6px; padding: 10px 14px 0;
-  font-size: 11px; color: var(--faint);
+/**
+ * The column headings, which are also how the table is sorted.
+ *
+ * Laid out with the same widths a row uses, so each word sits over the figure it names. A control
+ * anywhere else would have to explain which column it meant; this one is the column.
+ */
+.standingcols {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px 6px; border-bottom: 1px solid var(--line); background: var(--sunk);
 }
-.sortby span {
-  font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-right: 2px;
+.standingcolname {
+  flex: 1; min-width: 0; padding-left: 34px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--faint);
 }
-.sortby button {
-  padding: 5px 11px; border-radius: 999px; min-height: 0; font-size: 12px; font-weight: 650;
-  background: var(--sunk); border: 1px solid var(--line); color: var(--dim);
+.sortcol {
+  display: flex; align-items: center; justify-content: flex-end; gap: 3px;
+  background: none; border: 0; padding: 5px 0; cursor: pointer;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--faint);
 }
-.sortby button.on { background: var(--raised); border-color: var(--gold); color: var(--ink); }
+.sortcol:hover { color: var(--dim); }
+.sortcol.on { color: var(--gold); }
+.sortmark { font-size: 8px; line-height: 1; }
 /* Three columns want a little less air between them than two did. */
 .standingnums:has(.standingnum:nth-child(3)) { gap: 9px; }
 .standingnum.forecast b { font-size: 12.5px; font-weight: 600; color: var(--faint); line-height: 1.2; }

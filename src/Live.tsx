@@ -340,18 +340,6 @@ export function Live({ uid }: { uid: string }) {
             Weekly prize
           </button>
         </div>
-        {carried && (
-          <div className="sortby">
-            <span>Sort by</span>
-            <button className={order === 'total' ? 'on' : ''} onClick={() => setOrder('total')}>
-              Overall
-            </button>
-            <button className={order === 'week' ? 'on' : ''} onClick={() => setOrder('week')}>
-              This week
-            </button>
-          </div>
-        )}
-
         <div className="pending">
           {race === 'contest'
             ? 'Every round added up, multipliers and all — the contest.'
@@ -360,6 +348,33 @@ export function Live({ uid }: { uid: string }) {
             ? ' Projections came off at the first kickoff: these are points somebody has scored.'
             : ' Nothing has kicked off, so every figure here is a projection.'}
         </div>
+
+        {/*
+          * Column headings that are also the way to sort by them.
+          *
+          * Above the scores and lined up with them, using the same widths as a row, so the word
+          * sits over the figure it names. A separate control somewhere else would have to say
+          * which column it meant; this one is the column.
+          */}
+        {carried && (
+          <div className="standingcols">
+            <span className="standingcolname">Manager</span>
+            <span className="standingnums">
+              <button
+                className={`standingnum forecast sortcol ${order === 'week' ? 'on' : ''}`}
+                onClick={() => setOrder('week')}
+              >
+                Week{order === 'week' && <span className="sortmark">▾</span>}
+              </button>
+              <button
+                className={`standingnum scored sortcol ${order === 'total' ? 'on' : ''}`}
+                onClick={() => setOrder('total')}
+              >
+                Total{order === 'total' && <span className="sortmark">▾</span>}
+              </button>
+            </span>
+          </div>
+        )}
 
         {rows.map((row) => (
           <Standing
@@ -445,7 +460,6 @@ function Standing({
           {carried && (
             <span className="standingnum forecast">
               <b>{points(row.scored - row.before)}</b>
-              <span className="numlabel">week</span>
             </span>
           )}
           {!underway && (
@@ -456,7 +470,6 @@ function Standing({
           )}
           <span className="standingnum scored">
             <b>{points(row.scored)}</b>
-            {carried && <span className="numlabel">total</span>}
             {row.behind > 0 && <span className="behind">−{points(row.behind)}</span>}
           </span>
         </span>
