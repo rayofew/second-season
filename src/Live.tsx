@@ -191,6 +191,15 @@ export function Live({ uid }: { uid: string }) {
    * silenced: they settle a tie between two clubs that played, and a resting club is in no tie.
    */
   const resting = new Set(teams?.byes ?? []);
+
+  /**
+   * Whether any of this round's football has started.
+   *
+   * The moment it has, a projection stops being the best answer available and becomes a guess made
+   * on Friday sitting beside things that actually happened. Two numbers in the same column that
+   * mean different kinds of thing is how a leaderboard misleads without ever being wrong.
+   */
+  const underway = [...games.values()].some((game) => game.state !== 'upcoming');
   const clubOf = (playerId: string) => pool.get(playerId)?.team;
   const scored = silence(actual, clubOf, resting);
   const guessed = silence(expected, clubOf, resting);
@@ -326,6 +335,9 @@ export function Live({ uid }: { uid: string }) {
           {race === 'contest'
             ? 'Every round added up, multipliers and all — the contest.'
             : 'This round alone, raw points with multipliers ignored — so it stays winnable by anybody.'}
+          {underway
+            ? ' Projections came off at the first kickoff: these are points somebody has scored.'
+            : ' Nothing has kicked off, so every figure here is a projection.'}
         </div>
 
         {rows.map((row) => (
@@ -336,6 +348,7 @@ export function Live({ uid }: { uid: string }) {
             open={open === row.entryId}
             pool={pool}
             carried={race === 'contest' && rows.some((entry) => entry.before > 0)}
+            underway={underway}
             onToggle={() => setOpen(open === row.entryId ? null : row.entryId)}
           />
         ))}
@@ -350,6 +363,7 @@ function Standing({
   open,
   pool,
   carried,
+  underway,
   onToggle,
 }: {
   row: BoardRow;
@@ -364,6 +378,15 @@ function Standing({
    * From the Divisional on they are different questions and both are worth asking.
    */
   carried: boolean;
+  /**
+   * Whether the football has started.
+   *
+   * Until it does, a projection is the only answer there is and the screen says so. After it, it
+   * is a guess made on Friday sitting next to things that actually happened, and the two read as
+   * the same kind of number when they are nothing of the sort — so it comes off and what is left
+   * is points somebody has scored.
+   */
+  underway: boolean;
   onToggle: () => void;
 }) {
   return (
@@ -404,10 +427,12 @@ function Standing({
               <span className="numlabel">week</span>
             </span>
           )}
-          <span className="standingnum forecast">
-            <b>{points(carried ? row.running : row.total)}</b>
-            <span className="numlabel">{carried ? 'week proj' : 'proj'}</span>
-          </span>
+          {!underway && (
+            <span className="standingnum forecast">
+              <b>{points(carried ? row.running : row.total)}</b>
+              <span className="numlabel">{carried ? 'week proj' : 'proj'}</span>
+            </span>
+          )}
           <span className="standingnum scored">
             <b>{points(row.scored)}</b>
             {carried && <span className="numlabel">total</span>}
