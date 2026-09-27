@@ -15,6 +15,15 @@ import type { LivePlayer } from './live.ts';
 
 export type Race = 'contest' | 'week';
 
+/**
+ * Which figure the table is ordered on.
+ *
+ * 'total' is the contest — everything anybody has scored since the Wild Card. 'week' is this
+ * afternoon alone, which from the second round on is a different table entirely: the man in tenth
+ * place can be having the best Sunday in the league and there was no way to see it.
+ */
+export type Order = 'total' | 'week';
+
 export interface BoardInput {
   entryId: string;
   name: string;
@@ -56,7 +65,11 @@ export interface BoardRow extends BoardInput {
 const sum = (players: readonly LivePlayer[], of: (player: LivePlayer) => number) =>
   players.reduce((running, player) => running + of(player), 0);
 
-export function board(entries: readonly BoardInput[], race: Race): BoardRow[] {
+export function board(
+  entries: readonly BoardInput[],
+  race: Race,
+  order: Order = 'total',
+): BoardRow[] {
   const rows = entries.map((entry): Omit<BoardRow, 'rank' | 'behind'> => {
     const { players } = entry;
     const running = sum(players, (player) => player.credited);
@@ -93,14 +106,17 @@ export function board(entries: readonly BoardInput[], race: Race): BoardRow[] {
   /**
    * Ordered by what has actually been scored, best first.
    *
-   * Where two managers have scored the same — which on a Sunday morning is everybody, on nought —
-   * the one running at more goes above. That is an order to read the list in, not a claim about
-   * who is ahead: the ranks below still share.
+   * On whichever figure was asked for: the contest, or this afternoon alone. Where two managers
+   * are level — which on a Sunday morning is everybody, on nought — the one running at more goes
+   * above. That is an order to read the list in, not a claim about who is ahead: the ranks below
+   * still share.
    */
+  const on = (row: (typeof rows)[number]) => (order === 'week' ? row.scored - row.before : row.scored);
+
   const sorted = [...rows].sort(
-    (first, second) => second.scored - first.scored || second.total - first.total,
+    (first, second) => on(second) - on(first) || second.total - first.total,
   );
-  const best = sorted[0]?.scored ?? 0;
+  const best = sorted[0] ? on(sorted[0]) : 0;
 
   /**
    * Equal scores share a rank and the next one skips, as places do everywhere else.
@@ -111,10 +127,10 @@ export function board(entries: readonly BoardInput[], race: Race): BoardRow[] {
   let rank = 0;
   let previous: number | null = null;
   return sorted.map((row, index) => {
-    if (previous === null || Math.abs(row.scored - previous) > 1e-9) {
+    if (previous === null || Math.abs(on(row) - previous) > 1e-9) {
       rank = index + 1;
-      previous = row.scored;
+      previous = on(row);
     }
-    return { ...row, rank, behind: best - row.scored };
+    return { ...row, rank, behind: best - on(row) };
   });
 }

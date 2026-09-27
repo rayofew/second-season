@@ -194,3 +194,39 @@ describe('the three figures a leaderboard shows from the second round on', () =>
     assert.equal(opening.scored - opening.before, opening.scored);
   });
 });
+
+describe('ordering the table by this week instead of the contest', () => {
+  const table = [
+    // Miles ahead overall, quiet afternoon.
+    entry('carrying', 500, [man('QB', 10, 1, 'final')]),
+    // Nowhere in the contest, best Sunday in the league.
+    entry('surging', 0, [man('QB', 90, 1, 'final')]),
+  ];
+
+  it('puts the best afternoon first, whatever the contest says', () => {
+    // The man in tenth place can be having the best Sunday in the league, and there was no way to
+    // see it from a cumulative total.
+    const rows = board(table, 'contest', 'week');
+    assert.deepEqual(rows.map((row) => row.entryId), ['surging', 'carrying']);
+  });
+
+  it('still puts the contest leader first when asked for the contest', () => {
+    const rows = board(table, 'contest', 'total');
+    assert.deepEqual(rows.map((row) => row.entryId), ['carrying', 'surging']);
+  });
+
+  it('numbers the places and the deficit on whichever figure was asked for', () => {
+    // A rank of 1 next to a row sorted by something else is a leaderboard telling two stories.
+    const weekly = board(table, 'contest', 'week');
+    assert.deepEqual(weekly.map((row) => row.rank), [1, 2]);
+    assert.equal(weekly[1]!.behind, 80, 'eighty behind this week');
+
+    const overall = board(table, 'contest', 'total');
+    assert.equal(overall[1]!.behind, 420, 'and four hundred and twenty behind overall');
+  });
+
+  it('defaults to the contest, which is what a leaderboard means', () => {
+    assert.deepEqual(board(table, 'contest').map((row) => row.entryId),
+      board(table, 'contest', 'total').map((row) => row.entryId));
+  });
+});

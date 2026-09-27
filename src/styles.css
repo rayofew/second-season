@@ -1625,6 +1625,21 @@ td { font-variant-numeric: tabular-nums; }
   font-size: 21px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); line-height: 1.1;
 }
 .standingnum.forecast { min-width: 44px; }
+
+/* Which of the two figures the table is standing on. Smaller than the races, because it is a
+   second question about the same list rather than a different list. */
+.sortby {
+  display: flex; align-items: center; gap: 6px; padding: 10px 14px 0;
+  font-size: 11px; color: var(--faint);
+}
+.sortby span {
+  font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-right: 2px;
+}
+.sortby button {
+  padding: 5px 11px; border-radius: 999px; min-height: 0; font-size: 12px; font-weight: 650;
+  background: var(--sunk); border: 1px solid var(--line); color: var(--dim);
+}
+.sortby button.on { background: var(--raised); border-color: var(--gold); color: var(--ink); }
 /* Three columns want a little less air between them than two did. */
 .standingnums:has(.standingnum:nth-child(3)) { gap: 9px; }
 .standingnum.forecast b { font-size: 12.5px; font-weight: 600; color: var(--faint); line-height: 1.2; }

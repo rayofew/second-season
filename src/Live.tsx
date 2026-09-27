@@ -4,7 +4,7 @@ import { standingsFor } from './domain/multiplier.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
 import { board } from './domain/board.ts';
 import { table } from './domain/standings.ts';
-import type { BoardInput, BoardRow, Race } from './domain/board.ts';
+import type { BoardInput, BoardRow, Order, Race } from './domain/board.ts';
 import { liveRoster } from './domain/live.ts';
 import { points, projectedPoints, rawPoints } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
@@ -56,6 +56,8 @@ export function Live({ uid }: { uid: string }) {
   const [actual, setActual] = useState<Record<string, StatLine>>({});
   const [expected, setExpected] = useState<Record<string, StatLine>>({});
   const [race, setRace] = useState<Race>('contest');
+  /** Which figure the table is ordered on. Only ever offered once the two differ. */
+  const [order, setOrder] = useState<Order>('total');
   const [open, setOpen] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [locked, setLocked] = useState<boolean | null>(null);
@@ -306,7 +308,14 @@ export function Live({ uid }: { uid: string }) {
   }
 
 
-  const rows = board(inputs, race);
+  /**
+   * Sorting by this afternoon only means anything once there is a contest to be behind in.
+   *
+   * In the Wild Card the two are the same number, and the weekly prize is this week by definition,
+   * so the control appears exactly where it answers a question that could not be answered already.
+   */
+  const carried = race === 'contest' && inputs.some((entry) => entry.before > 0);
+  const rows = board(inputs, race, carried ? order : 'total');
 
   return (
     <>
@@ -331,6 +340,18 @@ export function Live({ uid }: { uid: string }) {
             Weekly prize
           </button>
         </div>
+        {carried && (
+          <div className="sortby">
+            <span>Sort by</span>
+            <button className={order === 'total' ? 'on' : ''} onClick={() => setOrder('total')}>
+              Overall
+            </button>
+            <button className={order === 'week' ? 'on' : ''} onClick={() => setOrder('week')}>
+              This week
+            </button>
+          </div>
+        )}
+
         <div className="pending">
           {race === 'contest'
             ? 'Every round added up, multipliers and all — the contest.'
@@ -347,7 +368,7 @@ export function Live({ uid }: { uid: string }) {
             you={row.entryId === uid}
             open={open === row.entryId}
             pool={pool}
-            carried={race === 'contest' && rows.some((entry) => entry.before > 0)}
+            carried={carried}
             underway={underway}
             onToggle={() => setOpen(open === row.entryId ? null : row.entryId)}
           />
