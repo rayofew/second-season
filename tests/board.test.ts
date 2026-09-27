@@ -163,3 +163,34 @@ describe('the live leaderboard', () => {
     assert.equal(absent?.total, 120, 'he still has what he already had');
   });
 });
+
+describe('the three figures a leaderboard shows from the second round on', () => {
+  /** Carrying 300 in, half a round played: 40 scored so far, another 20 expected. */
+  const rows = board([entry('carrying', 300, [
+    man('QB', 40, 1, 'playing'),
+    man('RB1', 0, 1, 'upcoming', 20),
+  ])], 'contest');
+  const row = rows[0]!;
+
+  it('separates what he has done today from what he is carrying', () => {
+    // A cumulative total cannot answer "how is he doing this afternoon", which is the only thing
+    // somebody watching football wants to know.
+    assert.equal(row.scored - row.before, 40, 'this week, so far');
+    assert.equal(row.running, 60, 'this week, counting the man still to play');
+    assert.equal(row.scored, 340, 'and the total he actually has');
+  });
+
+  it('ranks on the total, which is the one in large type', () => {
+    const table = board([
+      entry('behind today', 500, [man('QB', 1, 1, 'final')]),
+      entry('big afternoon', 0, [man('QB', 90, 1, 'final')]),
+    ], 'contest');
+    assert.deepEqual(table.map((entry) => entry.entryId), ['behind today', 'big afternoon']);
+  });
+
+  it('makes the week and the total the same number in the opening round', () => {
+    // Which is exactly why the third column only appears once somebody is carrying something.
+    const opening = board([entry('nobody carries', 0, [man('QB', 20, 1, 'final')])], 'contest')[0]!;
+    assert.equal(opening.scored - opening.before, opening.scored);
+  });
+});

@@ -335,6 +335,7 @@ export function Live({ uid }: { uid: string }) {
             you={row.entryId === uid}
             open={open === row.entryId}
             pool={pool}
+            carried={race === 'contest' && rows.some((entry) => entry.before > 0)}
             onToggle={() => setOpen(open === row.entryId ? null : row.entryId)}
           />
         ))}
@@ -348,12 +349,21 @@ function Standing({
   you,
   open,
   pool,
+  carried,
   onToggle,
 }: {
   row: BoardRow;
   you: boolean;
   open: boolean;
   pool: Map<string, PoolPlayer>;
+  /**
+   * Whether anybody is carrying points in from earlier rounds.
+   *
+   * In the Wild Card round this week and the contest are the same number, and printing it twice
+   * under two different headings is how a leaderboard gets read as saying something it does not.
+   * From the Divisional on they are different questions and both are worth asking.
+   */
+  carried: boolean;
   onToggle: () => void;
 }) {
   return (
@@ -380,13 +390,27 @@ function Standing({
             )}
           </span>
         </span>
+        {/*
+          * What he has done today, what today should come to, and where that leaves him.
+          *
+          * The last of the three is the one the table is ranked on, so it is the one in large
+          * type at the end. The other two are this afternoon, which is what somebody watching
+          * football actually wants and could not get from a cumulative total.
+          */}
         <span className="standingnums">
+          {carried && (
+            <span className="standingnum forecast">
+              <b>{points(row.scored - row.before)}</b>
+              <span className="numlabel">week</span>
+            </span>
+          )}
           <span className="standingnum forecast">
-            <b>{points(row.total)}</b>
-            <span className="numlabel">proj</span>
+            <b>{points(carried ? row.running : row.total)}</b>
+            <span className="numlabel">{carried ? 'week proj' : 'proj'}</span>
           </span>
           <span className="standingnum scored">
             <b>{points(row.scored)}</b>
+            {carried && <span className="numlabel">total</span>}
             {row.behind > 0 && <span className="behind">−{points(row.behind)}</span>}
           </span>
         </span>
