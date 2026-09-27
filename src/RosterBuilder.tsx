@@ -8,11 +8,13 @@ import { readContest, readHistory, readPool, readTeams, recordMoves, saveRoster 
 import type { Move } from './store/firestore.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import { changed } from './domain/unsaved.ts';
-import { projections } from './providers/sleeper.ts';
+import { silence } from './domain/resting.ts';
+import { useHeartbeat } from './useHeartbeat.ts';
+import { projections, stats } from './providers/sleeper.ts';
 import { clubGames } from './providers/schedule.ts';
 import type { ClubGame } from './providers/schedule.ts';
 import { fixtureLabel } from './domain/fixture.ts';
-import { points, projectedPoints } from './domain/scoring.ts';
+import { points, projectedPoints, rawPoints } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
 import { Breakdown } from './Breakdown.tsx';
 import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
@@ -72,10 +74,28 @@ export function RosterBuilder({
   const [projected, setProjected] = useState<Map<string, number>>(new Map());
   // The stat lines the projections came from, so a figure can be opened up and argued with.
   const [lines, setLines] = useState<Record<string, StatLine>>({});
+  /**
+   * What they have actually done, once anybody has done anything.
+   *
+   * A projection is a thing said beforehand. Once his game has kicked off it is not what he is
+   * worth, it is what somebody guessed on Friday — and a man who has played a quarter and dropped
+   * two passes should read nought, not eighteen.
+   */
+  const [actual, setActual] = useState<Record<string, StatLine>>({});
   const [showing, setShowing] = useState<string | null>(null);
   // When each club plays, so nobody picks a man whose game is already over.
   const [games, setGames] = useState<Map<string, ClubGame>>(new Map());
   const [problem, setProblem] = useState<string | null>(null);
+
+  /**
+   * The scores again, while there is football on.
+   *
+   * A figure fetched once at ten o'clock is a lie by noon. Only the statistics and the clocks are
+   * asked for again — the pool, the bracket and the roster cannot change during a round — and only
+   * while a game is actually running, so a Tuesday costs nothing.
+   */
+  const anyGoing = [...games.values()].some((game) => game.state === 'playing');
+  const beat = useHeartbeat(anyGoing, 45_000);
 
   useEffect(() => {
     void (async () => {
@@ -116,12 +136,42 @@ export function RosterBuilder({
             player.id,
             projectedPoints(player.position as Position, (expected as Record<string, Record<string, number>>)[player.id], EASTSIDE),
           ])));
+
+          // Only once the round has shut: before that there is nothing to have done.
+          const shut = (found.locks[String(round)] ?? new Date()) <= new Date();
+          if (shut) {
+            const played = await stats(found.season, config.seasonType, config.week)
+              .catch(() => ({}) as Record<string, StatLine>);
+            const resting = new Set(roundTeams?.byes ?? []);
+            const clubOf = (playerId: string) => board.find((player) => player.id === playerId)?.team;
+            setActual(silence(played, clubOf, resting));
+          }
         }
       } catch (cause) {
         setProblem(explain(cause));
       }
     })();
   }, [uid]);
+
+  useEffect(() => {
+    if (!contest || !beat) return;
+    const config = contest.rounds[contest.currentRound];
+    if (!config) return;
+
+    let cancelled = false;
+    void (async () => {
+      const [played, clubs] = await Promise.all([
+        stats(contest.season, config.seasonType, config.week)
+          .catch(() => ({}) as Record<string, StatLine>),
+        clubGames(contest.season, config.week).catch(() => null),
+      ]);
+      if (cancelled) return;
+      const clubOf = (playerId: string) => pool.find((player) => player.id === playerId)?.team;
+      setActual(silence(played, clubOf, new Set(teams?.byes ?? [])));
+      if (clubs) setGames(clubs);
+    })();
+    return () => { cancelled = true; };
+  }, [beat]);
 
   const byId = useMemo(() => new Map(pool.map((player) => [player.id, player])), [pool]);
   const round = contest?.currentRound ?? 0;
@@ -148,11 +198,28 @@ export function RosterBuilder({
    */
   const lost = previous.filter((held) => !alive.has(byId.get(held.playerId)?.team ?? ''));
   const gaps = EASTSIDE.slots.filter((slot) => !roster.some((held) => held.slot === slot.id));
-  const projectedRaw = roster.reduce((sum, held) => sum + (projected.get(held.playerId) ?? 0), 0);
+  /**
+   * What the nine are worth, counting what has happened wherever anything has.
+   *
+   * Mixing the two is the honest total on a Sunday afternoon: three men have played and six have
+   * not, and pretending the three are still worth their Friday projection is how a screen ends up
+   * disagreeing with the leaderboard on the same page.
+   */
+  const worthOf = (held: { playerId: string }) => {
+    const person = byId.get(held.playerId);
+    if (person && (games.get(person.team)?.state ?? 'upcoming') !== 'upcoming') {
+      return rawPoints(person.position as Position, actual[held.playerId], EASTSIDE);
+    }
+    return projected.get(held.playerId) ?? 0;
+  };
+  const projectedRaw = roster.reduce((sum, held) => sum + worthOf(held), 0);
   const projectedCredited = roster.reduce(
-    (sum, held) => sum + (projected.get(held.playerId) ?? 0) * (standings.get(held.slot)?.multiplier ?? 1),
+    (sum, held) => sum + worthOf(held) * (standings.get(held.slot)?.multiplier ?? 1),
     0,
   );
+  /** Whether this club has taken the field, which is when a guess stops being the answer. */
+  const started = (club: string) => (games.get(club)?.state ?? 'upcoming') !== 'upcoming';
+
   const filled = roster.length;
   const legal = filled === EASTSIDE.slots.length;
 
@@ -327,15 +394,23 @@ export function RosterBuilder({
                       ? fixtureLabel(games.get(person.team))
                       : `${fixtureLabel(games.get(person.team))} · ${standing?.retained ? 'kept' : 'new'}`
                 }
-                card={person ? { line: lines[person.id], projected: true } : undefined}
+                card={person
+                  ? started(person.team)
+                    ? { line: actual[person.id], projected: false }
+                    : { line: lines[person.id], projected: true }
+                  : undefined}
                 trailing={person && !resting ? (
                   <button
                     className="proj asked"
                     title="How this was worked out"
                     onClick={(event) => { event.stopPropagation(); setShowing(person.id); }}
                   >
-                    <b>{points(projected.get(person.id) ?? 0)}</b>
-                    <span className="projlabel">proj</span>
+                    <b>
+                      {started(person.team)
+                        ? points(rawPoints(person.position as Position, actual[person.id], EASTSIDE))
+                        : points(projected.get(person.id) ?? 0)}
+                    </b>
+                    <span className="projlabel">{started(person.team) ? 'pts' : 'proj'}</span>
                   </button>
                 ) : undefined}
                 right={!locked ? (
