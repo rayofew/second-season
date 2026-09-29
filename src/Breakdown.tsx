@@ -164,7 +164,7 @@ export function Breakdown({
             {noCareer ? (
               <div className="pending">
                 {player?.position === 'DEF'
-                  ? 'A defence has no career page — it is a different eleven every year.'
+                  ? 'A defense has no career page — it is a different eleven every year.'
                   : 'No career record for him.'}
               </div>
             ) : tables === null ? (
