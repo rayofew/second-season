@@ -61,7 +61,15 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
         setTeams(roundTeams);
         setScored(Object.keys(figures).length);
 
-        if (round > 0 && people.length > 0) {
+        /*
+         * Only once the round has shut.
+         *
+         * Before the lock a missing team is not a missing team, it is somebody who has not got
+         * round to it yet and still has until Sunday. Flagging it then would put fifteen names in
+         * red every Monday for six days running, which is how a warning stops being read.
+         */
+        const shut = (contest.locks[String(round)] ?? new Date()) <= new Date();
+        if (shut && round > 0 && people.length > 0) {
           const uids = people.map((person) => person.uid);
           const empty: Record<string, HeldPlayer[]> = {};
           const [now, before] = await Promise.all([
