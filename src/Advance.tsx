@@ -3,9 +3,10 @@ import { decide, reseed } from './domain/advance.ts';
 import type { Decision } from './domain/advance.ts';
 import { clubScores } from './providers/schedule.ts';
 import { stats } from './providers/sleeper.ts';
-import { advanceRound, readPool, readScores, readTeams } from './store/firestore.ts';
+import { advanceRound, readAllRosters, readEntries, readPool, readScores, readTeams } from './store/firestore.ts';
 import type { Contest, RoundTeams } from './store/firestore.ts';
 import { colorOf, crest } from './domain/clubs.ts';
+import type { HeldPlayer } from './domain/multiplier.ts';
 
 /**
  * Deciding a round from the commissioner's phone.
@@ -32,6 +33,15 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
   const [unfinished, setUnfinished] = useState<string[]>([]);
   /** How many players this round has figures for. Null until we have looked. */
   const [scored, setScored] = useState<number | null>(null);
+  /**
+   * Managers with nothing saved for this round who had a team last round.
+   *
+   * Doing nothing is a legitimate way to play a round and the picker has always said so — it opens
+   * with last round's survivors already in the slots. But nothing is saved unless somebody presses
+   * submit, so a manager who looked at a good team and closed the tab scores nought, which is not
+   * what anybody agreed to. The carry-over has to be written down before the round is scored.
+   */
+  const [toCarry, setToCarry] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -41,14 +51,27 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
   useEffect(() => {
     void (async () => {
       try {
-        const [roundTeams, board, figures] = await Promise.all([
+        const [roundTeams, board, figures, people] = await Promise.all([
           readTeams(CONTEST, round),
           readPool(CONTEST),
           readScores(CONTEST, round).catch(() => ({})),
+          readEntries(CONTEST).catch(() => []),
         ]);
         if (!roundTeams || !config) return;
         setTeams(roundTeams);
         setScored(Object.keys(figures).length);
+
+        if (round > 0 && people.length > 0) {
+          const uids = people.map((person) => person.uid);
+          const empty: Record<string, HeldPlayer[]> = {};
+          const [now, before] = await Promise.all([
+            readAllRosters(CONTEST, uids, round).catch(() => empty),
+            readAllRosters(CONTEST, uids, round - 1).catch(() => empty),
+          ]);
+          setToCarry(people
+            .filter((person) => (now[person.uid]?.length ?? 0) === 0 && (before[person.uid]?.length ?? 0) > 0)
+            .map((person) => person.teamName));
+        }
 
         const [results, lines] = await Promise.all([
           clubScores(contest.season, config.week),
@@ -94,7 +117,7 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
   }
 
   const unscored = scored === 0;
-  const blocked = unfinished.length > 0 || unscored;
+  const blocked = unfinished.length > 0 || unscored || toCarry.length > 0;
 
   return (
     <div className="card">
@@ -108,6 +131,12 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
             ? 'Every club has finished playing.'
             : `Still playing: ${unfinished.join(', ')}.`}
         </div>
+        <div className={`checkline ${toCarry.length > 0 ? 'no' : 'ok'}`}>
+          <span>{toCarry.length > 0 ? '×' : '✓'}</span>
+          {toCarry.length > 0
+            ? `${toCarry.join(', ')} saved nothing this round and had a team last round.`
+            : 'Everybody who had a team last round has one saved for this one.'}
+        </div>
         <div className={`checkline ${unscored ? 'no' : 'ok'}`}>
           <span>{unscored ? '×' : '✓'}</span>
           {unscored
@@ -115,6 +144,17 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
             : `Scored — ${scored} players have figures.`}
         </div>
       </div>
+
+      {toCarry.length > 0 && (
+        <div className="notice flat">
+          <strong>Carry their teams over first.</strong> Doing nothing is a legitimate way to play a
+          round — the picker opens with last round's survivors already in the slots — but nothing is
+          saved unless somebody presses submit. Write it down for them, then score:
+          <code className="runthis">node scripts/carry-over.ts {round} --write</code>
+          Whoever went out is left as an empty slot, and a manager who has never submitted anything
+          has nothing to carry.
+        </div>
+      )}
 
       {unscored && (
         <div className="notice flat">
@@ -159,6 +199,7 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
         </span>
         <button className="submit" disabled={busy || blocked} onClick={() => void advance()}>
           {busy ? 'Advancing…'
+            : toCarry.length > 0 ? 'Carry them over first'
             : unscored ? 'Score it first'
             : unfinished.length > 0 ? 'Games still on'
             : `Advance to ${next?.name ?? 'the end'}`}
