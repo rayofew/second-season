@@ -586,6 +586,15 @@ export async function advanceRound(
   decided: { home: string; away: string; winner: string }[],
   through: string[],
   pairings: { home: string; away: string; winner: string | null }[],
+  /**
+   * When the next round should lock.
+   *
+   * The first kickoff involving a club still in it, which is not the same as the first kickoff of
+   * the week: by the Conference round four clubs are left and none of them may play until Sunday,
+   * so a Thursday lock takes three days of picking away and protects nothing. Left alone when the
+   * caller does not know, so a seeded lock survives.
+   */
+  nextLock?: Date,
 ): Promise<void> {
   const contestRef = doc(db, 'contests', contestId);
   const snapshot = await getDoc(contestRef);
@@ -599,6 +608,7 @@ export async function advanceRound(
     batch.set(doc(db, 'contests', contestId, 'teams', String(next)), { alive: through, byes: [], matchups: pairings });
     batch.update(contestRef, {
       currentRound: next,
+      ...(nextLock ? { [`locks.${next}`]: nextLock } : {}),
       rounds: rounds.map((entry) =>
         entry.round === round ? { ...entry, status: 'final' }
         : entry.round === next ? { ...entry, status: 'open' }

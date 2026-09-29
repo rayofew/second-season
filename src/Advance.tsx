@@ -108,7 +108,24 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
     setBusy(true);
     setProblem(null);
     try {
-      await advanceRound(CONTEST, round, decisions!, through, pairings);
+      /*
+       * The next round locks at its first kickoff involving a club that is still in it.
+       *
+       * Worked out here rather than left as it was seeded, because the seeded lock is the first
+       * game of the NFL week and by now that is often a game none of the survivors are playing in.
+       */
+      let nextLock: Date | undefined;
+      if (next) {
+        const schedule = await clubScores(contest.season, next.week).catch(() => null);
+        const kickoffs = through
+          .map((club) => schedule?.get(club)?.kickoff)
+          .filter((when): when is Date => when instanceof Date);
+        if (kickoffs.length > 0) {
+          nextLock = new Date(Math.min(...kickoffs.map((when) => when.getTime())));
+        }
+      }
+
+      await advanceRound(CONTEST, round, decisions!, through, pairings, nextLock);
       onDone();
     } catch (cause) {
       setProblem((cause as Error).message);
@@ -189,7 +206,7 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
         Pressing this marks those {decisions.length} winners, draws{' '}
         {next ? `${next.name} from the ${through.length} still standing` : 'nothing further'}, and
         {next
-          ? ' opens picking for it — every manager\u2019s countdown moves to the next lock and the standings pick up this round.'
+          ? ' opens picking for it, and sets its lock to the first kickoff any of them are playing in — every manager\u2019s countdown moves to that, and the standings pick up this round.'
           : ' closes the contest.'}
       </div>
 
