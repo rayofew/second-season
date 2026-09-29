@@ -93,13 +93,20 @@ export function scoreEntry(
       // Raw first, always. The multiplier is applied to a figure that is already final — and a
       // correction, where one exists, is that figure.
       /*
-       * A club that is resting scores nothing — see domain/resting.ts for why that has to be said
-       * out loud rather than falling out of a missing stat line. Here it comes from the roster's
-       * own record of who was resting when it was submitted, which is the fact as it stood.
+       * A club that is resting scores nothing, and that is settled before this ever runs.
+       *
+       * It used to be settled here, from the roster's own onBye flag — which was wrong in a way
+       * that cost three managers a hundred and forty points between them. A roster carries over
+       * from one round to the next and the flag carried with it, so a Seattle man kept through the
+       * Wild Card arrived in the Divisional round still marked as resting and was given nought in
+       * a week his club played. Worse, the live screens read the round's own bye list and got it
+       * right, so the two halves of the app disagreed about what somebody had scored.
+       *
+       * One rule, one place: a resting club has no stat line — suppressed by the scoring job at
+       * the edge and by domain/resting.ts on the live screens — and a missing line is nought
+       * without anybody having to decide anything here.
        */
-      const imported = standing.onBye
-        ? 0
-        : rawPoints(standing.position, lines[standing.playerId], settings);
+      const imported = rawPoints(standing.position, lines[standing.playerId], settings);
       const corrected = corrections[standing.playerId];
       const raw = corrected ?? imported;
       return {

@@ -215,7 +215,15 @@ describe('a correction by hand', () => {
 });
 
 describe('a club that is resting', () => {
-  /** One man held for three rounds, resting in the middle one, with a big afternoon every week. */
+  /**
+   * One man held for three rounds, resting in the middle one.
+   *
+   * Resting is expressed as a missing stat line, which is what it looks like in January and what
+   * the scoring job writes in the rehearsal. It used to be expressed as a flag on the roster as
+   * well, and that flag carried from one round to the next when a roster did — so a Seattle man
+   * kept through a bye was still marked as resting in a week Seattle played, and was given nought
+   * for it. Three managers lost a hundred and forty points between them before anybody noticed.
+   */
   const entry = (onBye: boolean[]): Entry => ({
     entryId: 'holder',
     name: 'holder',
@@ -224,17 +232,24 @@ describe('a club that is resting', () => {
     ]),
   });
 
-  const contest: Contest = {
-    statsByRound: [0, 1, 2].map(() => ({ man: { rush_yd: 100, rush_td: 1 } as StatLine })),
-  };
+  const BIG = { rush_yd: 100, rush_td: 1 } as StatLine;
+  /** Nothing at all in the middle round, which is what a resting club's line looks like. */
+  const contest: Contest = { statsByRound: [{ man: BIG }, {}, { man: BIG }] };
 
-  it('scores nothing for him however his real afternoon went', () => {
-    // The rehearsal's byes are invented over a real NFL week, so the feed has a hundred rushing
-    // yards for a man who by our rules was not playing. He gets nought.
+  it('scores nothing for him, because there is nothing to score', () => {
     const scored = scoreEntry(entry([false, true, false]), contest, EASTSIDE);
     assert.ok(scored.rounds[0]!.raw > 0, 'the weeks he played');
     assert.equal(scored.rounds[1]!.raw, 0, 'and the week his club rested');
     assert.ok(scored.rounds[2]!.raw > 0);
+  });
+
+  it('pays him for a week his club played, whatever the roster remembers', () => {
+    // The flag says resting and the statistics say a hundred rushing yards. The statistics are
+    // about this round; the flag was copied out of the last one.
+    const stale = scoreEntry(entry([false, true, false]), {
+      statsByRound: [{ man: BIG }, { man: BIG }, { man: BIG }],
+    }, EASTSIDE);
+    assert.ok(stale.rounds[1]!.raw > 0, 'he played, so he scored');
   });
 
   it('still counts the round towards holding him', () => {
@@ -256,7 +271,7 @@ describe('a club that is resting', () => {
 
   it('lets the commissioner overrule it, because a correction is his last word', () => {
     const scored = scoreEntry(entry([true]), {
-      ...contest,
+      statsByRound: [{}],
       correctionsByRound: [{ man: 14 }],
     }, EASTSIDE);
     assert.equal(scored.rounds[0]!.raw, 14);

@@ -118,9 +118,19 @@ export function RosterBuilder({
         const alive = new Set(roundTeams?.alive ?? []);
         const teamOf = new Map(board.map((p) => [p.id, p.team]));
         const submitted = past[round] ?? [];
+        /*
+         * Carried over with the bye recomputed, not copied.
+         *
+         * Resting is a fact about a club in a round, not about a man, and copying last round's
+         * answer into this one is how somebody ends up marked as resting in a week his club
+         * played.
+         */
+        const restingNow = new Set(roundTeams?.byes ?? []);
         const opening = submitted.length > 0
-          ? submitted
-          : (past[round - 1] ?? []).filter((held) => alive.has(teamOf.get(held.playerId) ?? ''));
+          ? submitted.map((held) => ({ ...held, onBye: restingNow.has(teamOf.get(held.playerId) ?? '') }))
+          : (past[round - 1] ?? [])
+            .filter((held) => alive.has(teamOf.get(held.playerId) ?? ''))
+            .map((held) => ({ ...held, onBye: restingNow.has(teamOf.get(held.playerId) ?? '') }));
         setRoster(opening);
         setBaseline(opening);
 
