@@ -2043,3 +2043,13 @@ td { font-variant-numeric: tabular-nums; }
   display: block; margin-top: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
   text-transform: uppercase; color: var(--faint);
 }
+
+/* The club's own real score, at the right-hand end of its line in the bracket. Tabular so the two
+   halves of a tie line up, and the winner's in the same green as his name. */
+.box .side .clubscore {
+  margin-left: auto; padding-left: 8px; font-size: 13px; font-weight: 800;
+  font-variant-numeric: tabular-nums; color: var(--ink, inherit);
+}
+.box .side.won .clubscore { color: var(--live); }
+.box .side.out .clubscore { color: var(--faint); }
+.box .side .clubscore.playing { color: var(--live); font-style: italic; }

@@ -5,6 +5,8 @@ import { colorOf, crest, nameOf } from './domain/clubs.ts';
 import { tree } from './domain/tree.ts';
 import type { Slot } from './domain/tree.ts';
 import { explain } from './domain/trouble.ts';
+import { clubGames } from './providers/schedule.ts';
+import type { ClubGame } from './providers/schedule.ts';
 
 /**
  * The whole bracket, all four rounds, drawn as a bracket.
@@ -14,10 +16,15 @@ import { explain } from './domain/trouble.ts';
  * rounds are reseeded and a tree drawn in the order the ties happen to be stored would connect
  * clubs that never played each other.
  *
- * No scores on this screen. What is happening right now is the Live tab's job, and it was doing it
- * twice; this one answers the other question, which is who is still in and who they have to get
- * past. A player is only worth holding if his club survives, so this is what you consult before
- * deciding whether a 1x replacement beats a 3x incumbent.
+ * Each club carries the score from its own real fixture once that game has kicked off. Ray: "lets
+ * put the scores in the bracket". This screen used to leave them to the Live tab, but a decided
+ * round with no numbers only says who went through and never by how much, and the Live tab moves
+ * on to the next round as soon as it opens. The minute-by-minute detail is still the Live tab's
+ * job; here a score is just the figure beside the name, final or as it stands.
+ *
+ * Otherwise this answers who is still in and who they have to get past. A player is only worth
+ * holding if his club survives, so this is what you consult before deciding whether a 1x
+ * replacement beats a 3x incumbent.
  *
  * Split from the fetching so the design preview can drive it with invented clubs.
  */
@@ -37,7 +44,13 @@ function mondayAfter(lock: Date): Date {
 const shortDay = (when: Date) =>
   when.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
-function Side({ club, seed, won }: { club: string; seed: number; won: boolean | null }) {
+/** His real fixture, for the tooltip: "27 at DAL", with the clock while it is still going. */
+const scoreTitle = (game: ClubGame) =>
+  `${game.points} ${game.against}${game.state === 'playing' && game.clock ? ` · ${game.clock}` : ''}`;
+
+function Side({ club, seed, won, game }: { club: string; seed: number; won: boolean | null; game?: ClubGame }) {
+  // Nothing before kickoff: a nought beside a club that has not played reads as a club that scored none.
+  const shown = game && game.state !== 'upcoming' ? game : undefined;
   return (
     <div className={`side ${won === true ? 'won' : ''} ${won === false ? 'out' : ''}`}>
       <span className="seed">{seed}</span>
@@ -45,12 +58,17 @@ function Side({ club, seed, won }: { club: string; seed: number; won: boolean | 
       <span className="club" style={won === false ? undefined : { color: colorOf(club) }}>
         {nameOf(club)}
       </span>
+      {shown && (
+        <span className={`clubscore ${shown.state === 'playing' ? 'playing' : ''}`} title={scoreTitle(shown)}>
+          {shown.points}
+        </span>
+      )}
     </div>
   );
 }
 
 /** One box in the tree: a tie, a club resting, or a place nobody has reached yet. */
-function Box({ slot, seedOf }: { slot: Slot; seedOf: (club: string) => number }) {
+function Box({ slot, seedOf, games }: { slot: Slot; seedOf: (club: string) => number; games?: ReadonlyMap<string, ClubGame> }) {
   if (slot.kind === 'empty') {
     return <div className="box empty"><span className="waiting">to be drawn</span></div>;
   }
@@ -64,13 +82,18 @@ function Box({ slot, seedOf }: { slot: Slot; seedOf: (club: string) => number })
   }
   return (
     <div className={`box ${slot.winner ? 'settled' : ''}`}>
-      <Side club={slot.away} seed={seedOf(slot.away)} won={slot.winner ? slot.winner === slot.away : null} />
-      <Side club={slot.home} seed={seedOf(slot.home)} won={slot.winner ? slot.winner === slot.home : null} />
+      <Side club={slot.away} seed={seedOf(slot.away)} won={slot.winner ? slot.winner === slot.away : null} game={games?.get(slot.away)} />
+      <Side club={slot.home} seed={seedOf(slot.home)} won={slot.winner ? slot.winner === slot.home : null} game={games?.get(slot.home)} />
     </div>
   );
 }
 
-export function BracketLadder({ contest, rounds }: { contest: Contest; rounds: (RoundTeams | null)[] }) {
+export function BracketLadder({ contest, rounds, scores = [] }: {
+  contest: Contest;
+  rounds: (RoundTeams | null)[];
+  /** Each round's real fixtures by club, where they have been read. The design preview passes none. */
+  scores?: (ReadonlyMap<string, ClubGame> | null)[];
+}) {
   const seedOf = (club: string) => contest.field[club]?.seed ?? 0;
   const columns = tree(
     contest.rounds.map((round) => rounds[round.round] ?? null),
@@ -115,7 +138,7 @@ export function BracketLadder({ contest, rounds }: { contest: Contest; rounds: (
                 <div className="treeslots">
                   {column.slots.map((slot, index) => (
                     <div className="treeslot" key={`${column.round}-${index}`}>
-                      <Box slot={slot} seedOf={seedOf} />
+                      <Box slot={slot} seedOf={seedOf} games={scores[column.round] ?? undefined} />
                     </div>
                   ))}
                 </div>
@@ -138,13 +161,24 @@ export function Bracket() {
   const [contest, setContest] = useState<Contest | null>(null);
   const [rounds, setRounds] = useState<(RoundTeams | null)[]>([]);
   const [problem, setProblem] = useState<string | null>(null);
+  const [scores, setScores] = useState<(ReadonlyMap<string, ClubGame> | null)[]>([]);
 
   useEffect(() => {
     void (async () => {
       try {
         const found = await readContest(CONTEST);
         setContest(found);
-        if (found) setRounds(await readAllTeams(CONTEST, found.rounds.length));
+        if (!found) return;
+        setRounds(await readAllTeams(CONTEST, found.rounds.length));
+        // Only a round that has locked can have kicked off. A failed read costs that round its
+        // numbers and nothing else: the bracket is still right without them.
+        const now = new Date();
+        setScores(await Promise.all(found.rounds.map((round) => {
+          const lock = found.locks[String(round.round)];
+          return lock && lock <= now
+            ? clubGames(found.season, round.week).catch(() => null)
+            : Promise.resolve(null);
+        })));
       } catch (cause) {
         setProblem(explain(cause));
       }
@@ -154,5 +188,5 @@ export function Bracket() {
   if (problem) return <div className="card gate"><p className="problem">{problem}</p></div>;
   if (!contest) return <div className="card gate"><p>Loading the bracket…</p></div>;
 
-  return <BracketLadder contest={contest} rounds={rounds} />;
+  return <BracketLadder contest={contest} rounds={rounds} scores={scores} />;
 }
