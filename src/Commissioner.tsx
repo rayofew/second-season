@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { explain } from './domain/trouble.ts';
-import { admitManager, declineApplication, readApplications, readContest, readEntries, readStandIns, readSubmitted, removeManager, setCommissioners, setPaid } from './store/firestore.ts';
+import { admitManager, declineApplication, readApplications, readContest, readEntries, readStandIns, readSubmitted, removeManager, setCommissioners, setPaid, syncTeamLabels } from './store/firestore.ts';
 import type { Application, Contest, Manager, StandInRegister } from './store/firestore.ts';
 import { dialable, formatPhone } from './domain/phone.ts';
 import { Advance } from './Advance.tsx';
@@ -9,6 +9,7 @@ import { RosterBuilder } from './RosterBuilder.tsx';
 import { Corrections } from './Corrections.tsx';
 import { Managers } from './Managers.tsx';
 import { StandIns } from './StandIns.tsx';
+import { KickoffSetting } from './KickoffSetting.tsx';
 
 /**
  * The commissioner's tab: who wants in, and who has not picked yet.
@@ -52,6 +53,9 @@ export function Commissioner({ uid }: { uid: string }) {
       const [people, waiting] = await Promise.all([readEntries(CONTEST), readApplications(CONTEST)]);
       const members = new Set(people.map((person) => person.uid));
       setManagers(people);
+      // After every admission, removal or rename this screen reloads, so the public team list
+      // catches up here as well as on the commissioner's next visit.
+      void syncTeamLabels(CONTEST, people).catch(() => undefined);
       setEveryone(waiting);
       setApplications(waiting.filter((application) => !members.has(application.uid)));
       setFilled(await readSubmitted(CONTEST, people.map((person) => person.uid), found.currentRound));
@@ -180,6 +184,8 @@ export function Commissioner({ uid }: { uid: string }) {
       <Pool contest={contest} managers={managers} commissioner onChange={() => void load()} />
 
       <Advance contest={contest} onDone={() => void load()} />
+
+      <KickoffSetting contest={contest} onDone={() => void load()} />
 
       <Corrections contest={contest} by={uid} />
 

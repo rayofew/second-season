@@ -73,8 +73,22 @@ service cloud.firestore {
       return 'YmGUiqlUSudC5CEW5UYcsLYhnuE3';
     }
 
+    /**
+     * Open to anyone, signed in or not.
+     *
+     * Ray: "I want people to be able to view the pages without signing in or creating an account, so
+     * people can look before signing up in December." What a visitor gets is the bracket, the
+     * standings and the result: the contest itself, the draw, the scores, the player pool, and
+     * every roster once its round has locked. Everything with a person behind it stays shut — the
+     * entries (real names, who has paid), applications (phone numbers), the board, the moves log,
+     * the predictions. Team names reach the public through /public/teams instead of the entries.
+     */
+    function isPublic() {
+      return true;
+    }
+
     match /contests/{contestId} {
-      allow read: if isMember(contestId) || isCommissioner(contestId);
+      allow read: if isPublic();
       allow create: if isCommissioner(contestId);
       allow update: if isCommissioner(contestId)
                     && request.resource.data.commissioners.hasAll([OWNER()]);
@@ -99,9 +113,10 @@ service cloud.firestore {
          * anyone else is doing while there is still time to copy it. The owner sees his own always.
          */
         match /rounds/{roundId} {
+          // After the lock it is anybody's to see, signed in or not; before it, only his own.
           allow read: if isOwner(uid)
                       || isCommissioner(contestId)
-                      || (isMember(contestId) && request.time >= lockFor(contestId, roundId));
+                      || request.time >= lockFor(contestId, roundId);
 
           allow write: if (isOwner(uid) && isCurrentRound(contestId, roundId) && beforeLock(contestId, roundId))
                        || isCommissioner(contestId);
@@ -195,14 +210,14 @@ service cloud.firestore {
        * cannot quietly undo an edit and both figures survive to be compared.
        */
       match /corrections/{roundId} {
-        allow read: if isMember(contestId) || isCommissioner(contestId);
+        allow read: if isPublic();
         allow write: if isCommissioner(contestId);
       }
 
       // Written by the scoring job through the Admin SDK, which bypasses these rules entirely.
       // No client may write them, including the commissioner's browser.
       match /scores/{roundId} {
-        allow read: if isMember(contestId) || isCommissioner(contestId);
+        allow read: if isPublic();
         allow write: if false;
       }
 
@@ -211,12 +226,21 @@ service cloud.firestore {
        * One document rather than a collection, because a phone should fetch it in a single read.
        */
       match /pool/{poolId} {
-        allow read: if isMember(contestId) || isCommissioner(contestId);
+        allow read: if isPublic();
         allow write: if false;
       }
 
       match /teams/{roundId} {
-        allow read: if isMember(contestId) || isCommissioner(contestId);
+        allow read: if isPublic();
+        allow write: if isCommissioner(contestId);
+      }
+
+      /**
+       * What the public may know about the league: each team's name and logo, and nothing else.
+       * Written by the commissioner's browser from the entries, which stay members-only.
+       */
+      match /public/{docId} {
+        allow read: if isPublic();
         allow write: if isCommissioner(contestId);
       }
 

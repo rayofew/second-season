@@ -12,7 +12,9 @@ import { Version } from './Version.tsx';
 import { Home } from './Home.tsx';
 import { Theme } from './Theme.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
-import { noteVisit, readContest, readEntries, readPosts, rememberEmail } from './store/firestore.ts';
+import { noteVisit, readContest, readEntries, readPosts, readTeamLabels, rememberEmail, syncTeamLabels } from './store/firestore.ts';
+import { NextSeason } from './NextSeason.tsx';
+import { Results } from './Results.tsx';
 import type { Contest } from './store/firestore.ts';
 import { isRefusal } from './domain/trouble.ts';
 import { hashFor, tabFromHash } from './domain/tabs.ts';
@@ -54,6 +56,8 @@ export function App() {
    * depends on it — which is a fetch per render and then a render per fetch.
    */
   const clearUnread = useCallback(() => setUnread(0), []);
+  /** A visitor who has asked to sign in, which swaps the open pages for the sign-in screen. */
+  const [signingIn, setSigningIn] = useState(false);
 
   /**
    * Going somewhere, in a way the browser can undo.
@@ -145,9 +149,26 @@ export function App() {
       window.history.replaceState({ tab: 'home' }, '', hashFor('home'));
     }
     was.current = user?.uid ?? null;
-    if (!user) return;
+    setSigningIn(false);
 
     let current = true;
+    /*
+     * Nobody signed in: a visitor, who may read the contest and the public team list and nothing
+     * else. Enough for the header and for the open pages, each of which fetches its own.
+     */
+    if (!user) {
+      void (async () => {
+        const [found, teams] = await Promise.all([
+          readContest(CONTEST).catch(() => null),
+          readTeamLabels(CONTEST).catch(() => []),
+        ]);
+        if (!current) return;
+        setContest(found);
+        setManagers(teams.length);
+      })();
+      return () => { current = false; };
+    }
+
     void (async () => {
       try {
         const found = await readContest(CONTEST);
@@ -161,6 +182,9 @@ export function App() {
         void rememberEmail(CONTEST, user.uid, user.email).catch(() => undefined);
         // And a note that he was here, so the commissioner can see who has never opened it.
         void noteVisit(CONTEST, user.uid).catch(() => undefined);
+        // The commissioner keeps the public team list in step with the entries, so a rename by any
+        // route reaches visitors the next time he opens the app.
+        if (found?.commissioners?.includes(user.uid)) void syncTeamLabels(CONTEST, people).catch(() => undefined);
 
         // His own posts are not news to him, which is the difference between a notice and a
         // receipt. Five is plenty: past that the number is "several" either way.
@@ -197,8 +221,13 @@ export function App() {
         </p>
       </header>
 
-      {checking ? null : !user ? (
-        <SignIn />
+      {checking ? null : !user && signingIn ? (
+        <>
+          <button className="ghost" onClick={() => setSigningIn(false)}>← Back to the pages</button>
+          <SignIn />
+        </>
+      ) : !user ? (
+        <Visitor tab={tab} go={go} contest={contest} onSignIn={() => setSigningIn(true)} />
       ) : member === false ? (
         <Register user={user} />
       ) : (
@@ -245,5 +274,61 @@ export function App() {
         </>
       )}
     </div>
+  );
+}
+
+/** The pages a visitor may open. Anything else in the address falls back to Home. */
+const OPEN: readonly Tab[] = ['home', 'bracket', 'standings', 'rules'];
+
+/**
+ * The app for somebody who has not signed in.
+ *
+ * Ray: "I want people to be able to view the pages without signing in or creating an account, so
+ * people can look before signing up in December." Four pages, read only, with team names in place
+ * of real ones — the rules give a visitor nothing else, so this is the screen catching up with
+ * what the database already allows rather than the screen deciding it.
+ */
+function Visitor({ tab, go, contest, onSignIn }: {
+  tab: Tab;
+  go: (next: Tab) => void;
+  contest: Contest | null;
+  onSignIn: () => void;
+}) {
+  const showing = OPEN.includes(tab) ? tab : 'home';
+  return (
+    <>
+      <nav>
+        <button aria-current={showing === 'home'} onClick={() => go('home')}>Home</button>
+        <button aria-current={showing === 'bracket'} onClick={() => go('bracket')}>Bracket</button>
+        <button aria-current={showing === 'standings'} onClick={() => go('standings')}>Standings</button>
+        <button aria-current={showing === 'rules'} onClick={() => go('rules')}>Rules</button>
+        <button onClick={onSignIn}>Sign in</button>
+      </nav>
+
+      {showing === 'bracket' ? <Bracket />
+        : showing === 'standings' ? <Standings uid="" visitor />
+        : showing === 'rules' ? <Rules />
+        : (
+          <>
+            <NextSeason contest={contest} onSignIn={onSignIn} />
+            {contest?.status === 'final' ? (
+              <>
+                <h2 className="sectionhead">
+                  How the rehearsal finished
+                  <span>{contest.season}, played on the regular season to test everything before January</span>
+                </h2>
+                <Results contestId={CONTEST} visitor />
+              </>
+            ) : contest ? (
+              <div className="card prose">
+                <p>
+                  The rehearsal is being played now, on ordinary weeks of the regular season, to shake
+                  everything out before January. The Bracket and Standings tabs show where it stands.
+                </p>
+              </div>
+            ) : null}
+          </>
+        )}
+    </>
   );
 }

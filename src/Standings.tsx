@@ -30,7 +30,11 @@ function inFives<T>(all: readonly T[]): T[][] {
   return groups;
 }
 
-export function Standings({ uid }: { uid: string }) {
+/**
+ * visitor is somebody who has not signed in. He reads team names from the public list rather than
+ * the entries, and does not get the prize pool card — it says who has paid, which is not his business.
+ */
+export function Standings({ uid, visitor = false }: { uid: string; visitor?: boolean }) {
   const [placings, setPlacings] = useState<Placing[] | null>(null);
   const [names, setNames] = useState<Map<string, PoolPlayer>>(new Map());
   const [roundNames, setRoundNames] = useState<string[]>([]);
@@ -43,7 +47,7 @@ export function Standings({ uid }: { uid: string }) {
   useEffect(() => {
     void (async () => {
       try {
-        const loaded = await loadTable(CONTEST);
+        const loaded = await loadTable(CONTEST, { visitor });
         if (!loaded) { setProblem('No contest found.'); return; }
         setContest(loaded.contest);
         setRoundNames(loaded.roundNames);
@@ -56,14 +60,14 @@ export function Standings({ uid }: { uid: string }) {
         setProblem(explain(cause));
       }
     })();
-  }, [uid]);
+  }, [uid, visitor]);
 
   if (problem) return <div className="card gate"><p className="problem">{problem}</p></div>;
   if (!placings) return <div className="card gate"><p>Working out the table…</p></div>;
   if (placings.length === 0) {
     return (
       <>
-      {contest && <Pool contest={contest} managers={[...managers.values()]} commissioner={false} onChange={() => undefined} />}
+      {contest && !visitor && <Pool contest={contest} managers={[...managers.values()]} commissioner={false} onChange={() => undefined} />}
       <div className="card gate">
         <h2>Everyone's team is hidden</h2>
         <p>
@@ -88,7 +92,7 @@ export function Standings({ uid }: { uid: string }) {
     );
   }
 
-  const pool = contest
+  const pool = contest && !visitor
     ? <Pool contest={contest} managers={[...managers.values()]} commissioner={false} onChange={() => undefined} />
     : null;
 

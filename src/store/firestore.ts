@@ -48,6 +48,11 @@ export interface Contest {
   locks: Record<string, Date>;
   /** Buy-in, places, split and weekly prize. Missing means nobody is playing for anything. */
   prizes?: Prizes;
+  /**
+   * When the next real contest kicks off, for the countdown on Home. Set from Commish; missing
+   * means the app falls back to its own estimate of Wild Card weekend.
+   */
+  nextKickoff?: Date;
 }
 
 export interface RoundTeams {
@@ -65,7 +70,49 @@ export async function readContest(contestId: string): Promise<Contest | null> {
     locks: Object.fromEntries(
       Object.entries(data.locks ?? {}).map(([round, at]) => [round, (at as { toDate(): Date }).toDate()]),
     ),
+    nextKickoff: data.nextKickoff ? (data.nextKickoff as { toDate(): Date }).toDate() : undefined,
   } as Contest;
+}
+
+/**
+ * Every team as the public sees it: its name and its logo, and nothing else.
+ *
+ * The entries carry the manager's real name, so they stay readable by members only and a visitor
+ * reads this instead. Rules cannot hide a field, which is why it is a document of its own rather
+ * than a filter on the screen. One document, so a visitor pays one read for the whole league.
+ *
+ * Written only by the commissioner's browser, which keeps it in step with the entries every time
+ * it opens the app (see syncTeamLabels). A rename by any route — the commissioner's screens, the
+ * admit script, the stand-ins — therefore reaches the public at the commissioner's next visit.
+ */
+export interface TeamLabel {
+  uid: string;
+  teamName: string;
+  logo: string;
+}
+
+export async function readTeamLabels(contestId: string): Promise<TeamLabel[]> {
+  const snapshot = await getDoc(doc(db, 'contests', contestId, 'public', 'teams'));
+  const teams = (snapshot.data()?.teams ?? {}) as Record<string, { teamName?: string; logo?: string }>;
+  return Object.entries(teams).map(([uid, team]) => ({ uid, teamName: team.teamName || 'Team', logo: team.logo ?? '' }));
+}
+
+/** Rewrites the public team list from the entries, but only when something has actually changed. */
+export async function syncTeamLabels(contestId: string, managers: readonly Manager[]): Promise<void> {
+  const teams = Object.fromEntries(
+    [...managers].sort((a, b) => a.uid.localeCompare(b.uid))
+      .map((manager) => [manager.uid, { teamName: manager.teamName, logo: manager.logo ?? '' }]),
+  );
+  const current = await getDoc(doc(db, 'contests', contestId, 'public', 'teams'));
+  const had = current.data()?.teams ?? {};
+  const same = JSON.stringify(Object.keys(had).sort().map((uid) => [uid, had[uid].teamName, had[uid].logo]))
+    === JSON.stringify(Object.keys(teams).map((uid) => [uid, teams[uid]!.teamName, teams[uid]!.logo]));
+  if (!same) await setDoc(doc(db, 'contests', contestId, 'public', 'teams'), { teams });
+}
+
+/** The commissioner setting when the next contest starts, which the countdown on Home runs to. */
+export async function setNextKickoff(contestId: string, when: Date | null): Promise<void> {
+  await updateDoc(doc(db, 'contests', contestId), { nextKickoff: when ?? deleteField() });
 }
 
 export async function readTeams(contestId: string, round: number): Promise<RoundTeams | null> {

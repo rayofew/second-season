@@ -15,6 +15,23 @@ import type { Scoring } from './domain/rules.ts';
 
 const CONTEST = 'rehearsal-2026';
 
+/**
+ * Whether the contest this page reads is the autumn rehearsal rather than a real January one.
+ *
+ * While it is, the schedule shows January's expected dates instead of the rehearsal's regular-season
+ * weeks, because the rehearsal is over and the page is now read by people deciding whether to play.
+ * Point CONTEST at January's contest and the schedule goes back to being read from it.
+ */
+const REHEARSAL = CONTEST.startsWith('rehearsal');
+
+/** The 2026 season's playoffs, as scheduled: week 18 is January 9–10, Super Bowl LXI is February 14. */
+const UPCOMING = [
+  { name: 'Wild Card', when: 'Saturday, January 16 – Monday, January 18' },
+  { name: 'Divisional', when: 'Saturday, January 23 – Sunday, January 24' },
+  { name: 'Conference', when: 'Sunday, January 31' },
+  { name: 'Super Bowl', when: 'Sunday, February 14' },
+];
+
 const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
 
 /** The Monday after a round's games, which is when it gets decided. */
@@ -93,26 +110,22 @@ export function Rules() {
   return (
     <>
       <div className="card prose lead">
-        <h2>The practice playoffs</h2>
+        <h2>The Eastside Playoff Challenge</h2>
         <p>
-          This is a test, to shake out the bugs before January. <strong>There is no winner at the
-          end</strong> — nothing here counts for anything except finding out what breaks.
+          Pick nine players from the NFL playoff field. Keep the ones whose clubs survive, and every
+          round you hold a player he counts for more. <strong>Most points after the Super Bowl wins.</strong>
         </p>
         <p>
-          I have invented a fourteen-club playoff bracket and laid it over four ordinary weeks of
-          football{rounds.length ? `, NFL weeks ${rounds[0]?.week} to ${rounds[rounds.length - 1]?.week}` : ''}.
+          It runs on the real playoffs: fourteen clubs, seven from each conference, from Wild Card
+          weekend in January to the Super Bowl in February. Every round is a real game, and the
+          winner goes through.
         </p>
         <p>
-          <strong>The clubs never actually play each other.</strong> Each plays whoever the real
-          schedule gave them, and whichever of your two bracket clubs scores more in its own game
-          goes through. Tied on points, the quarterback with more passing yards wins it. Still tied,
-          the better seed.
-        </p>
-        <p>
-          Denver and Seattle have first-round byes. Their players score <strong>nothing</strong> in
-          the Wild Card round — but the round still counts towards holding them. Keep one and he is{' '}
-          <strong>2x</strong> in the Divisional, <strong>3x</strong> in the Conference and{' '}
-          <strong>4x</strong> in the Super Bowl, exactly like anybody you picked in week one.
+          The top seed in each conference rests on Wild Card weekend. Their players score{' '}
+          <strong>nothing</strong> in that round — but the round still counts towards holding them.
+          Keep one and he is <strong>2x</strong> in the Divisional, <strong>3x</strong> in the
+          Conference and <strong>4x</strong> in the Super Bowl, exactly like anybody you picked for
+          Wild Card weekend.
         </p>
         <p>
           So you give up a round of scoring to back a club you think goes all the way. That is the
@@ -120,12 +133,33 @@ export function Rules() {
           anything.
         </p>
         <p>
-          Rounds are decided on Monday nights, once every club has played. Losing clubs are out,
-          and <strong>their players come off your roster for you</strong> — you will find those
-          slots empty, waiting to be filled from the clubs still in.
+          Each round is decided once its games are over. Losing clubs are out, and{' '}
+          <strong>their players come off your roster for you</strong> — you will find those slots
+          empty, waiting to be filled from the clubs still in.
+        </p>
+        <p>
+          This fall we played a full rehearsal over four weeks of the regular season to shake out
+          the bugs. Thank you to everyone who played it and said when something looked off; how it
+          finished is on the Home page.
         </p>
       </div>
 
+      {REHEARSAL ? (
+        <div className="card">
+          <div className="confhead">January's schedule</div>
+          {UPCOMING.map((round) => (
+            <div className="schedule" key={round.name}>
+              <span className="schedround"><strong>{round.name}</strong></span>
+              <span className="schedwhen"><span>{round.when}</span></span>
+            </div>
+          ))}
+          <div className="pending">
+            Expected dates for the 2026 season's playoffs. Picks lock at each round's first kickoff,
+            and the exact times go up as soon as the NFL sets them. Pick any time before the lock and
+            change your mind as often as you like until then.
+          </div>
+        </div>
+      ) : (
       <div className="card">
         <div className="confhead">The schedule</div>
         {rounds.map((round) => {
@@ -151,9 +185,10 @@ export function Rules() {
         })}
         <div className="pending">
           Pick any time before the lock; change your mind as often as you like until then. After it,
-          the round plays out and I decide it on the Monday night, once every club has finished.
+          the round plays out and I decide it once every club has finished.
         </div>
       </div>
+      )}
 
       <div className="card prose">
         <h2>How the game works</h2>
@@ -205,15 +240,11 @@ export function Rules() {
       </div>
 
       <div className="card prose">
-        <h2>The money, in January</h2>
+        <h2>The money</h2>
         <p>
-          <strong>Nothing is at stake in the practice.</strong> No buy-in, no prize, no winner —
-          these four weeks exist to find out what breaks, and that is all. Any pot shown on the
-          Home screen between now and January is a number I am testing with.
-        </p>
-        <p>
-          This is here so you know what the real thing would look like. None of it is fixed
-          either — the buy-in, the weekly prize and how many places pay are all adjustable.
+          The buy-in, the weekly prize and how many places pay are set before Wild Card weekend, and
+          the pot is on the Standings page from then on. <strong>Nothing is kept back</strong>: every
+          dollar paid in is paid out.
         </p>
         <p>
           <strong>The more of us who play, the more places pay.</strong> Paying only the top three

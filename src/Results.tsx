@@ -36,15 +36,15 @@ function payoutsFor(placings: readonly Placing[], amounts: readonly number[]): M
   return paid;
 }
 
-export function Results({ contestId, uid }: { contestId: string; uid?: string }) {
+export function Results({ contestId, uid, visitor = false }: { contestId: string; uid?: string; visitor?: boolean }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
   useEffect(() => {
-    void loadTable(contestId)
+    void loadTable(contestId, { visitor })
       .then((found) => (found ? setLoaded(found) : setProblem('No contest found.')))
       .catch((cause) => setProblem(explain(cause)));
-  }, [contestId]);
+  }, [contestId, visitor]);
 
   if (problem) return <div className="card gate"><p className="problem">{problem}</p></div>;
   if (!loaded) return <div className="card gate"><p>Working out the result…</p></div>;

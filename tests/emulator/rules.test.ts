@@ -4,7 +4,7 @@ import {
   assertFails, assertSucceeds, initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
 import type { RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 /**
  * The security rules, run against the emulator.
@@ -129,5 +129,61 @@ describe('the lock', () => {
     await assertSucceeds(
       setDoc(doc(asCommissioner(), 'contests', CONTEST, 'entries', MANAGER, 'rounds', '0'), { players: nine }),
     );
+  });
+});
+
+/**
+ * Somebody who has not signed in at all.
+ *
+ * Ray: "I want people to be able to view the pages without signing in or creating an account". A
+ * visitor gets the contest, the draw, the scores, the pool, the public team names and every roster
+ * whose round has locked. Nothing with a person behind it: not the entries (real names, who has
+ * paid), not an application (a phone number), not the board, not a roster before its lock.
+ *
+ * Runs after "the lock", so round 0 has kicked off and round 1 has not.
+ */
+describe('a visitor who has not signed in', () => {
+  const asVisitor = () => env.unauthenticatedContext().firestore();
+
+  before(async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'contests', CONTEST, 'entries', MANAGER, 'rounds', '1'), { players: nine });
+      await setDoc(doc(db, 'contests', CONTEST, 'public', 'teams'), { teams: { [MANAGER]: { teamName: 'A Team', logo: '' } } });
+      await setDoc(doc(db, 'contests', CONTEST, 'pool', 'current'), { players: [] });
+      await setDoc(doc(db, 'contests', CONTEST, 'scores', '0'), { players: {} });
+      await setDoc(doc(db, 'contests', CONTEST, 'teams', '0'), { alive: [], byes: [], matchups: [] });
+      await setDoc(doc(db, 'contests', CONTEST, 'applications', STRANGER), { name: 'Someone', phone: '555' });
+    });
+  });
+
+  it('may read the contest, the draw, the scores, the pool and the team names', async () => {
+    const db = asVisitor();
+    await assertSucceeds(getDoc(doc(db, 'contests', CONTEST)));
+    await assertSucceeds(getDoc(doc(db, 'contests', CONTEST, 'teams', '0')));
+    await assertSucceeds(getDoc(doc(db, 'contests', CONTEST, 'scores', '0')));
+    await assertSucceeds(getDoc(doc(db, 'contests', CONTEST, 'pool', 'current')));
+    await assertSucceeds(getDoc(doc(db, 'contests', CONTEST, 'public', 'teams')));
+  });
+
+  it('may read a roster once its round has locked', async () => {
+    await assertSucceeds(getDoc(doc(asVisitor(), 'contests', CONTEST, 'entries', MANAGER, 'rounds', '0')));
+  });
+
+  it('may not read a roster before its lock', async () => {
+    await assertFails(getDoc(doc(asVisitor(), 'contests', CONTEST, 'entries', MANAGER, 'rounds', '1')));
+  });
+
+  it('may not read an entry, which carries a real name', async () => {
+    await assertFails(getDoc(doc(asVisitor(), 'contests', CONTEST, 'entries', MANAGER)));
+  });
+
+  it('may not read an application, which carries a phone number', async () => {
+    await assertFails(getDoc(doc(asVisitor(), 'contests', CONTEST, 'applications', STRANGER)));
+  });
+
+  it('may not write the public team names', async () => {
+    await assertFails(setDoc(doc(asVisitor(), 'contests', CONTEST, 'public', 'teams'), { teams: {} }));
+    await assertFails(setDoc(doc(asManager(), 'contests', CONTEST, 'public', 'teams'), { teams: {} }));
   });
 });
