@@ -2,6 +2,9 @@ import { PlayerRow } from './PlayerRow.tsx';
 import type { RowPlayer } from './PlayerRow.tsx';
 import { BracketLadder } from './Bracket.tsx';
 import { Rules } from './Rules.tsx';
+import { ResultsView } from './Results.tsx';
+import type { Loaded } from './store/table.ts';
+import type { Placing } from './domain/standings.ts';
 import type { Contest, RoundTeams } from './store/firestore.ts';
 import { EASTSIDE } from './domain/rules.ts';
 
@@ -87,6 +90,32 @@ const ROSTER = [
   { slot: 'DEF', player: MOCK.seahawks!, multiplier: 3, hint: 'resting' },
 ];
 
+/** A finished contest, so the results on Home can be judged without one. Invented teams and points. */
+const FINISHED: Loaded = (() => {
+  const teams: [string, number[], number[]][] = [
+    ['Niner Faithful', [102.4, 169.68, 140.2, 98.1], [102.4, 339.36, 420.6, 392.4]],
+    ['Steve R', [120.38, 131.2, 118.0, 88.6], [120.38, 249.0, 330.1, 301.3]],
+    ['Midway52', [118.68, 122.5, 101.7, 92.2], [118.68, 244.4, 290.0, 288.8]],
+    ['Chris K.', [134.62, 98.3, 96.4, 71.0], [134.62, 190.2, 260.3, 240.5]],
+    ['Mellen', [120.38, 110.9, 87.5, 93.4], [120.38, 233.28, 210.0, 199.9]],
+    ['Corrie K.', [102.16, 90.0, 77.3, 64.2], [102.16, 170.0, 190.5, 160.1]],
+  ];
+  const placings: Placing[] = teams.map(([name, raw, credited], index) => ({
+    entryId: `e${index}`, name, rank: index + 1, decidedBy: null,
+    raw: raw.reduce((a, b) => a + b, 0),
+    credited: credited.reduce((a, b) => a + b, 0),
+    rounds: raw.map((value, round) => ({ round, raw: value, credited: credited[round]!, players: [] })),
+  }));
+  return {
+    contest: { ...CONTEST, status: 'final', currentRound: 3, prizes: { buyIn: 50, places: 3, shares: [50, 30, 20], weekly: 10 } },
+    placings,
+    managers: placings.map((placing) => ({ uid: placing.entryId, name: placing.name, teamName: placing.name, logo: '', paid: true, visits: 1 })),
+    players: new Map(),
+    roundNames: ['Wild Card', 'Divisional', 'Conference', 'Super Bowl'],
+    nextLock: null,
+  };
+})();
+
 export function Preview() {
   return (
     <div className="wrap">
@@ -125,6 +154,8 @@ export function Preview() {
         </span>
         <button className="submit">Submit</button>
       </div>
+
+      <ResultsView loaded={FINISHED} uid="e3" />
 
       <BracketLadder contest={CONTEST} rounds={LADDER} />
 

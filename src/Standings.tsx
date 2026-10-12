@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react';
 import { explain } from './domain/trouble.ts';
-import { EASTSIDE } from './domain/rules.ts';
 import { points } from './domain/scoring.ts';
-import { table } from './domain/standings.ts';
 import { weeklyWins, winCounts } from './domain/weekly.ts';
-import type { Entry, Placing } from './domain/standings.ts';
-import type { HeldPlayer } from './domain/multiplier.ts';
-import type { StatLine } from './domain/scoring.ts';
-import { readAllRosters, readContest, readCorrections, readEntries, readPool, readScores } from './store/firestore.ts';
+import type { Placing } from './domain/standings.ts';
+import { loadTable } from './store/table.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import type { Contest, Manager, PoolPlayer } from './store/firestore.ts';
 import { Pool } from './Pool.tsx';
@@ -15,12 +11,8 @@ import { Pool } from './Pool.tsx';
 /**
  * The table, and the arithmetic behind every number in it.
  *
- * Nothing is read from a stored standing. Rosters and stat lines go in, the same table() that will
- * settle the real contest comes out — so a corrected statistic changes the standings by being
- * corrected, with nothing to recompute and nothing to remember to recompute.
- *
- * Only rounds that have locked are fetched. Before a lock the rules refuse one manager another's
- * roster, which is the rule working rather than an obstacle to it.
+ * Worked out by loadTable() in store/table.ts, which the results on Home use too, so the two can
+ * never disagree about who won.
  */
 
 const CONTEST = 'rehearsal-2026';
@@ -51,49 +43,15 @@ export function Standings({ uid }: { uid: string }) {
   useEffect(() => {
     void (async () => {
       try {
-        const contest = await readContest(CONTEST);
-        if (!contest) { setProblem('No contest found.'); return; }
-        setContest(contest);
-
-        const now = new Date();
-        const locked = contest.rounds.filter((round) => (contest.locks[String(round.round)] ?? now) <= now);
-        setRoundNames(locked.map((round) => round.name));
-        setNextLock(contest.locks[String(contest.currentRound)] ?? null);
-
-        const [people, board] = await Promise.all([readEntries(CONTEST), readPool(CONTEST)]);
-        setNames(new Map(board.map((player) => [player.id, player])));
-        setManagers(new Map(people.map((person) => [person.uid, person])));
-
+        const loaded = await loadTable(CONTEST);
+        if (!loaded) { setProblem('No contest found.'); return; }
+        setContest(loaded.contest);
+        setRoundNames(loaded.roundNames);
+        setNextLock(loaded.nextLock);
+        setNames(loaded.players);
+        setManagers(new Map(loaded.managers.map((person) => [person.uid, person])));
         // The pot is worth showing before anything has been played; the table is not.
-        if (locked.length === 0) {
-          setPlacings([]);
-          return;
-        }
-
-        const uids = people.map((person) => person.uid);
-        const statsByRound: Record<string, StatLine>[] = [];
-        const correctionsByRound: Record<string, number>[] = [];
-        const histories: Record<string, HeldPlayer[][]> = Object.fromEntries(uids.map((id) => [id, []]));
-
-        for (const round of locked) {
-          const [scores, rosters, fixes] = await Promise.all([
-            readScores(CONTEST, round.round),
-            readAllRosters(CONTEST, uids, round.round),
-            readCorrections(CONTEST, round.round).catch(() => ({})),
-          ]);
-          statsByRound.push(scores);
-          correctionsByRound.push(
-            Object.fromEntries(Object.entries(fixes).map(([playerId, fix]) => [playerId, fix.raw])),
-          );
-          for (const id of uids) histories[id]!.push(rosters[id] ?? []);
-        }
-
-        const entries: Entry[] = people.map((person) => ({
-          entryId: person.uid,
-          name: person.teamName,
-          history: histories[person.uid]!,
-        }));
-        setPlacings(table(entries, { statsByRound, correctionsByRound }, EASTSIDE));
+        setPlacings(loaded.placings);
       } catch (cause) {
         setProblem(explain(cause));
       }

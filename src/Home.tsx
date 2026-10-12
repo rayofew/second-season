@@ -16,6 +16,7 @@ import { clubGames } from './providers/schedule.ts';
 import type { ClubGame } from './providers/schedule.ts';
 import { fixtureLabel } from './domain/fixture.ts';
 import { Countdown } from './Countdown.tsx';
+import { Results } from './Results.tsx';
 import { Field } from './Field.tsx';
 import { GameDay } from './GameDay.tsx';
 import { silence } from './domain/resting.ts';
@@ -217,6 +218,9 @@ export function Home({
   }, [contest, roster, history, pool, teams, roundNow, beat]);
 
   if (!contest) return <div className="card gate"><p>Loading…</p></div>;
+  // Over. Advancing the last round marks the contest final, and from then on nothing on this
+  // screen can be acted on — no lock to count down to, no team to change — so it shows who won.
+  if (contest.status === 'final') return <Results contestId={CONTEST} uid={uid} />;
 
   const round = contest.rounds[contest.currentRound];
   const lock = contest.locks[String(contest.currentRound)];
