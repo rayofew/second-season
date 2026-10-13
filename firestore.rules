@@ -78,10 +78,10 @@ service cloud.firestore {
      *
      * Ray: "I want people to be able to view the pages without signing in or creating an account, so
      * people can look before signing up in December." What a visitor gets is the bracket, the
-     * standings and the result: the contest itself, the draw, the scores, the player pool, and
-     * every roster once its round has locked. Everything with a person behind it stays shut — the
-     * entries (real names, who has paid), applications (phone numbers), the board, the moves log,
-     * the predictions. Team names reach the public through /public/teams instead of the entries.
+     * standings and the result: the contest itself, the draw, the scores, the player pool, the
+     * message board (read only), and every roster once its round has locked. Everything else with a
+     * person behind it stays shut — the entries (real names, who has paid), applications (phone
+     * numbers), the moves log, the predictions. Team names reach the public through /public/teams instead of the entries.
      */
     function isPublic() {
       return true;
@@ -192,7 +192,9 @@ service cloud.firestore {
        * out twice; it is the only field anybody may write after the fact.
        */
       match /posts/{postId} {
-        allow read: if isMember(contestId) || isCommissioner(contestId);
+        // Readable by anyone, so somebody deciding whether to join can see what the league is like.
+        // Posts carry the team name, never the real one. Writing still takes a member.
+        allow read: if isPublic();
         allow create: if isMember(contestId)
                       && request.resource.data.uid == request.auth.uid
                       && request.resource.data.text is string

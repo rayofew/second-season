@@ -28,12 +28,22 @@ export function Board({
   uid,
   commissioner,
   onRead,
+  onSignIn,
 }: {
   uid: string;
   commissioner: boolean;
   /** Clears the count on the tab, which is this screen's business rather than the tab's. */
   onRead: () => void;
+  /**
+   * Set for a visitor, who may read the board and not post to it.
+   *
+   * Ray: "unregistered people can look at the board but not post to it". The rules allow anyone to
+   * read the posts and only a member to write one, so the screen just stops offering a box he
+   * could not use, and offers the way in instead.
+   */
+  onSignIn?: () => void;
 }) {
+  const visitor = Boolean(onSignIn);
   const [posts, setPosts] = useState<Post[] | null>(null);
   const [me, setMe] = useState<Manager | null>(null);
   const [hasText, setHasText] = useState(false);
@@ -44,6 +54,11 @@ export function Board({
 
   const load = useCallback(async () => {
     try {
+      // A visitor may not read the entries, and has no place on the board to mark as read.
+      if (visitor) {
+        setPosts(await readPosts(CONTEST));
+        return;
+      }
       const [people, written] = await Promise.all([readEntries(CONTEST), readPosts(CONTEST)]);
       setMe(people.find((person) => person.uid === uid) ?? null);
       setPosts(written);
@@ -55,7 +70,7 @@ export function Board({
     } catch (cause) {
       setProblem(explain(cause));
     }
-  }, [uid, onRead]);
+  }, [uid, onRead, visitor]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -99,6 +114,19 @@ export function Board({
 
   return (
     <>
+      {visitor ? (
+        <div className="card">
+          <div className="confhead">
+            The board
+            <span className="colhead">{posts.length} on the board</span>
+          </div>
+          <div className="pending">
+            Anyone can read along. Posting is for players: sign in, or join when registration opens
+            in December.
+          </div>
+          <button className="ghost wide" onClick={onSignIn}>Sign in to post</button>
+        </div>
+      ) : (
       <div className="card">
         <div className="confhead">
           Say something
@@ -122,6 +150,7 @@ export function Board({
           </div>
         </div>
       </div>
+      )}
 
       {posts.length === 0 ? (
         <div className="card gate">
@@ -130,7 +159,7 @@ export function Board({
         </div>
       ) : (
         posts.map((entry) => {
-          const mine = entry.uid === uid;
+          const mine = !visitor && entry.uid === uid;
           return (
             <div className="card post" key={entry.id}>
               <div className="posthead">
@@ -145,7 +174,7 @@ export function Board({
 
               <div className="postfoot">
                 <span className="postacts">
-                  {(mine || commissioner) && (
+                  {!visitor && (mine || commissioner) && (
                     <button
                       className="danger small"
                       disabled={busy === entry.id}

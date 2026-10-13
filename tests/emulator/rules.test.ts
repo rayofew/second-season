@@ -182,6 +182,14 @@ describe('a visitor who has not signed in', () => {
     await assertFails(getDoc(doc(asVisitor(), 'contests', CONTEST, 'applications', STRANGER)));
   });
 
+  it('may read the board but not post to it', async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), 'contests', CONTEST, 'posts', 'p1'), { uid: MANAGER, name: 'A Team', text: 'hi' });
+    });
+    await assertSucceeds(getDoc(doc(asVisitor(), 'contests', CONTEST, 'posts', 'p1')));
+    await assertFails(setDoc(doc(asVisitor(), 'contests', CONTEST, 'posts', 'p2'), { uid: 'nobody', name: 'X', text: 'hi' }));
+  });
+
   it('may not write the public team names', async () => {
     await assertFails(setDoc(doc(asVisitor(), 'contests', CONTEST, 'public', 'teams'), { teams: {} }));
     await assertFails(setDoc(doc(asManager(), 'contests', CONTEST, 'public', 'teams'), { teams: {} }));

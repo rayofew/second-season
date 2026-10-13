@@ -277,14 +277,16 @@ export function App() {
   );
 }
 
+const noop = () => undefined;
+
 /** The pages a visitor may open. Anything else in the address falls back to Home. */
-const OPEN: readonly Tab[] = ['home', 'bracket', 'standings', 'rules'];
+const OPEN: readonly Tab[] = ['home', 'bracket', 'standings', 'board', 'rules'];
 
 /**
  * The app for somebody who has not signed in.
  *
  * Ray: "I want people to be able to view the pages without signing in or creating an account, so
- * people can look before signing up in December." Four pages, read only, with team names in place
+ * people can look before signing up in December." Five pages, read only, with team names in place
  * of real ones — the rules give a visitor nothing else, so this is the screen catching up with
  * what the database already allows rather than the screen deciding it.
  */
@@ -301,6 +303,7 @@ function Visitor({ tab, go, contest, onSignIn }: {
         <button aria-current={showing === 'home'} onClick={() => go('home')}>Home</button>
         <button aria-current={showing === 'bracket'} onClick={() => go('bracket')}>Bracket</button>
         <button aria-current={showing === 'standings'} onClick={() => go('standings')}>Standings</button>
+        <button aria-current={showing === 'board'} onClick={() => go('board')}>Board</button>
         <button aria-current={showing === 'rules'} onClick={() => go('rules')}>Rules</button>
         <button onClick={onSignIn}>Sign in</button>
       </nav>
@@ -308,6 +311,7 @@ function Visitor({ tab, go, contest, onSignIn }: {
       {showing === 'bracket' ? <Bracket />
         : showing === 'standings' ? <Standings uid="" visitor />
         : showing === 'rules' ? <Rules />
+        : showing === 'board' ? <Board uid="" commissioner={false} onRead={noop} onSignIn={onSignIn} />
         : (
           <>
             <NextSeason contest={contest} onSignIn={onSignIn} />
