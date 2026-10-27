@@ -119,12 +119,18 @@ export type Tiebreaker =
   | { kind: 'prediction' }
   | { kind: 'commissioner' };
 
+/**
+ * The league's order, as Ray set it: the Super Bowl round, then the Conference round, then raw
+ * points across all four rounds with multipliers ignored — and if they are still level after that,
+ * they share the place and split the money for the places they cover. No guess at the Super Bowl
+ * total and no commissioner's call: neither was ever collected, and a commissioner deciding who
+ * wins is exactly what the league should not have to trust. Both remain available to a league that
+ * wants them; this one does not.
+ */
 export const EASTSIDE_TIEBREAKERS: readonly Tiebreaker[] = [
   { kind: 'roundScore', round: 3 },
   { kind: 'roundScore', round: 2 },
   { kind: 'rawPoints' },
-  { kind: 'prediction' },
-  { kind: 'commissioner' },
 ];
 
 /**

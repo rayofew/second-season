@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { scoreEntry, table } from '../src/domain/standings.ts';
 import type { Contest, Entry } from '../src/domain/standings.ts';
-import { EASTSIDE } from '../src/domain/rules.ts';
+import { EASTSIDE, EASTSIDE_TIEBREAKERS } from '../src/domain/rules.ts';
 import type { Tiebreaker } from '../src/domain/rules.ts';
 import type { StatLine } from '../src/domain/scoring.ts';
 
@@ -96,13 +96,31 @@ describe('breaking a dead heat', () => {
   });
 });
 
+/** A league that does use the guess and the commissioner's call, which Eastside does not. */
+const WITH_EXTRAS = {
+  ...EASTSIDE,
+  tiebreakers: [...EASTSIDE_TIEBREAKERS, { kind: 'prediction' } as const, { kind: 'commissioner' } as const],
+};
+
+describe('Eastside stops at raw points', () => {
+  it('and splits it, even when somebody happens to have a guess or a commissioner rank', () => {
+    const { entries, contest } = contestOf([
+      { name: 'A', raw: [10, 10, 10, 5], prediction: 50, commissionerRank: 1 },
+      { name: 'B', raw: [10, 10, 10, 5], prediction: 90, commissionerRank: 2 },
+    ]);
+    const placings = table(entries, { ...contest, superBowlTotal: 50 });
+    assert.deepEqual([placings[0]!.rank, placings[1]!.rank], [1, 1], 'they share first');
+    assert.equal(placings[1]!.decidedBy, null);
+  });
+});
+
 describe('breaking a dead heat, continued', () => {
   it('then on the guess at the Super Bowl total', () => {
     const { entries, contest } = contestOf([
       { name: 'Close', raw: [10, 10, 10, 5], prediction: 48 },
       { name: 'Wild', raw: [10, 10, 10, 5], prediction: 60 },
     ]);
-    const placings = table(entries, { ...contest, superBowlTotal: 50 });
+    const placings = table(entries, { ...contest, superBowlTotal: 50 }, WITH_EXTRAS);
     assert.deepEqual(names(placings), ['Close', 'Wild']);
     assert.equal(placings[1]!.decidedBy, 'prediction');
   });
@@ -112,7 +130,7 @@ describe('breaking a dead heat, continued', () => {
       { name: 'Silent', raw: [10, 10, 10, 5] },
       { name: 'Guessed Badly', raw: [10, 10, 10, 5], prediction: 200 },
     ]);
-    const placings = table(entries, { ...contest, superBowlTotal: 50 });
+    const placings = table(entries, { ...contest, superBowlTotal: 50 }, WITH_EXTRAS);
     assert.deepEqual(names(placings), ['Guessed Badly', 'Silent'], 'a wild guess still beats no guess');
   });
 
@@ -131,7 +149,7 @@ describe('breaking a dead heat, continued', () => {
       { name: 'Second', raw: [10, 10, 10, 5], commissionerRank: 2 },
       { name: 'First', raw: [10, 10, 10, 5], commissionerRank: 1 },
     ]);
-    const placings = table(entries, contest);
+    const placings = table(entries, contest, WITH_EXTRAS);
     assert.deepEqual(names(placings), ['First', 'Second']);
     assert.equal(placings[1]!.decidedBy, 'commissioner');
   });

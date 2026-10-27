@@ -331,6 +331,14 @@ export function Rules() {
           by somebody whose contest is already over. <strong>A tied week is split</strong> evenly
           between everybody tied for the best score.
         </p>
+        <p>
+          <strong>Tied at the end?</strong> Two teams on the same total are separated by, in order:
+          the higher score in the <strong>Super Bowl round</strong>; then the higher score in the{' '}
+          <strong>Conference round</strong>; then the most <strong>raw points</strong> across all four
+          rounds, multipliers ignored. Still level after all three, they share the place and{' '}
+          <strong>split the money</strong> for the places they cover — tied for first, they split
+          first and second between them.
+        </p>
       </div>
 
       </>
@@ -441,9 +449,16 @@ export function PlanMoney({ plan, lockedAt, rounds, paid }: { plan: Plan; locked
         <p>
           <strong>{plan.weeklyPercent}% of the pot</strong> goes to the best raw score each round, multipliers
           ignored, so a week stays winnable by anybody — even somebody whose contest is over. The rest is
-          paid to the final standings. <strong>A tie is split</strong>: everybody level shares what
-          the places or weekly spots they cover are worth — two tied for the best week share it, and two
-          tied for second share second and third between them.
+          paid to the final standings. <strong>A tied week is split</strong> between everybody level on
+          it, sharing whatever the weekly spots they cover are worth.
+        </p>
+        <p>
+          <strong>Tied at the end?</strong> Two teams on the same total are separated by, in order:
+          the higher score in the <strong>Super Bowl round</strong>; then the higher score in the{' '}
+          <strong>Conference round</strong>; then the most <strong>raw points</strong> across all four
+          rounds, multipliers ignored. Still level after all three, they share the place and{' '}
+          <strong>split the money</strong> for the places they cover — tied for first, they split
+          first and second between them.
         </p>
       </div>
 
