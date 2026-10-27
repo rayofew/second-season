@@ -97,10 +97,41 @@ describe('submitting a roster', () => {
     );
   });
 
-  it('lets the commissioner write anybody’s team, which is how he fixes one', async () => {
+  /*
+   * Ray: "the commish is able to see other lineups before a week has locked giving the commish an
+   * unfair advantage." Being commissioner no longer opens a team. A public notice does.
+   */
+  it('refuses the commissioner somebody else’s team without a notice', async () => {
+    await assertFails(getDoc(doc(asCommissioner(), 'contests', CONTEST, 'entries', MANAGER, 'rounds', '0')));
+    await assertFails(
+      setDoc(doc(asCommissioner(), 'contests', CONTEST, 'entries', MANAGER, 'rounds', '0'), { players: nine }),
+    );
+  });
+
+  it('lets him in once he has posted a notice for that team and round, and only that one', async () => {
+    await assertSucceeds(setDoc(doc(asCommissioner(), 'contests', CONTEST, 'notices', `0_${MANAGER}`), {
+      round: 0, uid: MANAGER, teamName: 'A Team', by: COMMISSIONER, byName: 'His Team', reason: 'asked me to fix his kicker',
+    }));
+    await assertSucceeds(getDoc(doc(asCommissioner(), 'contests', CONTEST, 'entries', MANAGER, 'rounds', '0')));
     await assertSucceeds(
       setDoc(doc(asCommissioner(), 'contests', CONTEST, 'entries', MANAGER, 'rounds', '0'), { players: nine }),
     );
+    await assertFails(getDoc(doc(asCommissioner(), 'contests', CONTEST, 'entries', MANAGER, 'rounds', '1')));
+  });
+
+  it('never lets a notice be changed or taken back', async () => {
+    await assertFails(setDoc(doc(asCommissioner(), 'contests', CONTEST, 'notices', `0_${MANAGER}`), {
+      round: 0, uid: MANAGER, teamName: 'A Team', by: COMMISSIONER, byName: 'His Team', reason: 'never mind',
+    }));
+  });
+
+  it('refuses a notice with no reason, or written in somebody else’s name', async () => {
+    await assertFails(setDoc(doc(asCommissioner(), 'contests', CONTEST, 'notices', `1_${MANAGER}`), {
+      round: 1, uid: MANAGER, teamName: 'A Team', by: COMMISSIONER, byName: 'His Team', reason: '',
+    }));
+    await assertFails(setDoc(doc(asCommissioner(), 'contests', CONTEST, 'notices', `1_${MANAGER}`), {
+      round: 1, uid: MANAGER, teamName: 'A Team', by: MANAGER, byName: 'A Team', reason: 'pretending',
+    }));
   });
 });
 
@@ -125,7 +156,7 @@ describe('the lock', () => {
     );
   });
 
-  it('still lets the commissioner in, so a broken team can be fixed mid-round', async () => {
+  it('still lets the commissioner in after the lock, through the notice he already posted', async () => {
     await assertSucceeds(
       setDoc(doc(asCommissioner(), 'contests', CONTEST, 'entries', MANAGER, 'rounds', '0'), { players: nine }),
     );

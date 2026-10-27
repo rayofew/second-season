@@ -240,7 +240,14 @@ export function Rules() {
           carries over and climbs.
         </p>
         <p>
-          Rosters lock at the first kickoff of the week. Nobody sees anybody else's team until then.
+          Rosters lock at the first kickoff of the week. Nobody sees anybody else's team until then —{' '}
+          <strong>the commissioner included</strong>.
+        </p>
+        <p>
+          Now and then somebody needs help with their team, and the commissioner has to open it to fix
+          it. When that happens it is out in the open: he has to give a reason, it is posted on the
+          Board for everybody, and the owner of the team sees it on their Home screen. That record
+          can&apos;t be edited or deleted, by him or anybody else.
         </p>
       </div>
 

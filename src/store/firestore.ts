@@ -273,6 +273,15 @@ export async function saveRoster(
     players,
     submittedAt: serverTimestamp(),
   });
+  /*
+   * How many slots are filled, and for which round, on the entry itself.
+   *
+   * The commissioner needs to know who still has gaps before the lock — "7 of 9" is somebody to
+   * chase — and he is no longer allowed to read anybody's team before the lock to find out. A count
+   * says who to chase without saying who they picked.
+   */
+  await setDoc(doc(db, 'contests', contestId, 'entries', uid), { filled: players.length, filledRound: round }, { merge: true })
+    .catch(() => undefined);
 }
 
 export interface Manager {
@@ -290,6 +299,9 @@ export interface Manager {
   visits: number;
   /** When they last looked at the board, so Home can say what has been said since. */
   lastReadBoard?: Date;
+  /** Slots filled in the round named by filledRound, as their own save recorded it. */
+  filled?: number;
+  filledRound?: number;
 }
 
 /** Who is in the league. Readable by any member — but never their phone number, which stays on the application. */
@@ -307,6 +319,8 @@ export async function readEntries(contestId: string): Promise<Manager[]> {
       lastSeen: (data.lastSeen as { toDate?: () => Date } | undefined)?.toDate?.(),
       visits: Number(data.visits) || 0,
       lastReadBoard: (data.lastReadBoard as { toDate?: () => Date } | undefined)?.toDate?.(),
+      filled: typeof data.filled === 'number' ? data.filled : undefined,
+      filledRound: typeof data.filledRound === 'number' ? data.filledRound : undefined,
     };
   });
 }
@@ -956,4 +970,75 @@ export async function joinGame(gameId: string, uid: string, profile: Profile): P
 /** Taking back a request to join, before the commissioner has let them in. After that, it is his call. */
 export async function leaveGame(gameId: string, uid: string): Promise<void> {
   await deleteDoc(doc(db, 'contests', gameId, 'applications', uid));
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Opening somebody else's team.
+ *
+ * Ray: "the commish is able to see other lineups before a week has locked giving the commish an
+ * unfair advantage. There may be times when the commish needs to look at a line up or change a
+ * lineup, but if this happens I feel as if the league should know about it." So the rules no
+ * longer let a commissioner read or write anybody's team just because he is one. He may open a
+ * particular team for a particular round only once a notice exists for it — who, whose, which
+ * round, why — and that notice can never be edited or deleted, by him or anybody. Writing it also
+ * posts to the Board, and the player sees it on Home. No exceptions.
+ * ---------------------------------------------------------------------------------------------- */
+
+export interface Notice {
+  round: number;
+  uid: string;
+  teamName: string;
+  by: string;
+  byName: string;
+  reason: string;
+  at: Date;
+}
+
+const noticeId = (round: number, uid: string) => `${round}_${uid}`;
+
+export async function readNotice(contestId: string, round: number, uid: string): Promise<Notice | null> {
+  const snapshot = await getDoc(doc(db, 'contests', contestId, 'notices', noticeId(round, uid))).catch(() => null);
+  if (!snapshot?.exists()) return null;
+  const data = snapshot.data();
+  return { ...(data as Omit<Notice, 'at'>), at: (data.at as { toDate(): Date } | null)?.toDate() ?? new Date() };
+}
+
+/** Every notice about one player's team, newest first, for their Home. */
+export async function readNoticesFor(contestId: string, uid: string): Promise<Notice[]> {
+  const snapshot = await getDocs(query(collection(db, 'contests', contestId, 'notices'), where('uid', '==', uid))).catch(() => null);
+  return (snapshot?.docs ?? [])
+    .map((entry) => {
+      const data = entry.data();
+      return { ...(data as Omit<Notice, 'at'>), at: (data.at as { toDate(): Date } | null)?.toDate() ?? new Date() };
+    })
+    .sort((a, b) => b.at.getTime() - a.at.getTime());
+}
+
+/**
+ * Writes the notice that unlocks one team for one round, and tells the league on the Board.
+ *
+ * The notice first, because it is what the rules check: until it exists the team stays shut. The
+ * Board post second, and a failure there does not undo the notice — the record is the notice, and
+ * the player sees it on Home whether or not the post went up.
+ */
+export async function openTeam(
+  contestId: string,
+  notice: { round: number; roundName: string; uid: string; teamName: string; by: string; byName: string; reason: string; locked: boolean },
+): Promise<void> {
+  await setDoc(doc(db, 'contests', contestId, 'notices', noticeId(notice.round, notice.uid)), {
+    round: notice.round,
+    uid: notice.uid,
+    teamName: notice.teamName,
+    by: notice.by,
+    byName: notice.byName,
+    reason: notice.reason,
+    at: serverTimestamp(),
+  });
+  const when = notice.locked ? 'after the lock' : 'before the lock';
+  await writePost(contestId, {
+    uid: notice.by,
+    name: notice.byName,
+    text: `**Commissioner notice:** I opened **${notice.teamName}**'s team for the ${notice.roundName} round, ${when}. Reason: ${notice.reason}`,
+    wantsEmail: false,
+  }).catch(() => undefined);
 }

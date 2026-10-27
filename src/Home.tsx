@@ -3,8 +3,9 @@ import { EASTSIDE } from './domain/rules.ts';
 import { standingsFor } from './domain/multiplier.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
 import {
-  readContest, readHistory, readLeague, readLineups, readMine, readPool, readPosts, readTeams,
+  readContest, readHistory, readLeague, readLineups, readMine, readNoticesFor, readPool, readPosts, readTeams,
 } from './store/firestore.ts';
+import type { Notice } from './store/firestore.ts';
 import type { Contest, Manager, PoolPlayer, RoundTeams } from './store/firestore.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import { liveRoster } from './domain/live.ts';
@@ -76,6 +77,8 @@ export function Home({
   const [played, setPlayed] = useState<Map<string, HeldPlayer[]>>(new Map());
   const [playedRound, setPlayedRound] = useState<string | null>(null);
   const [recent, setRecent] = useState<Post[]>([]);
+  /** Every time the commissioner opened this manager's team, so he hears it from the app itself. */
+  const [notices, setNotices] = useState<Notice[]>([]);
   const [lastRead, setLastRead] = useState<Date | null>(null);
   const [now, setNow] = useState(new Date());
   const [live, setLive] = useState<LiveTotal | null>(null);
@@ -113,6 +116,7 @@ export function Home({
       setRoster(past[round] ?? []);
       setRecent(posts);
       setLastRead(me?.lastReadBoard ?? null);
+      setNotices(await readNoticesFor(CONTEST, uid).catch(() => []));
 
     })();
   }, [uid]);
@@ -256,6 +260,15 @@ export function Home({
 
   return (
     <>
+      {/* Told here as well as on the Board, because the Board is easy to miss and this is his team. */}
+      {notices.filter((notice) => notice.round === contest.currentRound).map((notice) => (
+        <div className="card notice" key={`${notice.round}-${notice.uid}`}>
+          <strong>The commissioner opened your team</strong> for the {contest.rounds[notice.round]?.name ?? 'current'} round,{' '}
+          {notice.at.toLocaleString(undefined, { weekday: 'long', hour: 'numeric', minute: '2-digit' })}.
+          {' '}Reason: {notice.reason}
+        </div>
+      ))}
+
       {newest && (
         <button className="card newpost" onClick={onGoToBoard}>
           <span className="newpostflag">

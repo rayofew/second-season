@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { explain } from './domain/trouble.ts';
-import { admitManager, declineApplication, readApplications, readContest, readEntries, readStandIns, readSubmitted, removeManager, setCommissioners, setPaid, syncTeamLabels } from './store/firestore.ts';
+import { admitManager, declineApplication, openTeam, readApplications, readContest, readEntries, readNotice, readStandIns, removeManager, setCommissioners, setPaid, syncTeamLabels } from './store/firestore.ts';
 import type { Application, Contest, Manager, StandInRegister } from './store/firestore.ts';
 import { dialable, formatPhone } from './domain/phone.ts';
 import { Advance } from './Advance.tsx';
@@ -8,7 +8,6 @@ import { Pool } from './Pool.tsx';
 import { RosterBuilder } from './RosterBuilder.tsx';
 import { Corrections } from './Corrections.tsx';
 import { Managers } from './Managers.tsx';
-import { StandIns } from './StandIns.tsx';
 import { KickoffSetting } from './KickoffSetting.tsx';
 import { Calculator } from './Calculator.tsx';
 import { GamesPanel } from './GamesPanel.tsx';
@@ -74,6 +73,14 @@ export function Commissioner({ uid }: { uid: string }) {
   const [confirming, setConfirming] = useState<string | null>(null);
   // Whose team the commissioner is currently fixing, if any.
   const [editing, setEditing] = useState<Manager | null>(null);
+  /**
+   * A team the commissioner has asked to open, waiting for him to say why.
+   *
+   * Opening anybody's team but his own writes a public notice first — the rules refuse the team
+   * until it exists — so the reason is asked for here, before anything is read.
+   */
+  const [opening, setOpening] = useState<Manager | null>(null);
+  const [reason, setReason] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
   const [section, setSection] = useState<Section>(remembered);
   const show = (next: Section) => {
@@ -94,7 +101,13 @@ export function Commissioner({ uid }: { uid: string }) {
       void syncTeamLabels(CONTEST, people).catch(() => undefined);
       setEveryone(waiting);
       setApplications(waiting.filter((application) => !members.has(application.uid)));
-      setFilled(await readSubmitted(CONTEST, people.map((person) => person.uid), found.currentRound));
+      // From the count each manager's own save records, not from reading the teams: a commissioner
+      // may not see a team before the lock without posting a notice, and chasing people needs only
+      // how many slots are empty.
+      setFilled(new Map(people.map((person) => [
+        person.uid,
+        person.filledRound === found.currentRound ? (person.filled ?? 0) : 0,
+      ])));
       setStandIns(await readStandIns(CONTEST).catch(() => ({})));
     } catch (cause) {
       setProblem(explain(cause));
@@ -125,6 +138,66 @@ export function Commissioner({ uid }: { uid: string }) {
   // Whoever set the contest up. The rules refuse any update that drops him, so this only decides
   // what the screen offers.
   const owner = commissioners[0];
+
+  /** His own team opens straight away; anybody else's only once there is a notice for this round. */
+  async function startEdit(manager: Manager) {
+    if (!contest) return;
+    if (manager.uid === uid) { setEditing(manager); return; }
+    const already = await readNotice(CONTEST, contest.currentRound, manager.uid);
+    if (already) { setEditing(manager); return; }
+    setReason('');
+    setOpening(manager);
+  }
+
+  async function confirmOpen() {
+    if (!contest || !opening) return;
+    const me = managers.find((person) => person.uid === uid);
+    const lock = contest.locks[String(contest.currentRound)];
+    await act(opening.uid, () => openTeam(CONTEST, {
+      round: contest.currentRound,
+      roundName: contest.rounds[contest.currentRound]?.name ?? `round ${contest.currentRound + 1}`,
+      uid: opening.uid,
+      teamName: opening.teamName,
+      by: uid,
+      byName: me?.teamName ?? me?.name ?? 'Commissioner',
+      reason: reason.trim(),
+      locked: Boolean(lock && lock <= new Date()),
+    }));
+    // Only if the notice really went in: without it the rules keep the team shut anyway, and
+    // opening an empty screen would look like the team had been wiped.
+    const posted = await readNotice(CONTEST, contest.currentRound, opening.uid);
+    if (posted) setEditing(opening);
+    setOpening(null);
+  }
+
+  // Asking why, before opening somebody else's team. Nothing about it is read until this is answered.
+  if (opening) {
+    return (
+      <div className="card prose">
+        <h2>Open {opening.teamName}&apos;s team?</h2>
+        <p>
+          Nobody sees anybody else&apos;s team before the lock — you included. To open this one, say why.
+          It goes on the Board for the whole league, and {opening.teamName} sees it on their Home screen.
+          It can&apos;t be edited or deleted afterwards.
+        </p>
+        <label>
+          <span>Reason</span>
+          <textarea
+            rows={3} value={reason} maxLength={300}
+            placeholder={`e.g. ${opening.teamName} texted me to swap their kicker`}
+            onChange={(event) => setReason(event.target.value)}
+          />
+        </label>
+        {problem && <p className="problem">{problem}</p>}
+        <div className="summary">
+          <button className="ghost" onClick={() => setOpening(null)}>Cancel</button>
+          <button className="submit" disabled={reason.trim().length < 3 || busy === opening.uid} onClick={() => void confirmOpen()}>
+            {busy === opening.uid ? '…' : 'Post the notice and open it'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // While fixing somebody's team, that is the whole screen — no room to press the wrong thing.
   if (editing) {
@@ -214,7 +287,7 @@ export function Commissioner({ uid }: { uid: string }) {
         busy={busy}
         confirming={confirming}
         onConfirm={setConfirming}
-        onEdit={setEditing}
+        onEdit={(manager) => void startEdit(manager)}
         onCommish={(manager) =>
           void act(manager.uid, () =>
             setCommissioners(
@@ -231,9 +304,9 @@ export function Commissioner({ uid }: { uid: string }) {
         onPaid={(manager) => void act(manager.uid, () => setPaid(CONTEST, manager.uid, !manager.paid))}
       />
 
-      {/* The bench. It lived on a Lab tab that existed to preview layouts against live football,
-          which the design preview at ?preview now covers without a tab of its own. */}
-      <StandIns />
+      {/* Stand-in teams were for filling out the rehearsal and are retired. Ray: "regarding stand-in
+          teams ... dont need that anymore". The rules no longer let a commissioner play anybody's
+          team, so the screen that did it is gone too; the rehearsal's stand-ins stay in its result. */}
       </>}
 
       {showing === 'money' && <>

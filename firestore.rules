@@ -43,6 +43,15 @@ service cloud.firestore {
       return contest(contestId).locks[roundId];
     }
 
+    /**
+     * Whether the commissioner may open this manager's team for this round: only once a notice for
+     * it exists. No exceptions — the stand-in teams the rehearsal used are retired (Ray: "dont need
+     * that anymore"), so there is no team a commissioner plays on somebody else's behalf.
+     */
+    function commissionerMayOpen(contestId, roundId, uid) {
+      return exists(/databases/$(database)/documents/contests/$(contestId)/notices/$(roundId + '_' + uid));
+    }
+
     function beforeLock(contestId, roundId) {
       return request.time < lockFor(contestId, roundId);
     }
@@ -112,7 +121,9 @@ service cloud.firestore {
         // lastSeen, visits and lastReadBoard are his own browser saying where he has been. He
         // could lie about any of them; nobody fakes never having opened an app, and the worst a
         // lie about the board can do is hide a notice from the person telling it.
-        allow update: if (isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'teamName', 'lastSeen', 'visits', 'lastReadBoard']))
+        // filled and filledRound are how many slots his last save filled: the count the commissioner
+        // chases people with, now that he cannot read the team itself before the lock.
+        allow update: if (isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'teamName', 'lastSeen', 'visits', 'lastReadBoard', 'filled', 'filledRound']))
                       || isCommissioner(contestId);
         allow delete: if isCommissioner(contestId);
 
@@ -122,14 +133,25 @@ service cloud.firestore {
          * Readable by the whole league only once the round has locked, so nobody can see what
          * anyone else is doing while there is still time to copy it. The owner sees his own always.
          */
+        /*
+         * After the lock it is anybody's to see, signed in or not; before it, only his own.
+         *
+         * Being commissioner is no longer enough to see or change somebody else's team. Ray: "the
+         * commish is able to see other lineups before a week has locked giving the commish an
+         * unfair advantage." He may open one only once a notice exists for that team and that round
+         * — written by him, public to the league, impossible to edit or delete — so the league
+         * always knows when it happened and why. His own team is the only exception. Removing a
+         * manager still deletes his rosters.
+         */
         match /rounds/{roundId} {
-          // After the lock it is anybody's to see, signed in or not; before it, only his own.
           allow read: if isOwner(uid)
-                      || isCommissioner(contestId)
-                      || request.time >= lockFor(contestId, roundId);
+                      || request.time >= lockFor(contestId, roundId)
+                      || (isCommissioner(contestId) && commissionerMayOpen(contestId, roundId, uid));
 
           allow write: if (isOwner(uid) && isCurrentRound(contestId, roundId) && beforeLock(contestId, roundId))
-                       || isCommissioner(contestId);
+                       || (isCommissioner(contestId) && commissionerMayOpen(contestId, roundId, uid));
+
+          allow delete: if isCommissioner(contestId);
         }
       }
 
@@ -179,9 +201,12 @@ service cloud.firestore {
        * Readable by the league only once the round has locked, for the same reason rosters are:
        * seeing that somebody has just taken Barkley is seeing their team.
        */
+      // Nobody reads a round's moves before it locks — the commissioner included, for the same
+      // reason he cannot read the rosters: seeing that somebody has just taken Barkley is seeing
+      // their team.
       match /log/{entryId} {
-        allow read: if isCommissioner(contestId)
-                    || (isMember(contestId) && request.time >= lockFor(contestId, string(resource.data.round)));
+        allow read: if (isMember(contestId) || isCommissioner(contestId))
+                    && request.time >= lockFor(contestId, string(resource.data.round));
         // A commissioner may write one for anybody. He can already replace any roster outright
         // from his own screen, so this grants no power he did not have — and without it the
         // stand-ins have no history, which is the loudest thing about them.
@@ -260,6 +285,22 @@ service cloud.firestore {
        * Readable when the rosters it copies are — once the round has locked — and written by the
        * commissioner's browser or the scoring script, from rosters nobody else may change by then.
        */
+      /**
+       * The record of a commissioner opening somebody else's team: who, whose, which round, why.
+       * Readable by the league, writable only by the commissioner as himself, and never changed or
+       * removed afterwards. Its id is the round and the manager, which is how the roster rule above
+       * finds it.
+       */
+      match /notices/{noticeId} {
+        allow read: if isMember(contestId) || isCommissioner(contestId);
+        allow create: if isCommissioner(contestId)
+                      && request.resource.data.by == request.auth.uid
+                      && noticeId == string(request.resource.data.round) + '_' + request.resource.data.uid
+                      && request.resource.data.reason is string
+                      && request.resource.data.reason.size() >= 3;
+        allow update, delete: if false;
+      }
+
       match /lineups/{roundId} {
         allow read: if request.time >= lockFor(contestId, roundId);
         allow write: if isCommissioner(contestId);
