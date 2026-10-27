@@ -311,7 +311,7 @@ export function Commissioner({ uid }: { uid: string }) {
 
       {showing === 'money' && <>
         <Pool contest={contest} managers={managers} commissioner onChange={() => void load()} />
-        <Calculator contest={contest} paid={managers.filter((manager) => manager.paid).length} onDone={() => void load()} />
+        <Calculator contest={contest} paid={managers.filter((manager) => manager.paid).length} onDone={() => void load()} owner={isOwner} />
       </>}
 
       {showing === 'rounds' && <>

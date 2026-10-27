@@ -4,6 +4,7 @@ import type { StatLine } from '../domain/scoring.ts';
 import type { ContestSettings } from '../domain/rules.ts';
 import type { Post } from '../domain/post.ts';
 import type { Prizes } from '../domain/pool.ts';
+import type { Plan } from '../domain/payouts.ts';
 import { shortName, splitName } from '../domain/name.ts';
 import { db } from '../firebase.ts';
 
@@ -1041,4 +1042,21 @@ export async function openTeam(
     text: `**Commissioner notice:** I opened **${notice.teamName}**'s team for the ${notice.roundName} round, ${when}. Reason: ${notice.reason}`,
     wantsEmail: false,
   }).catch(() => undefined);
+}
+
+/**
+ * The payout table every new game's calculator opens with.
+ *
+ * Ray: "i just made changes to the tables and there was no save button" — on the rehearsal, whose
+ * money can no longer change. Saving his table here gives the work somewhere to live: every game
+ * that has no payouts of its own starts from it, so the January games open already filled in.
+ * Public to read, like the rest of site/, and only the owner may write it.
+ */
+export async function readPayoutTemplate(): Promise<Plan | null> {
+  const snapshot = await getDoc(doc(db, 'site', 'payouts')).catch(() => null);
+  return (snapshot?.data()?.plan as Plan | undefined) ?? null;
+}
+
+export async function savePayoutTemplate(plan: Plan): Promise<void> {
+  await setDoc(doc(db, 'site', 'payouts'), { plan: JSON.parse(JSON.stringify(plan)), savedAt: serverTimestamp() });
 }

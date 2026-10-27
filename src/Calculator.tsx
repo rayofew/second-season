@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { DEFAULT_PLAN, breakdown, parseShares, problems, sharesText, tierFrom, weeklyShareOfPot } from './domain/payouts.ts';
 import type { Plan, Tier } from './domain/payouts.ts';
-import { setPrizes } from './store/firestore.ts';
+import { readPayoutTemplate, savePayoutTemplate, setPrizes } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
 import { explain } from './domain/trouble.ts';
 import { useGame } from './game.tsx';
@@ -123,10 +123,50 @@ function BandRows({ tiers, onChange, what }: { tiers: Tier[]; onChange: (next: T
   );
 }
 
-export function Calculator({ contest, paid, onDone }: { contest: Contest; paid: number; onDone: () => void }) {
+/**
+ * Unsaved changes, kept on this device so leaving the tab does not lose them.
+ *
+ * Ray: "I navigated out of the tab and it all disappeared." A calculator is somewhere to try things,
+ * and an hour of trying is worth keeping even before any of it is saved. Per game, in this browser
+ * only; cleared once the table is saved or the changes are thrown away.
+ */
+const draftKey = (game: string) => `calculator-draft:${game}`;
+const readDraft = (game: string): Plan | null => {
+  try { const text = localStorage.getItem(draftKey(game)); return text ? (JSON.parse(text) as Plan) : null; } catch { return null; }
+};
+const writeDraft = (game: string, plan: Plan | null) => {
+  try { if (plan) localStorage.setItem(draftKey(game), JSON.stringify(plan)); else localStorage.removeItem(draftKey(game)); } catch { /* nowhere to keep it */ }
+};
+
+export function Calculator({ contest, paid, onDone, owner = false }: {
+  contest: Contest;
+  paid: number;
+  onDone: () => void;
+  /** The owner may save the starting table every new game opens with. */
+  owner?: boolean;
+}) {
   const CONTEST = useGame();
   const saved = contest.prizes?.plan ?? null;
-  const [plan, setPlan] = useState<Plan>(saved ?? DEFAULT_PLAN);
+  const [template, setTemplate] = useState<Plan | null>(null);
+  const [plan, setPlan] = useState<Plan>(() => readDraft(CONTEST) ?? saved ?? DEFAULT_PLAN);
+  const [said, setSaid] = useState<string | null>(null);
+  // What this game's calculator would show with nothing unsaved: its own payouts, else the owner's
+  // starting table, else the suggested one.
+  const baseline = saved ?? template ?? DEFAULT_PLAN;
+
+  useEffect(() => {
+    void readPayoutTemplate().then((found) => {
+      setTemplate(found);
+      // A game with no payouts of its own, and nothing unsaved, opens on the starting table.
+      if (found && !saved && !readDraft(CONTEST)) setPlan(found);
+    });
+  }, [CONTEST]);
+
+  // Keep anything that differs from the baseline, so it is still here after a trip to another tab.
+  useEffect(() => {
+    writeDraft(CONTEST, JSON.stringify(plan) === JSON.stringify(baseline) ? null : plan);
+  }, [plan, baseline, CONTEST]);
+  const unsaved = JSON.stringify(plan) !== JSON.stringify(baseline);
   const [field, setField] = useState(Math.max(5, paid || 15));
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -151,7 +191,22 @@ export function Calculator({ contest, paid, onDone }: { contest: Contest; paid: 
         buyIn: plan.buyIn, places: null, shares: null, weekly: 0, plan,
         ...(lockIn ? { lockedAt: new Date() } : {}),
       });
+      writeDraft(CONTEST, null);
       onDone();
+    } catch (cause) {
+      setProblem(explain(cause));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveTemplate() {
+    setBusy(true);
+    setProblem(null);
+    try {
+      await savePayoutTemplate(plan);
+      setTemplate(plan);
+      setSaid('Saved as your starting table. Every new game opens with it.');
     } catch (cause) {
       setProblem(explain(cause));
     } finally {
@@ -253,11 +308,27 @@ export function Calculator({ contest, paid, onDone }: { contest: Contest; paid: 
         })}
       </div>
 
+      {unsaved && !frozen && (
+        <div className="pending">
+          Unsaved changes, kept on this device.{' '}
+          <button className="linky inline" onClick={() => setPlan(baseline)}>Discard them</button>
+        </div>
+      )}
+      {said && <div className="pending"><strong>{said}</strong></div>}
+
       {sandbox && (
         <div className="summary">
           <span className="actions">
             <button className="ghost small" onClick={() => setPlan(DEFAULT_PLAN)}>Start from the suggested table</button>
+            {template && <button className="ghost small" onClick={() => setPlan(template)}>Start from my starting table</button>}
           </span>
+          {owner && (
+            <span className="actions">
+              <button className="submit small" disabled={busy || wrong.length > 0} onClick={() => void saveTemplate()}>
+                {busy ? '…' : 'Save as my starting table'}
+              </button>
+            </span>
+          )}
         </div>
       )}
       {wrong.length > 0 && <ul className="calcproblems">{wrong.map((line) => <li key={line} className="problem">{line}</li>)}</ul>}
@@ -267,9 +338,11 @@ export function Calculator({ contest, paid, onDone }: { contest: Contest; paid: 
         <div className="summary">
           <span className="actions">
             <button className="ghost small" disabled={busy} onClick={() => setPlan(DEFAULT_PLAN)}>Start from the suggested table</button>
+            {template && <button className="ghost small" disabled={busy} onClick={() => setPlan(template)}>Start from my starting table</button>}
             {saved && changed && <button className="ghost small" disabled={busy} onClick={() => setPlan(saved)}>Undo changes</button>}
           </span>
           <span className="actions">
+            {owner && <button className="ghost small" disabled={busy || wrong.length > 0} onClick={() => void saveTemplate()}>Save as my starting table</button>}
             <button className="ghost small" disabled={busy || wrong.length > 0} onClick={() => void save(false)}>Save as draft</button>
             <button className="submit small" disabled={busy || wrong.length > 0} onClick={() => void save(true)}>
               {busy ? '…' : 'Lock it in'}
