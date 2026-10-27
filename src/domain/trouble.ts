@@ -9,8 +9,13 @@
 export function explain(cause: unknown): string {
   const code = (cause as { code?: string } | null)?.code ?? '';
   switch (code) {
+    // Two causes now, not one. The rules also refuse anything past its lock — a team after kickoff,
+    // a game's money after its first round, another manager's team without a notice — and telling
+    // the commissioner he was not in his own league, when he had pressed Save on a finished game,
+    // was the message being confidently wrong.
     case 'permission-denied':
-      return 'You are not in this league — or you are signed in with a different account than the '
+      return 'That was refused. Usually it is past a lock — a team after its round has kicked off, or a '
+        + 'game’s money after its first round — or you are signed in with a different account than the '
         + 'one you joined with. Sign out and back in, and ask the commissioner if it still refuses.';
     case 'unauthenticated':
       return 'Your sign-in has expired. Sign out and back in.';

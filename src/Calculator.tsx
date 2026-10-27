@@ -87,7 +87,13 @@ export function Calculator({ contest, paid, onDone }: { contest: Contest; paid: 
   const [problem, setProblem] = useState<string | null>(null);
   const rounds = contest.rounds.length || 4;
   const lock = contest.locks['0'];
-  const frozen = Boolean(lock && lock <= new Date()) && Boolean(saved);
+  // Once the first round has locked, nothing about this game's money can be saved — the rules refuse
+  // it. With a plan already saved that plan is the final word and is shown read-only. Without one
+  // (the rehearsal, which never had a plan) the calculator stays open to play with, and only saving
+  // is withheld: Ray pressed Save on the rehearsal and was told he was not in the league.
+  const locked = Boolean(lock && lock <= new Date());
+  const frozen = locked && Boolean(saved);
+  const sandbox = locked && !saved;
   const wrong = problems(plan);
   const preview = breakdown(field, plan, rounds);
   const changed = JSON.stringify(plan) !== JSON.stringify(saved);
@@ -120,6 +126,13 @@ export function Calculator({ contest, paid, onDone }: { contest: Contest; paid: 
       {frozen && (
         <div className="pending">
           The Wild Card round has locked, so the money is final. The database refuses any change to it now.
+        </div>
+      )}
+      {sandbox && (
+        <div className="pending">
+          <strong>Try anything here; it won&apos;t be saved.</strong> This game&apos;s first round has already
+          locked, so its money can&apos;t change. To set real payouts, switch to a January game (add one in
+          Commish → Games) and use its calculator before its Wild Card lock.
         </div>
       )}
 
@@ -193,10 +206,17 @@ export function Calculator({ contest, paid, onDone }: { contest: Contest; paid: 
         })}
       </div>
 
+      {sandbox && (
+        <div className="summary">
+          <span className="actions">
+            <button className="ghost small" onClick={() => setPlan(DEFAULT_PLAN)}>Start from the suggested table</button>
+          </span>
+        </div>
+      )}
       {wrong.length > 0 && <ul className="calcproblems">{wrong.map((line) => <li key={line} className="problem">{line}</li>)}</ul>}
       {problem && <p className="problem">{problem}</p>}
 
-      {!frozen && (
+      {!locked && (
         <div className="summary">
           <span className="actions">
             <button className="ghost small" disabled={busy} onClick={() => setPlan(DEFAULT_PLAN)}>Start from the suggested table</button>
