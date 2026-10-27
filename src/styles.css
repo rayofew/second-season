@@ -2167,3 +2167,65 @@ td { font-variant-numeric: tabular-nums; }
   .rulesection h2 { font-size: 21px; }
   .rulesection h3 { font-size: 16px; }
 }
+
+/* Graphics on the Rules page (RulesArt.tsx). Colors come from the theme, so light and dark both work. */
+.rulesection h2 { display: flex; align-items: center; gap: 10px; }
+.ruleicon {
+  flex: none; display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 10px;
+  color: var(--gold); background: color-mix(in srgb, var(--gold) 14%, transparent);
+}
+
+/* The prize pool bar, which moves with the slider. */
+.payoutbar { margin: 10px 0 14px; }
+.payoutbar-track { display: flex; height: 34px; border-radius: 9px; overflow: hidden; border: 1px solid var(--line); }
+.payoutbar-seg {
+  flex-basis: 0; min-width: 3px; display: grid; place-items: center; overflow: hidden;
+  transition: flex-grow 0.25s ease; border-right: 2px solid var(--panel);
+}
+.payoutbar-seg:last-child { border-right: 0; }
+.payoutbar-tag { font-size: 11px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); white-space: nowrap; padding: 0 4px; }
+.payoutbar-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; font-size: 12.5px; color: var(--dim); }
+.payoutbar-key { display: inline-flex; align-items: center; gap: 6px; }
+.payoutbar-key b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.payoutbar-dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+.seg-weekly { background: var(--gold); }
+.seg-0 { background: color-mix(in srgb, var(--live) 100%, #000 10%); }
+.seg-1 { background: color-mix(in srgb, var(--live) 82%, var(--panel)); }
+.seg-2 { background: color-mix(in srgb, var(--live) 66%, var(--panel)); }
+.seg-3 { background: color-mix(in srgb, var(--live) 52%, var(--panel)); }
+.seg-4 { background: color-mix(in srgb, var(--live) 40%, var(--panel)); }
+.seg-5 { background: color-mix(in srgb, var(--live) 30%, var(--panel)); }
+
+/* The multiplier staircase. */
+.stairs { margin: 10px 0 14px; }
+.stairs-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: end; }
+.stairs-col { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-end; gap: 4px; }
+.stairs-value { text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stairs-bar { display: grid; place-items: center; border-radius: 8px 8px 3px 3px; min-height: 24px; }
+.stairs-mult { font-weight: 800; font-size: 15px; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
+.mult-bar-1 { background: color-mix(in srgb, var(--gold) 45%, var(--panel)); }
+.mult-bar-2 { background: color-mix(in srgb, var(--gold) 65%, var(--panel)); }
+.mult-bar-3 { background: color-mix(in srgb, var(--gold) 82%, var(--panel)); }
+.mult-bar-4 { background: var(--gold); }
+.stairs-round { text-align: center; font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: 0.05em; }
+.stairs-total { margin-top: 8px; text-align: center; font-size: 13px; color: var(--dim); }
+.stairs-total b { color: var(--ink); }
+
+/* The schedule timeline: four stops on a line. */
+.timeline { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0; margin: 12px 0 8px; position: relative; }
+.timeline::before { content: ''; position: absolute; top: 17px; left: 12%; right: 12%; height: 2px; background: var(--line-strong); }
+.timeline-stop { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; margin: 0; }
+.timeline-dot {
+  width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800;
+  background: var(--gold); color: var(--on-accent); box-shadow: 0 0 0 4px var(--panel);
+}
+.timeline-name { font-weight: 750; font-size: 13.5px; line-height: 1.25; }
+.timeline-when { font-size: 12px; color: var(--dim); line-height: 1.35; }
+@media (max-width: 560px) {
+  .timeline { grid-template-columns: 1fr; gap: 12px; }
+  .timeline::before { top: 17px; bottom: 17px; left: 16px; right: auto; width: 2px; height: auto; }
+  .timeline-stop { display: grid; grid-template-columns: 34px 1fr; column-gap: 12px; text-align: left; align-items: center; }
+  .timeline-dot { grid-row: span 2; }
+  .stairs-steps { gap: 6px; }
+  .ruleicon { width: 32px; height: 32px; }
+}

@@ -7,6 +7,7 @@ import type { Plan, Tier } from './domain/payouts.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import type { Scoring, Slot } from './domain/rules.ts';
 import { useGame } from './game.tsx';
+import { HeadingIcon, PayoutBar, Staircase, Timeline } from './RulesArt.tsx';
 
 /**
  * The rules, laid out the way Ray wrote them.
@@ -53,7 +54,7 @@ const weeklySpots = (tier: Tier) => split(tier.amount ?? 0, tier.shares);
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="card prose rulesection">
-      <h2>{title}</h2>
+      <h2><HeadingIcon title={title} />{title}</h2>
       {children}
     </div>
   );
@@ -166,6 +167,7 @@ export function Rules() {
           right={[1, 2]}
           rows={Array.from({ length: rounds }, (_, index) => [ordinalWord(index + 1), `${index + 1}×`, `${20 * (index + 1)} points`])}
         />
+        <Staircase rounds={rounds} />
         <ul>
           <li>Keeping that player for all {rounds} rounds in this example earns <strong>{Array.from({ length: rounds }, (_, index) => 20 * (index + 1)).reduce((a, b) => a + b, 0)} total points</strong>.</li>
           <li>Every replacement starts at <strong>1×</strong>, even when added in a later playoff round.</li>
@@ -217,7 +219,7 @@ export function Rules() {
           <li>You may replace a player whose team is still alive, but the replacement starts at <strong>1×</strong>.</li>
           <li>Picks are hidden from everyone else until the round locks, <strong>including the commissioner</strong>.</li>
         </ul>
-        <Grid head={['Round', 'When']} rows={schedule.map((round) => [round.name, round.when])} />
+        <Timeline rounds={schedule} />
         {schedule === UPCOMING && (
           <p className="rulenote">Expected dates. Exact deadlines are posted as soon as the NFL sets the kickoff times.</p>
         )}
@@ -403,6 +405,7 @@ export function RulesMoney({ plan, draft, rounds, paid }: { plan: Plan; draft: b
           />
           <span className="ruleslidervalue">{exampleField} paid</span>
         </label>
+        <PayoutBar paid={example} rounds={rounds} />
         <Grid
           head={['Prize pool calculation', 'Amount']}
           right={[1]}
