@@ -20,15 +20,23 @@ export interface Tier {
   upTo: number;
   /** Percentages, first place first. Normalised by their sum, so a band that does not add to 100 still divides the pot. */
   shares: number[];
+  /**
+   * Weekly bands only: the dollars taken off the top for the best week, every round, at this field
+   * size. Ray: "instead of a percentage, i want to designate how much is removed for best week".
+   */
+  amount?: number;
 }
 
 export interface Plan {
   buyIn: number;
   /** How the places split, by field size. */
   tiers: Tier[];
-  /** The whole of the weekly prizes, as a percentage of the pot, spread evenly over the rounds. */
-  weeklyPercent: number;
-  /** How each round's weekly prize splits between the best raw scores, by field size. */
+  /**
+   * The weekly prizes as a percentage of the pot, spread over the rounds. Only used for a weekly band
+   * that names no dollar amount; the calculator now sets dollars, so new plans never rely on it.
+   */
+  weeklyPercent?: number;
+  /** How much each round's best week is worth, and how it splits between the best raw scores, by field size. */
   weeklyTiers: Tier[];
 }
 
@@ -49,11 +57,11 @@ export const DEFAULT_PLAN: Plan = {
     { upTo: 74, shares: [30, 18, 12, 9, 7, 6, 5, 5, 4, 4] },
     { upTo: 1000, shares: [27, 16, 11, 8, 6, 5, 4.5, 4, 3.5, 3, 3, 2.5, 2.5, 2, 2] },
   ],
-  weeklyPercent: 8,
   weeklyTiers: [
-    { upTo: 49, shares: [100] },
-    { upTo: 74, shares: [60, 40] },
-    { upTo: 1000, shares: [50, 30, 20] },
+    { upTo: 19, shares: [100], amount: 10 },
+    { upTo: 49, shares: [100], amount: 25 },
+    { upTo: 74, shares: [60, 40], amount: 50 },
+    { upTo: 1000, shares: [50, 30, 20], amount: 100 },
   ],
 };
 
@@ -105,8 +113,14 @@ export interface Breakdown {
 export function breakdown(field: number, plan: Plan, rounds: number): Breakdown {
   const size = Math.max(0, Math.floor(field));
   const pot = size * Math.max(0, plan.buyIn);
-  const weeklyRound = Math.floor((pot * Math.max(0, plan.weeklyPercent)) / 100 / Math.max(1, rounds));
-  const weeklyShares = tierFor(plan.weeklyTiers, size)?.shares ?? [100];
+  const weeklyTier = tierFor(plan.weeklyTiers, size);
+  // Dollars as the commissioner set them for this size of field — or, for an old plan written as a
+  // percentage, worked out from the pot. Never more than the whole pot can cover over every round.
+  const asked = weeklyTier?.amount !== undefined
+    ? Math.max(0, Math.floor(weeklyTier.amount))
+    : Math.floor((pot * Math.max(0, plan.weeklyPercent ?? 0)) / 100 / Math.max(1, rounds));
+  const weeklyRound = Math.min(asked, Math.floor(pot / Math.max(1, rounds)));
+  const weeklyShares = weeklyTier?.shares ?? [100];
   const weeklySpots = weeklyRound > 0 ? split(weeklyRound, weeklyShares) : [];
   const weeklyTotal = weeklySpots.reduce((sum, value) => sum + value, 0) * rounds;
   const placesPool = pot - weeklyTotal;
@@ -120,7 +134,9 @@ export function breakdown(field: number, plan: Plan, rounds: number): Breakdown 
 export function problems(plan: Plan): string[] {
   const found: string[] = [];
   if (!(plan.buyIn > 0)) found.push('Set a buy-in above $0.');
-  if (plan.weeklyPercent < 0 || plan.weeklyPercent > 50) found.push('The weekly prizes should be between 0% and 50% of the pot.');
+  for (const tier of plan.weeklyTiers) {
+    if (tier.amount !== undefined && !(tier.amount >= 0)) found.push(`Weekly: the band up to ${tier.upTo} needs a dollar amount of $0 or more.`);
+  }
   const check = (tiers: readonly Tier[], what: string) => {
     if (tiers.length === 0) found.push(`${what}: add at least one band.`);
     const sizes = tiers.map((tier) => tier.upTo);
@@ -143,3 +159,6 @@ export function problems(plan: Plan): string[] {
 export const sharesText = (shares: readonly number[]) => shares.join('/');
 export const parseShares = (text: string): number[] =>
   text.split(/[\s/,]+/).map((part) => Number(part)).filter((value) => Number.isFinite(value) && value > 0);
+
+/** The whole weekly purse as a share of the pot, so the calculator can flag a field where it eats the places. */
+export const weeklyShareOfPot = (paid: Breakdown): number => (paid.pot > 0 ? paid.weeklyTotal / paid.pot : 0);

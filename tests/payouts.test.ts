@@ -111,3 +111,30 @@ describe('the phone number at sign-up', () => {
     for (const bad of ['', '471-4580', '123-456-7890', '425 471 458', '012 471 4580']) assert.ok(!isUsPhone(bad), bad);
   });
 });
+
+/** Ray: "instead of a percentage, i want to designate how much is removed for best week". */
+describe('the weekly prize in dollars', () => {
+  it('takes exactly the dollars set for that size of field, every round', () => {
+    const paid = breakdown(30, DEFAULT_PLAN, 4);
+    assert.deepEqual(paid.weeklySpots, [25]);
+    assert.equal(paid.weeklyTotal, 100);
+    assert.equal(paid.placesPool, 30 * 50 - 100);
+  });
+
+  it('splits a band\'s dollars between its spots', () => {
+    assert.deepEqual(breakdown(60, DEFAULT_PLAN, 4).weeklySpots, [30, 20]);
+    assert.deepEqual(breakdown(100, DEFAULT_PLAN, 4).weeklySpots, [50, 30, 20]);
+  });
+
+  it('never takes more than the pot can cover', () => {
+    const greedy = { ...DEFAULT_PLAN, weeklyTiers: [{ upTo: 1000, shares: [100], amount: 1000 }] };
+    const paid = breakdown(5, greedy, 4);
+    assert.ok(paid.weeklyTotal <= paid.pot);
+    assert.equal(paid.weeklyTotal + sum(paid.places), paid.pot);
+  });
+
+  it('still reads an old plan written as a percentage', () => {
+    const old = { ...DEFAULT_PLAN, weeklyPercent: 8, weeklyTiers: [{ upTo: 1000, shares: [100] }] };
+    assert.deepEqual(breakdown(100, old, 4).weeklySpots, [100]);
+  });
+});

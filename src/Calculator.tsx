@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DEFAULT_PLAN, breakdown, parseShares, problems, sharesText, tierFrom } from './domain/payouts.ts';
+import { DEFAULT_PLAN, breakdown, parseShares, problems, sharesText, tierFrom, weeklyShareOfPot } from './domain/payouts.ts';
 import type { Plan, Tier } from './domain/payouts.ts';
 import { setPrizes } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
@@ -50,6 +50,17 @@ function BandRows({ tiers, onChange, what }: { tiers: Tier[]; onChange: (next: T
                 )}
               {' '}players
             </span>
+            {/* The weekly bands say how many dollars come off the top each round, not a percentage. */}
+            {what === 'Weekly' && (
+              <label className="bandamount">
+                $
+                <input
+                  type="number" inputMode="numeric" min={0} value={tier.amount ?? 0} aria-label="Dollars each round"
+                  onChange={(event) => set(index, { ...tier, amount: Math.max(0, Math.floor(Number(event.target.value) || 0)) })}
+                />
+                a round, split
+              </label>
+            )}
             <input
               className="bandshares"
               defaultValue={sharesText(tier.shares)}
@@ -71,7 +82,7 @@ function BandRows({ tiers, onChange, what }: { tiers: Tier[]; onChange: (next: T
           const before = sorted[sorted.length - 2];
           // A new band splits the open-ended last one in two, which is the only place one can go.
           const at = Math.max((before?.upTo ?? 0) + 2, Math.round(((before?.upTo ?? 0) + Math.min(top?.upTo ?? 100, 150)) / 2));
-          onChange([...sorted.slice(0, -1), { upTo: at, shares: [...(top?.shares ?? [100])] }, ...(top ? [top] : [])]);
+          onChange([...sorted.slice(0, -1), { upTo: at, shares: [...(top?.shares ?? [100])], ...(top?.amount !== undefined ? { amount: top.amount } : {}) }, ...(top ? [top] : [])]);
         }}
       >Add a band</button>
     </div>
@@ -145,15 +156,6 @@ export function Calculator({ contest, paid, onDone }: { contest: Contest; paid: 
             onChange={(event) => setPlan({ ...plan, buyIn: Math.max(0, Number(event.target.value) || 0) })}
           />
         </label>
-        <label className="inline">
-          Weekly prizes
-          <input
-            type="number" inputMode="decimal" style={{ width: 64 }} disabled={frozen}
-            value={plan.weeklyPercent}
-            onChange={(event) => setPlan({ ...plan, weeklyPercent: Math.max(0, Number(event.target.value) || 0) })}
-          />
-          % of the pot, over {rounds} rounds
-        </label>
       </div>
 
       <h3 className="calchead">Places, by how many have paid</h3>
@@ -162,8 +164,11 @@ export function Calculator({ contest, paid, onDone }: { contest: Contest; paid: 
         ? <BandsReadOnly tiers={plan.tiers} />
         : <BandRows tiers={plan.tiers} what="Places" onChange={(tiers) => setPlan({ ...plan, tiers })} />}
 
-      <h3 className="calchead">Weekly prize, by how many have paid</h3>
-      <p className="calchint">How each round&apos;s weekly prize splits between the best raw scores. 100 is one winner; 60/40 pays two.</p>
+      <h3 className="calchead">Best week, by how many have paid</h3>
+      <p className="calchint">
+        The dollars taken off the top for the best raw score, every one of the {rounds} rounds, and how they split:
+        100 is one winner, 60/40 pays two. The places share whatever is left.
+      </p>
       {frozen
         ? <BandsReadOnly tiers={plan.weeklyTiers} />
         : <BandRows tiers={plan.weeklyTiers} what="Weekly" onChange={(weeklyTiers) => setPlan({ ...plan, weeklyTiers })} />}
@@ -196,7 +201,15 @@ export function Calculator({ contest, paid, onDone }: { contest: Contest; paid: 
           const row = breakdown(size, plan, rounds);
           const last = row.places[row.places.length - 1] ?? 0;
           return (
-            <div className={`ladderrow ${last < plan.buyIn ? 'short' : ''}`} key={size} title={last < plan.buyIn ? 'Last paid place gets less than the buy-in back' : undefined}>
+            // Fixed weekly dollars can swallow a small field's pot, so a size where the best weeks take
+            // more than half of it is flagged the same way as a last place paid less than his buy-in.
+            <div
+              className={`ladderrow ${last < plan.buyIn || weeklyShareOfPot(row) > 0.5 ? 'short' : ''}`}
+              key={size}
+              title={weeklyShareOfPot(row) > 0.5
+                ? `The best weeks take ${Math.round(weeklyShareOfPot(row) * 100)}% of the pot at this size`
+                : last < plan.buyIn ? 'Last paid place gets less than the buy-in back' : undefined}
+            >
               <span>{size}</span><span>{money(row.pot)}</span><span>{row.places.length}</span>
               <span>{money(row.places[0] ?? 0)}</span><span>{row.places[1] !== undefined ? money(row.places[1]) : '—'}</span>
               <span>{row.places[2] !== undefined ? money(row.places[2]) : '—'}</span><span>{money(last)}</span>
@@ -245,7 +258,7 @@ function BandsReadOnly({ tiers }: { tiers: Tier[] }) {
       {sorted.map((tier, index) => (
         <div className="bandrow" key={index}>
           <span className="bandsize">{tierFrom(sorted, tier)}–{index === sorted.length - 1 && tier.upTo >= 1000 ? 'any' : tier.upTo} players</span>
-          <span>{sharesText(tier.shares)}</span>
+          <span>{tier.amount !== undefined ? `$${tier.amount} a round · ` : ''}{sharesText(tier.shares)}</span>
         </div>
       ))}
     </div>

@@ -447,9 +447,10 @@ export function PlanMoney({ plan, lockedAt, rounds, paid }: { plan: Plan; locked
           Only paid entries count towards the size of the field.
         </p>
         <p>
-          <strong>{plan.weeklyPercent}% of the pot</strong> goes to the best raw score each round, multipliers
-          ignored, so a week stays winnable by anybody — even somebody whose contest is over. The rest is
-          paid to the final standings. <strong>A tied week is split</strong> between everybody level on
+          <strong>The best week</strong> is paid every round, to the best raw score with multipliers
+          ignored, so a week stays winnable by anybody — even somebody whose contest is over. What it is
+          worth grows with the field (below), and it comes off the top: the rest of the pot is paid to the
+          final standings. <strong>A tied week is split</strong> between everybody level on
           it, sharing whatever the weekly spots they cover are worth.
         </p>
         <p>
@@ -487,11 +488,21 @@ export function PlanMoney({ plan, lockedAt, rounds, paid }: { plan: Plan; locked
             <span className="rulevalue">{sharesText(tier.shares)}</span>
           </div>
         ))}
-        {weekly.length > 0 && weekly.some((tier) => tier.shares.length > 1) && (
-          <div className="pending">
-            Weekly: {weekly.map((tier, index) => `${tier.shares.length === 1 ? 'one winner' : `top ${tier.shares.length} (${sharesText(tier.shares)})`} ${index === weekly.length - 1 ? `from ${tierFrom(weekly, tier)} players` : `up to ${tier.upTo}`}`).join('; ')}.
+      </div>
+
+      <div className="card">
+        <div className="confhead">The best week, every round<span className="colhead">Paid</span></div>
+        {weekly.map((tier, index) => (
+          <div className="ruleline" key={tier.upTo}>
+            <span>
+              {tierFrom(weekly, tier)}{index === weekly.length - 1 ? ' or more' : `–${tier.upTo}`} players
+              {' · '}{tier.shares.length === 1 ? 'one winner' : `top ${tier.shares.length}, split ${sharesText(tier.shares)}`}
+            </span>
+            <span className="rulevalue">
+              {tier.amount !== undefined ? `$${tier.amount} a round` : `${plan.weeklyPercent ?? 0}% of the pot`}
+            </span>
           </div>
-        )}
+        ))}
       </div>
 
       <div className="card">
