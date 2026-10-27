@@ -4,7 +4,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { signOut, updateProfile } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth, db } from './firebase.ts';
-import { typingPhone } from './domain/phone.ts';
+import { isUsPhone, typingPhone } from './domain/phone.ts';
 import { fullName, shortName, splitName } from './domain/name.ts';
 import { ThemeChoice } from './Theme.tsx';
 
@@ -69,6 +69,9 @@ export function Register({ user }: { user: User }) {
 
   async function send() {
     if (!first.trim()) { setProblem('A first name, at least.'); return; }
+    // Required: the commissioner settles payouts by phone, and an entry he cannot reach is one he
+    // cannot pay.
+    if (!isUsPhone(phone)) { setProblem('A phone number, please: ten digits, area code first. Only the commissioner sees it, for sorting out payouts.'); return; }
     setState('saving');
     setProblem(null);
     try {
@@ -159,7 +162,7 @@ export function Register({ user }: { user: User }) {
       </label>
 
       <label>
-        <span>Phone <em>only the commissioner sees this</em></span>
+        <span>Phone <em>required · only the commissioner sees it, for payouts</em></span>
         <input
           type="tel"
           value={phone}

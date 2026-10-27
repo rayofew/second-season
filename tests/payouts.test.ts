@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { DEFAULT_PLAN, breakdown, parseShares, problems, split, tierFor } from '../src/domain/payouts.ts';
 import { weeklyPaid } from '../src/domain/weekly.ts';
+import { isUsPhone } from '../src/domain/phone.ts';
 
 const sum = (values: readonly number[]) => values.reduce((total, value) => total + value, 0);
 
@@ -99,5 +100,14 @@ describe('paying more than one spot a week', () => {
   it('splits a tie across the spots it covers', () => {
     const [week] = weeklyPaid([entry('a', 120), entry('b', 100), entry('c', 100)], [50, 30, 20]);
     assert.deepEqual(week!.paid.map((p) => [p.entryId, p.amount]), [['a', 50], ['b', 25], ['c', 25]]);
+  });
+});
+
+describe('the phone number at sign-up', () => {
+  it('takes a US number however it is typed', () => {
+    for (const ok of ['(425) 471-4580', '425-471-4580', '4254714580', '+1 425 471 4580']) assert.ok(isUsPhone(ok), ok);
+  });
+  it('refuses something that is not one', () => {
+    for (const bad of ['', '471-4580', '123-456-7890', '425 471 458', '012 471 4580']) assert.ok(!isUsPhone(bad), bad);
   });
 });

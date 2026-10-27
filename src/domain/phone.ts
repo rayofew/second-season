@@ -30,6 +30,19 @@ export function typingPhone(value: string): string {
   return `(${national.slice(0, 3)}) ${national.slice(3, 6)}-${national.slice(6, 10)}`;
 }
 
+/**
+ * Whether this is a usable US number: ten digits, or eleven starting with a one.
+ *
+ * Ray: "requiring a phone number at sign up is imperative to be able to communicate with them about
+ * payouts". It checks the shape and nothing more — no text is sent to prove it is theirs — and an
+ * area code or exchange beginning with 0 or 1 is refused because no real US number has one.
+ */
+export function isUsPhone(value: string): boolean {
+  const digits = digitsOf(value);
+  const national = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits;
+  return national.length === 10 && /^[2-9]\d{2}[2-9]\d{6}$/.test(national);
+}
+
 /** What a tel: or sms: link needs: digits, and a country code if they gave one. */
 export const dialable = (value: string): string => {
   const digits = digitsOf(value);
