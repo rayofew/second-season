@@ -13,7 +13,7 @@ import { Theme } from './Theme.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
 import { FALLBACK_GAMES, buildLineups, noteVisit, readContest, readEntries, readGames, readLeague, readMine, readPosts, readTeamLabels, rememberEmail, syncTeamLabels } from './store/firestore.ts';
 import type { Game } from './store/firestore.ts';
-import { GameProvider, OWNER_UID, REHEARSAL, rememberGame, rememberedGame, useGame } from './game.tsx';
+import { GamePickerProvider, GameProvider, OWNER_UID, REHEARSAL, rememberGame, rememberedGame, useGame } from './game.tsx';
 import { MyGames, needsMyGames } from './MyGames.tsx';
 import { NextSeason } from './NextSeason.tsx';
 import { Results } from './Results.tsx';
@@ -303,6 +303,7 @@ export function App() {
       </header>
 
       <GameProvider value={game}>
+      <GamePickerProvider value={{ games: visible, pick }}>
       <div key={game}>
       {checking ? null : user && askGames ? (
         <MyGames
@@ -372,6 +373,7 @@ export function App() {
         </>
       )}
       </div>
+      </GamePickerProvider>
       </GameProvider>
     </div>
   );

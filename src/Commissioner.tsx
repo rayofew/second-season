@@ -39,7 +39,7 @@ const remembered = (): Section => {
     return 'players';
   }
 };
-import { useGame } from './game.tsx';
+import { useGame, useGamePicker } from './game.tsx';
 
 /**
  * The commissioner's tab: who wants in, and who has not picked yet.
@@ -221,6 +221,7 @@ export function Commissioner({ uid }: { uid: string }) {
 
   return (
     <>
+      <GameBar contest={contest} />
       <nav className="subnav" aria-label="Commish sections">
         {offered.map((each) => (
           <button key={each.id} aria-current={showing === each.id} onClick={() => show(each.id)}>
@@ -334,5 +335,40 @@ export function Commissioner({ uid }: { uid: string }) {
 
       {showing === 'games' && isOwner && <GamesPanel uid={uid} onChange={() => void load()} />}
     </>
+  );
+}
+
+/**
+ * Which game every setting on this page belongs to, said at the top and changeable from there.
+ *
+ * Ray: "in the money tab, there should be an easy way to switch to make sure i'm updating the
+ * correct game". On every Commish section, not only Money, because letting somebody in or advancing
+ * a round on the wrong game is the same mistake. Changing it here changes the whole site, exactly as
+ * the switch in the header does.
+ */
+function GameBar({ contest }: { contest: Contest }) {
+  const game = useGame();
+  const picker = useGamePicker();
+  const lock = contest.locks['0'];
+  const status = contest.status === 'final'
+    ? 'Finished. Its money and results can no longer change.'
+    : lock && lock <= new Date()
+      ? 'Under way. Its money is locked until the end.'
+      : 'Not started yet. Its money can be changed until the Wild Card lock.';
+  const games = picker?.games ?? [];
+  return (
+    <div className="card gamebar">
+      <label className="gamebar-pick">
+        <span>You&apos;re editing</span>
+        {games.length > 1 && picker
+          ? (
+            <select value={game} onChange={(event) => picker.pick(event.target.value)} aria-label="Game to edit">
+              {games.map((each) => <option key={each.id} value={each.id}>{each.name}{each.enabled ? '' : ' (hidden)'}</option>)}
+            </select>
+          )
+          : <strong>{games.find((each) => each.id === game)?.name ?? contest.name}</strong>}
+      </label>
+      <span className="gamebar-status">{status}</span>
+    </div>
   );
 }

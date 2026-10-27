@@ -36,3 +36,20 @@ export function rememberedGame(): string {
 export function rememberGame(id: string): void {
   try { localStorage.setItem(PICKED, id); } catch { /* a private window keeps nothing, which is fine */ }
 }
+
+/**
+ * The games on offer and a way to change to another, for screens below the header.
+ *
+ * Ray: "in the money tab, there should be an easy way to switch to make sure i'm updating the
+ * correct game". The header already had a switch, but it is small and far from the calculator, and
+ * the cost of getting it wrong is setting one game's money on another. So Commish carries its own,
+ * big and labelled, and both change the same thing.
+ */
+export interface GamePicker {
+  games: { id: string; name: string; enabled: boolean }[];
+  pick: (id: string) => void;
+}
+
+const PickerContext = createContext<GamePicker | null>(null);
+export const GamePickerProvider = PickerContext.Provider;
+export const useGamePicker = (): GamePicker | null => useContext(PickerContext);
