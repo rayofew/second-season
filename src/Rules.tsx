@@ -321,9 +321,8 @@ export function Rules() {
         </p>
         <p>
           The weekly prize is <strong>raw points, multipliers ignored</strong>, so it stays winnable
-          by somebody whose contest is already over. Ties go to the better quarterback; still tied,
-          the quarterback and the first running back together; and on down the roster until somebody
-          is ahead.
+          by somebody whose contest is already over. <strong>A tied week is split</strong> evenly
+          between everybody tied for the best score.
         </p>
       </div>
 
@@ -435,7 +434,9 @@ export function PlanMoney({ plan, lockedAt, rounds, paid }: { plan: Plan; locked
         <p>
           <strong>{plan.weeklyPercent}% of the pot</strong> goes to the best raw score each round, multipliers
           ignored, so a week stays winnable by anybody — even somebody whose contest is over. The rest is
-          paid to the final standings. Ties split whatever the places they cover are worth.
+          paid to the final standings. <strong>A tie is split</strong>: everybody level shares what
+          the places or weekly spots they cover are worth — two tied for the best week share it, and two
+          tied for second share second and third between them.
         </p>
       </div>
 
