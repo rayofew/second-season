@@ -94,6 +94,7 @@ export function BracketLadder({ contest, rounds, scores = [] }: {
   /** Each round's real fixtures by club, where they have been read. The design preview passes none. */
   scores?: (ReadonlyMap<string, ClubGame> | null)[];
 }) {
+  const rehearsal = useGame().startsWith('rehearsal');
   const seedOf = (club: string) => contest.field[club]?.seed ?? 0;
   const columns = tree(
     contest.rounds.map((round) => rounds[round.round] ?? null),
@@ -148,9 +149,14 @@ export function BracketLadder({ contest, rounds, scores = [] }: {
         </div>
       </div>
 
+      {/* The rehearsal paired clubs that never played each other, so it needed a rule for two of them
+          scoring the same. A real playoff game cannot end level, so a January game says only how the
+          rounds are drawn. Ray: "the qb tie breaker was only supposed to be for the rehearsal". */}
       <p className="footnote treefoot">
-        Clubs never actually meet. Whichever of the two scores more in its own real fixture goes
-        through; tied on points, the quarterback with more passing yards; tied again, the better seed.
+        {rehearsal && <>
+          Clubs never actually meet. Whichever of the two scores more in its own real fixture goes
+          through; tied on points, the quarterback with more passing yards; tied again, the better seed.{' '}
+        </>}
         Each round is redrawn best surviving seed against worst, so the lines move as clubs go out.
       </p>
     </div>
