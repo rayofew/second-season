@@ -176,7 +176,7 @@ export function Home({
           .map((entry) => [entry.slot, entry]),
       );
       const [clubs, forecast] = await Promise.all([
-        clubGames(contest.season, config.week).catch(() => new Map<string, ClubGame>()),
+        clubGames(contest.season, config.week, config.seasonType).catch(() => new Map<string, ClubGame>()),
         projections(contest.season, config.seasonType, config.week)
           .catch(() => ({}) as Record<string, StatLine>),
       ]);

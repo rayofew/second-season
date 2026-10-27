@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { decide, reseed } from './domain/advance.ts';
+import { decide } from './domain/advance.ts';
 import type { Decision } from './domain/advance.ts';
 import { clubScores } from './providers/schedule.ts';
 import { stats } from './providers/sleeper.ts';
-import { advanceRound, readAllRosters, readEntries, readPool, readScores, readTeams } from './store/firestore.ts';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from './firebase.ts';
+import { readAllRosters, readEntries, readPool, readScores, readTeams } from './store/firestore.ts';
 import type { Contest, RoundTeams } from './store/firestore.ts';
 import { colorOf, crest } from './domain/clubs.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
@@ -45,6 +47,8 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
   const [toCarry, setToCarry] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  /** What the press did, said back once it has. */
+  const [done, setDone] = useState<string | null>(null);
 
   const round = contest.currentRound;
   const config = contest.rounds[round];
@@ -83,7 +87,7 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
         }
 
         const [results, lines] = await Promise.all([
-          clubScores(contest.season, config.week),
+          clubScores(contest.season, config.week, config.seasonType),
           stats(contest.season, config.seasonType, config.week),
         ]);
 
@@ -106,35 +110,30 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
     })();
   }, [contest, round, config]);
 
+  if (done) return <div className="card notice done"><strong>Done.</strong> {done}</div>;
   if (problem) return <div className="card gate"><p className="problem">{problem}</p></div>;
   if (!teams || !decisions) return <div className="card gate"><p>Reading the scores…</p></div>;
 
   const through = [...decisions.map((decision) => decision.winner), ...teams.byes];
-  const pairings = reseed(through, contest.field);
   const next = contest.rounds[round + 1];
 
+  /**
+   * One press: score, carry over, copy the lineups, decide and advance.
+   *
+   * Ray: "i want it to be a one and done situation." The scoring has to happen where the credentials
+   * are, and a browser is refused them on purpose — so this asks the scoreAndAdvance function on
+   * Firebase to do it all, and it re-checks everything this screen has already shown (the lock, the
+   * games, that whoever asked is a commissioner) before writing anything.
+   */
   async function advance() {
     setBusy(true);
     setProblem(null);
     try {
-      /*
-       * The next round locks at its first kickoff involving a club that is still in it.
-       *
-       * Worked out here rather than left as it was seeded, because the seeded lock is the first
-       * game of the NFL week and by now that is often a game none of the survivors are playing in.
-       */
-      let nextLock: Date | undefined;
-      if (next) {
-        const schedule = await clubScores(contest.season, next.week).catch(() => null);
-        const kickoffs = through
-          .map((club) => schedule?.get(club)?.kickoff)
-          .filter((when): when is Date => when instanceof Date);
-        if (kickoffs.length > 0) {
-          nextLock = new Date(Math.min(...kickoffs.map((when) => when.getTime())));
-        }
-      }
-
-      await advanceRound(CONTEST, round, decisions!, through, pairings, nextLock);
+      const run = httpsCallable<{ game: string }, { scoredPlayers: number; carried: string[]; next: string | null }>(
+        functions, 'scoreAndAdvance', { timeout: 180_000 },
+      );
+      const { data } = await run({ game: CONTEST });
+      setDone(`Scored ${data.scoredPlayers} players${data.carried.length ? `, carried over ${data.carried.join(', ')}` : ''}, and ${data.next ? `opened ${data.next}` : 'closed the game'}.`);
       onDone();
     } catch (cause) {
       setProblem((cause as Error).message);
@@ -142,8 +141,9 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
     }
   }
 
-  const unscored = scored === 0;
-  const blocked = unfinished.length > 0 || unscored || toCarry.length > 0;
+  // Scoring and carrying over are part of the press now; the one thing still worth waiting for is a
+  // game that has not finished, because the function would refuse it anyway.
+  const blocked = unfinished.length > 0;
 
   return (
     <div className="card">
@@ -157,41 +157,19 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
             ? 'Every club has finished playing.'
             : `Still playing: ${unfinished.join(', ')}.`}
         </div>
-        <div className={`checkline ${toCarry.length > 0 ? 'no' : 'ok'}`}>
-          <span>{toCarry.length > 0 ? '×' : '✓'}</span>
+        <div className="checkline ok">
+          <span>✓</span>
           {toCarry.length > 0
-            ? `${toCarry.join(', ')} saved nothing this round and had a team last round.`
+            ? `${toCarry.join(', ')} saved nothing this round, so last round's survivors will be carried over for them.`
             : 'Everybody who had a team last round has one saved for this one.'}
         </div>
-        <div className={`checkline ${unscored ? 'no' : 'ok'}`}>
-          <span>{unscored ? '×' : '✓'}</span>
-          {unscored
-            ? 'This round has no scores yet. Nobody has been given a single point for it.'
-            : `Scored — ${scored} players have figures.`}
+        <div className="checkline ok">
+          <span>✓</span>
+          {(scored ?? 0) > 0
+            ? `Scored already — ${scored} players have figures. Pressing scores it again from Sleeper, which picks up any corrections.`
+            : 'Scores come straight from Sleeper when you press — nobody types a figure in.'}
         </div>
       </div>
-
-      {toCarry.length > 0 && (
-        <div className="notice flat">
-          <strong>Carry their teams over first.</strong> Doing nothing is a legitimate way to play a
-          round — the picker opens with last round's survivors already in the slots — but nothing is
-          saved unless somebody presses submit. Write it down for them, then score:
-          <code className="runthis">node scripts/carry-over.ts {round} --write</code>
-          Whoever went out is left as an empty slot, and a manager who has never submitted anything
-          has nothing to carry.
-        </div>
-      )}
-
-      {unscored && (
-        <div className="notice flat">
-          <strong>Score it first.</strong> A browser cannot write a score — the rules refuse every
-          client, so the figures only ever come from the job holding the key. Run this, then come
-          back:
-          <code className="runthis">node scripts/score.ts {round}</code>
-          Advancing without it would close the week having paid nobody for it, and the bracket would
-          be decided on the clubs' real results while every manager sat on nought.
-        </div>
-      )}
 
       {unfinished.length > 0 && (
         <div className="notice flat">
@@ -212,7 +190,8 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
 
       {/* What one press does, said out loud. It cannot be undone from any screen. */}
       <div className="willdo">
-        Pressing this marks those {decisions.length} winners, draws{' '}
+        Pressing this scores the round from Sleeper, carries over anybody who saved nothing, marks those{' '}
+        {decisions.length} winners, draws{' '}
         {next ? `${next.name} from the ${through.length} still standing` : 'nothing further'}, and
         {next
           ? ' opens picking for it, and sets its lock to the first kickoff any of them are playing in — every manager\u2019s countdown moves to that, and the standings pick up this round.'
@@ -225,10 +204,8 @@ export function Advance({ contest, onDone }: { contest: Contest; onDone: () => v
         </span>
         <button className="submit" disabled={busy || blocked} onClick={() => void advance()}>
           {busy ? 'Advancing…'
-            : toCarry.length > 0 ? 'Carry them over first'
-            : unscored ? 'Score it first'
             : unfinished.length > 0 ? 'Games still on'
-            : `Advance to ${next?.name ?? 'the end'}`}
+            : next ? `Score and advance to ${next.name}` : 'Score and finish the game'}
         </button>
       </div>
     </div>

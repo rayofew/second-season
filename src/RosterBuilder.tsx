@@ -139,7 +139,7 @@ export function RosterBuilder({
         // rather than once the round has shut and nothing can be done about them.
         const config = found.rounds[round];
         if (config) {
-          void clubGames(found.season, config.week).then(setGames).catch(() => undefined);
+          void clubGames(found.season, config.week, config.seasonType).then(setGames).catch(() => undefined);
           const expected = await projections(found.season, config.seasonType, config.week)
             .catch(() => ({} as Record<string, StatLine>));
           setLines(expected as Record<string, StatLine>);
@@ -174,7 +174,7 @@ export function RosterBuilder({
       const [played, clubs] = await Promise.all([
         stats(contest.season, config.seasonType, config.week)
           .catch(() => ({}) as Record<string, StatLine>),
-        clubGames(contest.season, config.week).catch(() => null),
+        clubGames(contest.season, config.week, config.seasonType).catch(() => null),
       ]);
       if (cancelled) return;
       const clubOf = (playerId: string) => pool.find((player) => player.id === playerId)?.team;

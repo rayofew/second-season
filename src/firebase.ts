@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
 
 /**
  * Firebase, configured in the open.
@@ -27,6 +28,8 @@ export const app = initializeApp({
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+/** The server side: only scoreAndAdvance, which holds the credentials a browser is refused. */
+export const functions = getFunctions(app);
 
 /** Google is the only way in: no passwords to handle, and one tap on a phone. */
 export const google = new GoogleAuthProvider();

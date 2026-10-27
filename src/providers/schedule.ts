@@ -41,8 +41,15 @@ export interface ClubGame {
 
 const STATES: Record<string, ClubState> = { pre: 'upcoming', in: 'playing', post: 'final' };
 
-export async function clubGames(season: number, week: number): Promise<Map<string, ClubGame>> {
-  const url = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${season}&seasontype=2&week=${week}`;
+/**
+ * ESPN numbers its season types 1 (preseason), 2 (regular) and 3 (postseason). The rehearsal ran on
+ * regular-season weeks; a January game's rounds are postseason weeks, and asking for week 1 of the
+ * regular season instead would quietly score the wrong September.
+ */
+const ESPN_TYPE: Record<string, number> = { pre: 1, regular: 2, post: 3 };
+
+export async function clubGames(season: number, week: number, seasonType = 'regular'): Promise<Map<string, ClubGame>> {
+  const url = `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${season}&seasontype=${ESPN_TYPE[seasonType] ?? 2}&week=${week}`;
   const payload = await (await fetch(url, { signal: AbortSignal.timeout(20_000) })).json();
 
   const games = new Map<string, ClubGame>();

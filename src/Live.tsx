@@ -153,7 +153,7 @@ export function Live({ uid }: { uid: string }) {
 
     void (async () => {
       const [clubs, real, guess] = await Promise.all([
-        clubGames(contest.season, config.week).catch(() => new Map<string, ClubGame>()),
+        clubGames(contest.season, config.week, config.seasonType).catch(() => new Map<string, ClubGame>()),
         stats(contest.season, config.seasonType, config.week)
           .catch(() => ({}) as Record<string, StatLine>),
         projections(contest.season, config.seasonType, config.week)

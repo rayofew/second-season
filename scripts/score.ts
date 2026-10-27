@@ -15,7 +15,8 @@
  * a dry run before the season has started.
  */
 import { EASTSIDE } from '../src/domain/rules.ts';
-import { points, rawPoints } from '../src/domain/scoring.ts';
+import { points } from '../src/domain/scoring.ts';
+import { scoreRound } from '../src/domain/scoreround.ts';
 import type { Position } from '../src/domain/rules.ts';
 import type { StatLine } from '../src/domain/scoring.ts';
 import { admin } from './admin.ts';
@@ -23,14 +24,6 @@ import { admin } from './admin.ts';
 // Which game: set GAME to run against another, e.g. $env:GAME = 'high-2027'. The rehearsal by default.
 const CONTEST = process.env.GAME ?? 'rehearsal-2026';
 
-/** The fields that decide a score, kept so the arithmetic can be checked on screen. */
-const SHOWN = [
-  'pass_yd', 'pass_td', 'pass_int', 'pass_2pt',
-  'rush_yd', 'rush_td', 'rush_2pt',
-  'rec', 'rec_yd', 'rec_td', 'rec_2pt', 'fum_lost',
-  'xpm', 'fgm', 'fgm_0_19', 'fgm_20_29', 'fgm_30_39', 'fgm_40_49', 'fgm_50_59', 'fgm_50p', 'fgm_60p',
-  'sack', 'int', 'fum_rec', 'safe', 'blk_kick', 'def_td', 'def_st_td', 'pts_allow', 'def_kr_yd', 'def_pr_yd',
-];
 
 const db = admin();
 const contest = (await db.doc(`contests/${CONTEST}`).get()).data();
@@ -54,22 +47,8 @@ const resting = new Set<string>(teams?.byes ?? []);
 const url = `https://api.sleeper.app/v1/stats/nfl/${config.seasonType}/${season}/${week}`;
 const stats = (await (await fetch(url, { signal: AbortSignal.timeout(30_000) })).json()) as Record<string, StatLine>;
 
-const players: Record<string, { raw: number; stats: Record<string, number> }> = {};
-let played = 0;
-let suppressed = 0;
-
-for (const player of pool) {
-  // Out of the bracket, or resting this round: no line, exactly as a real postseason would give us.
-  if (!alive.has(player.team) || resting.has(player.team)) { suppressed += 1; continue; }
-
-  const line = stats[player.id];
-  if (!line) continue;
-
-  const shown: Record<string, number> = {};
-  for (const field of SHOWN) if (line[field]) shown[field] = line[field]!;
-  players[player.id] = { raw: rawPoints(player.position, line, EASTSIDE), stats: shown };
-  played += 1;
-}
+// The same scoring the score-and-advance function on Firebase uses, from src/domain/scoreround.ts.
+const { players, played, suppressed } = scoreRound(pool, stats, alive, resting, EASTSIDE);
 
 console.log(`${config.name} — ${config.seasonType} ${season} week ${week}${dryRun ? '  (dry run)' : ''}`);
 console.log(`scored: ${played}   suppressed (out or resting): ${suppressed}`);

@@ -183,7 +183,7 @@ export function Bracket() {
         setScores(await Promise.all(found.rounds.map((round) => {
           const lock = found.locks[String(round.round)];
           return lock && lock <= now
-            ? clubGames(found.season, round.week).catch(() => null)
+            ? clubGames(found.season, round.week, round.seasonType).catch(() => null)
             : Promise.resolve(null);
         })));
       } catch (cause) {
