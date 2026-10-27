@@ -2128,3 +2128,30 @@ td { font-variant-numeric: tabular-nums; }
 .gamebar-pick { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 650; }
 .gamebar-pick select, .gamebar-pick strong { font-size: 17px; font-weight: 800; min-height: 40px; }
 .gamebar-status { font-size: 13px; color: var(--dim); }
+
+/* The Rules page (Rules.tsx): one card per section, bulleted, with plain tables. */
+.rulesection h2 { margin-top: 0; }
+.rulesection h3 { margin: 18px 0 6px; font-size: 15px; }
+.rulesection ul, .rulesection ol { margin: 6px 0 10px; padding-left: 22px; }
+.rulesection li { margin: 4px 0; line-height: 1.5; }
+.rulenote { font-size: 13px; color: var(--dim); }
+.rtablewrap { overflow-x: auto; margin: 8px 0 12px; }
+.rtable { width: 100%; border-collapse: collapse; font-size: 14px; }
+.rtable th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--faint); padding: 6px 8px; border-bottom: 1px solid var(--line-strong); }
+.rtable td { padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.rtable .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ruleslider { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; margin: 4px 0 10px; }
+.ruleslider > span:first-child { grid-column: 1 / -1; font-size: 13px; color: var(--dim); }
+.ruleslider input { width: 100%; }
+.ruleslidervalue { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 72px; text-align: right; }
+/* The site-wide table rule keeps cells on one line, which is right for a scoreboard and wrong for
+   a rules page read on a phone: "Flex: running back, wide receiver, or tight end" pushed even the
+   two-column tables sideways. Text wraps here; only the money and numbers stay on one line. */
+.rtable th, .rtable td { white-space: normal; text-align: left; }
+.rtable th.num, .rtable td.num { white-space: nowrap; text-align: right; }
+@media (max-width: 480px) {
+  .rtable { font-size: 12.5px; }
+  .rtable th { font-size: 9.5px; letter-spacing: 0.03em; padding: 5px 4px; }
+  .rtable td { padding: 6px 4px; }
+}
+.rtable th.num { white-space: normal; }

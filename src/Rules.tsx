@@ -1,408 +1,282 @@
 import { useEffect, useState } from 'react';
-import { readContest, readPaidCount } from './store/firestore.ts';
-import { breakdown, sharesText, tierFrom } from './domain/payouts.ts';
-import type { Plan } from './domain/payouts.ts';
+import type { ReactNode } from 'react';
+import { readContest, readPaidCount, readPayoutTemplate } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
+import { DEFAULT_PLAN, breakdown, split, tierFrom } from './domain/payouts.ts';
+import type { Plan, Tier } from './domain/payouts.ts';
 import { EASTSIDE } from './domain/rules.ts';
-import { placesFor, pot } from './domain/pool.ts';
-import type { Scoring } from './domain/rules.ts';
+import type { Scoring, Slot } from './domain/rules.ts';
 import { useGame } from './game.tsx';
 
 /**
- * What the game is, and what everything is worth.
+ * The rules, laid out the way Ray wrote them.
  *
- * The scoring table is generated from the contest's own settings rather than typed out, so it can
- * never quietly disagree with the engine that pays people — change a value and this page changes
- * with it. A rules page that has drifted from the rules is worse than no rules page.
+ * Ray: "to make sure the rules are easy to read and understand ... lets make sure there are bullet
+ * points", and then "rewrite the rules page to match". The order, the headings and the wording are
+ * his document's. What is not typed is anything that could drift from what actually happens: the
+ * roster is read from the game's slots, every dollar from the game's payout plan through the same
+ * breakdown() that pays it, and the scoring tables from the game's scoring settings. Change any of
+ * those and this page changes with it — a rules page that disagrees with the rules is worse than
+ * none.
+ *
+ * A game whose money has not been set yet shows the owner's starting table (or the suggested one),
+ * marked as a draft, so people deciding whether to play can see what it will look like.
  */
 
-
-/**
- * Whether the game this page reads is the autumn rehearsal rather than a real January one.
- *
- * While it is, the schedule shows January's expected dates instead of the rehearsal's regular-season
- * weeks, because the rehearsal is over and the page is now read by people deciding whether to play.
- * A January game's schedule is read from the game itself.
- */
 const isRehearsal = (game: string) => game.startsWith('rehearsal');
 
 /** The 2026 season's playoffs, as scheduled: week 18 is January 9–10, Super Bowl LXI is February 14. */
 const UPCOMING = [
   { name: 'Wild Card', when: 'Saturday, January 16 – Monday, January 18' },
   { name: 'Divisional', when: 'Saturday, January 23 – Sunday, January 24' },
-  { name: 'Conference', when: 'Sunday, January 31' },
+  { name: 'Conference Championships', when: 'Sunday, January 31' },
   { name: 'Super Bowl', when: 'Sunday, February 14' },
 ];
 
-const signed = (value: number) => (value > 0 ? `+${value}` : String(value));
-
-/** The Monday after a round's games, which is when it gets decided. */
-function mondayAfter(lock: Date): Date {
-  const monday = new Date(lock);
-  monday.setDate(monday.getDate() + ((8 - monday.getDay()) % 7 || 7));
-  monday.setHours(20, 0, 0, 0);
-  return monday;
-}
-
+const dollars = (amount: number) => `$${Math.round(amount).toLocaleString()}`;
+const ordinalWord = (place: number) =>
+  ['First', 'Second', 'Third', 'Fourth', 'Fifth'][place - 1] ?? `${place}th`;
 const dayAndTime = (when: Date) =>
   when.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+const per = (yards: number) => `1 per ${yards} yards`;
+const signed = (value: number) => String(value);
 
-const day = (when: Date) => when.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-const per = (yards: number) => `1 per ${yards} yds`;
+/** "1–9", "50 or more": a band's range, as a person would say it. */
+const range = (tiers: readonly Tier[], tier: Tier, index: number) => {
+  const sorted = [...tiers].sort((a, b) => a.upTo - b.upTo);
+  return index === sorted.length - 1 ? `${tierFrom(sorted, tier)} or more` : `${tierFrom(sorted, tier)}–${tier.upTo}`;
+};
 
-/**
- * The bands of the places ladder, worked out by asking placesFor about every plausible field.
- *
- * Derived rather than typed so the table can never quietly disagree with what the pot actually
- * pays — the same reason the scoring tables below are generated from the contest.
- */
-function placeBands(): { label: string; places: number }[] {
-  const bands: { from: number; to: number; places: number }[] = [];
-  for (let managers = 2; managers <= 24; managers += 1) {
-    const places = placesFor(managers);
-    const last = bands[bands.length - 1];
-    if (last && last.places === places) last.to = managers;
-    else bands.push({ from: managers, to: managers, places });
-  }
-  return bands.map((band, index) => ({
-    label: index === 0 ? `Up to ${band.to} teams`
-      : index === bands.length - 1 ? `${band.from} or more`
-      : `${band.from} to ${band.to}`,
-    places: band.places,
-  }));
-}
+/** What each weekly spot in a band is worth, in whole dollars, the way breakdown() splits it. */
+const weeklySpots = (tier: Tier) => split(tier.amount ?? 0, tier.shares);
 
-function Table({ title, rows }: { title: string; rows: [string, string][] }) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="card">
-      <div className="confhead">
-        {title}
-        <span className="colhead">Points</span>
-      </div>
-      {rows.map(([label, value]) => (
-        <div className="ruleline" key={label}>
-          <span>{label}</span>
-          <span className="rulevalue">{value}</span>
-        </div>
-      ))}
+    <div className="card prose rulesection">
+      <h2>{title}</h2>
+      {children}
     </div>
   );
+}
+
+function Grid({ head, rows, right = [] }: { head: string[]; rows: ReactNode[][]; right?: number[] }) {
+  return (
+    <div className="rtablewrap">
+      <table className="rtable">
+        <thead><tr>{head.map((cell, index) => <th key={index} className={right.includes(index) ? 'num' : undefined}>{cell}</th>)}</tr></thead>
+        <tbody>
+          {rows.map((row, at) => (
+            <tr key={at}>{row.map((cell, index) => <td key={index} className={right.includes(index) ? 'num' : undefined}>{cell}</td>)}</tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** The roster table, counted from the game's own slots. */
+function rosterRows(slots: readonly Slot[]): [string, number][] {
+  const label = (slot: Slot) => {
+    if (slot.eligible.length > 1) return 'Flex: running back, wide receiver, or tight end';
+    return ({ QB: 'Quarterback', RB: 'Running back', WR: 'Wide receiver', TE: 'Tight end', K: 'Kicker', DEF: 'Team defense/special teams' } as Record<string, string>)[slot.eligible[0] ?? ''] ?? slot.id;
+  };
+  const counts = new Map<string, number>();
+  for (const slot of slots) counts.set(label(slot), (counts.get(label(slot)) ?? 0) + 1);
+  return [...counts.entries()];
 }
 
 export function Rules() {
   const CONTEST = useGame();
   const [contest, setContest] = useState<Contest | null>(null);
   const [paid, setPaid] = useState<number | null>(null);
+  const [template, setTemplate] = useState<Plan | null>(null);
 
   useEffect(() => {
     void (async () => {
-      try {
-        setContest(await readContest(CONTEST));
-        setPaid(await readPaidCount(CONTEST));
-      } catch {
-        /* fall back to the defaults below, which are what a new contest is created with anyway */
-      }
+      const [found, count, starting] = await Promise.all([
+        readContest(CONTEST).catch(() => null),
+        readPaidCount(CONTEST).catch(() => null),
+        readPayoutTemplate().catch(() => null),
+      ]);
+      setContest(found);
+      setPaid(count);
+      setTemplate(starting);
     })();
-  }, []);
+  }, [CONTEST]);
 
-  const scoring: Scoring = contest?.settings?.scoring ?? EASTSIDE.scoring;
-
-  // A worked example, run through the same function that works out the real pot, so the numbers
-  // here can never disagree with what the app would actually pay.
-  const example = pot(10, { buyIn: 50, places: null, shares: null, weekly: 10 }, 4);
-  const rounds = contest?.rounds ?? [];
+  const settings = contest?.settings ?? EASTSIDE;
+  const scoring: Scoring = settings.scoring ?? EASTSIDE.scoring;
+  const slots = settings.slots ?? EASTSIDE.slots;
+  const rows = rosterRows(slots);
+  const plan = contest?.prizes?.plan ?? template ?? DEFAULT_PLAN;
+  const draft = !contest?.prizes?.lockedAt;
+  const rounds = (contest?.rounds?.length ?? 0) || 4;
+  const schedule = contest && !isRehearsal(CONTEST) && contest.rounds.length > 0
+    ? contest.rounds.map((round) => ({
+      name: round.name,
+      when: contest.locks?.[String(round.round)] ? `Locks ${dayAndTime(contest.locks[String(round.round)]!)}` : 'Dates to come',
+    }))
+    : UPCOMING;
 
   return (
     <>
-      <div className="card prose lead">
-        <h2>The Eastside Playoff Challenge</h2>
-        <p>
-          Pick nine players from the NFL playoff field. Keep the ones whose clubs survive, and every
-          round you hold a player he counts for more. <strong>Most points after the Super Bowl wins.</strong>
-        </p>
-        <p>
-          It runs on the real playoffs: fourteen clubs, seven from each conference, from Wild Card
-          weekend in January to the Super Bowl in February. Every round is a real game, and the
-          winner goes through.
-        </p>
-        <p>
-          The top seed in each conference rests on Wild Card weekend. Their players score{' '}
-          <strong>nothing</strong> in that round — but the round still counts towards holding them.
-          Keep one and he is <strong>2x</strong> in the Divisional, <strong>3x</strong> in the
-          Conference and <strong>4x</strong> in the Super Bowl, exactly like anybody you picked for
-          Wild Card weekend.
-        </p>
-        <p>
-          So you give up a round of scoring to back a club you think goes all the way. That is the
-          whole gamble, and it is the only decision in the Wild Card round that is really about
-          anything.
-        </p>
-        <p>
-          Each round is decided once its games are over. Losing clubs are out, and{' '}
-          <strong>their players come off your roster for you</strong> — you will find those slots
-          empty, waiting to be filled from the clubs still in.
-        </p>
-        <p>
-          This fall we played a full rehearsal over four weeks of the regular season to shake out
-          the bugs. Thank you to everyone who played it and said when something looked off; how it
-          finished is on the Home page.
-        </p>
-      </div>
+      <Section title="How to Play">
+        <ul>
+          <li>Pick a fantasy team from the NFL playoff player pool.</li>
+          <li>Earn points through four rounds: <strong>Wild Card, Divisional, Conference Championships, and Super Bowl</strong>.</li>
+          <li>Keep players on your roster to increase their scoring multipliers.</li>
+          <li><strong>The team with the most total points after the Super Bowl wins.</strong></li>
+        </ul>
+      </Section>
 
-      {isRehearsal(CONTEST) ? (
-        <div className="card">
-          <div className="confhead">January's schedule</div>
-          {UPCOMING.map((round) => (
-            <div className="schedule" key={round.name}>
-              <span className="schedround"><strong>{round.name}</strong></span>
-              <span className="schedwhen"><span>{round.when}</span></span>
-            </div>
-          ))}
-          <div className="pending">
-            Expected dates for the 2026 season's playoffs. Picks lock at each round's first kickoff,
-            and the exact times go up as soon as the NFL sets them. Pick any time before the lock and
-            change your mind as often as you like until then.
-          </div>
-        </div>
-      ) : (
-      <div className="card">
-        <div className="confhead">The schedule</div>
-        {rounds.map((round) => {
-          const lock = contest?.locks?.[String(round.round)];
-          return (
-            <div className="schedule" key={round.round}>
-              <span className="schedround">
-                <strong>{round.name}</strong>
-                <span className="rowmeta">NFL week {round.week}</span>
-              </span>
-              <span className="schedwhen">
-                {lock ? (
-                  <>
-                    <span>Picks lock <strong>{dayAndTime(lock)}</strong></span>
-                    <span className="rowmeta">Decided {day(mondayAfter(lock))}</span>
-                  </>
-                ) : (
-                  <span className="rowmeta">dates to come</span>
-                )}
-              </span>
-            </div>
-          );
-        })}
-        <div className="pending">
-          Pick any time before the lock; change your mind as often as you like until then. After it,
-          the round plays out and I decide it once every club has finished.
-        </div>
-      </div>
-      )}
+      <Section title="Signing Up">
+        <ul>
+          <li>Registration opens in <strong>December</strong>.</li>
+          <li>A <strong>phone number is required</strong> to register. Only the commissioner sees it.</li>
+          <li>Low Stakes and High Stakes are entered as <strong>separate teams</strong>. If you participate in both, manage each team separately.</li>
+        </ul>
+      </Section>
 
-      <div className="card prose">
-        <h2>How the game works</h2>
-        <p>
-          Nine players: a quarterback, two running backs, two receivers, a tight end, a flex
-          (running back, receiver or tight end), a kicker and a defense. All nine score. There is no
-          bench.
-        </p>
-        <p>
-          <strong>Hold a player and he is worth more every round.</strong> Say the same man scores
-          twenty points every week:
-        </p>
-      </div>
+      <Section title="Your Roster">
+        <ul>
+          <li><strong>There is no draft.</strong> Everyone chooses from the same player pool.</li>
+          <li>Any number of participants may select the same player.</li>
+          <li>Choose players from NFL teams still in the playoffs.</li>
+          <li>Fill all {slots.length} starting spots:</li>
+        </ul>
+        <Grid
+          head={['Position', 'Number']}
+          right={[1]}
+          rows={[...rows.map(([label, count]) => [label, count]), [<strong key="t">Total</strong>, <strong key="n">{slots.length}</strong>]]}
+        />
+        <ul>
+          <li>All {slots.length} spots count toward your score.</li>
+          <li>There is no bench.</li>
+        </ul>
+      </Section>
 
-      <div className="card">
-        <div className="confhead">The same twenty points, four weeks running</div>
-        {['Wild Card', 'Divisional', 'Conference', 'Super Bowl'].map((name, index) => (
-          <div className="ruleline" key={name}>
-            <span>{name}</span>
-            <span className="rulevalue">
-              20 × <span className={`mult mult-${index + 1}`}>{index + 1}x</span> = {20 * (index + 1)}
-            </span>
-          </div>
-        ))}
-        <div className="ruleline total">
-          <span>Held all four rounds</span>
-          <span className="rulevalue">200 points</span>
-        </div>
-      </div>
+      <Section title="Keeping Players and Building Multipliers">
+        <ul>
+          <li>A newly added player starts at <strong>1×</strong>.</li>
+          <li>Each consecutive round you keep that player increases their multiplier, up to <strong>{rounds}×</strong>.</li>
+          <li>The multiplier depends on how long you have kept the player, not which playoff round it is.</li>
+        </ul>
+        <Grid
+          head={['Consecutive rounds on your roster', 'Multiplier', 'If the player scores 20 fantasy points']}
+          right={[1, 2]}
+          rows={Array.from({ length: rounds }, (_, index) => [ordinalWord(index + 1), `${index + 1}×`, `${20 * (index + 1)} points`])}
+        />
+        <ul>
+          <li>Keeping that player for all {rounds} rounds in this example earns <strong>{Array.from({ length: rounds }, (_, index) => 20 * (index + 1)).reduce((a, b) => a + b, 0)} total points</strong>.</li>
+          <li>Every replacement starts at <strong>1×</strong>, even when added in a later playoff round.</li>
+          <li>If you drop a player and add them back in a later round, their multiplier starts over at <strong>1×</strong>.</li>
+        </ul>
+      </Section>
 
-      <div className="card prose">
-        <p>
-          The same player, the same performance every week — worth two hundred if you keep him, or
-          eighty if you sign somebody new each round. That is the game.
-        </p>
-        <p>
-          <strong>You can drop anyone, any time.</strong> But whoever replaces him starts back at
-          1x, and so does he if you sign him again later. Knocked-out players leave on their own, so
-          the only man you will ever choose to drop is one who is hurt — and even then, think twice
-          about what his multiplier is worth.
-        </p>
-        <p>
-          <strong>Doing nothing is a perfectly good way to play a round.</strong> Everyone still in
-          carries over and climbs.
-        </p>
-        <p>
-          Rosters lock at the first kickoff of the week. Nobody sees anybody else's team until then —{' '}
-          <strong>the commissioner included</strong>.
-        </p>
-        <p>
-          Now and then somebody needs help with their team, and the commissioner has to open it to fix
-          it. When that happens it is out in the open: he has to give a reason, it is posted on the
-          Board for everybody, and the owner of the team sees it on their Home screen. That record
-          can&apos;t be edited or deleted, by him or anybody else.
-        </p>
-      </div>
+      <Section title="When an NFL Team Loses">
+        <ul>
+          <li>Once the round is finalized, players from eliminated NFL teams are <strong>automatically removed from your roster</strong>.</li>
+          <li>Those roster spots stay <strong>empty until you fill them</strong>.</li>
+          <li>Fill empty spots before the next round locks, using players from teams still in the playoffs.</li>
+          <li>An empty spot earns no points.</li>
+        </ul>
+      </Section>
 
-      {contest?.prizes?.plan
-        ? <PlanMoney plan={contest.prizes.plan} lockedAt={contest.prizes.lockedAt} rounds={contest.rounds.length || 4} paid={paid} />
-        : (
-      <>
-      <div className="card prose">
-        <h2>The money</h2>
-        <p>
-          The buy-in, the weekly prize and how many places pay are set before Wild Card weekend, and
-          the pot is on the Standings page from then on. <strong>Nothing is kept back</strong>: every
-          dollar paid in is paid out.
-        </p>
-        <p>
-          <strong>The more of us who play, the more places pay.</strong> Paying only the top three
-          out of twenty would leave most of the room with nothing to play for by the third round,
-          so the ladder widens as the field fills. Something like this:
-        </p>
-      </div>
+      <Section title="Doing Nothing Is Allowed">
+        <ul>
+          <li>Players whose NFL teams advance automatically carry over to the next round.</li>
+          <li>Their multipliers keep increasing.</li>
+          <li><strong>You do not need to resubmit an unchanged team.</strong></li>
+          <li>Check your roster each round for empty spots left by eliminated players.</li>
+        </ul>
+      </Section>
 
-      <div className="card">
-        <div className="confhead">
-          How many places pay
-          <span className="colhead">Places</span>
-        </div>
-        {placeBands().map((band) => (
-          <div className="ruleline" key={band.label}>
-            <span>{band.label}</span>
-            <span className="rulevalue">{band.places}</span>
-          </div>
-        ))}
-        <div className="pending">
-          An example, and adjustable. This is what the app falls back to if nobody says otherwise —
-          the places, the buy-in and the weekly prize can all be set before we start.
-        </div>
-      </div>
+      <Section title="Players With a Wild Card Bye">
+        <ul>
+          <li>You may select players whose NFL teams have a first-round bye.</li>
+          <li>Those players earn <strong>zero points during Wild Card weekend</strong>.</li>
+          <li>The bye still counts as a round on your roster.</li>
+          <li>If you keep them continuously, they receive:</li>
+        </ul>
+        <Grid
+          head={['Round', 'Result']}
+          rows={[
+            ['Wild Card', 'Zero points; bye counts toward retention'],
+            ['Divisional', '2× multiplier'],
+            ['Conference Championships', '3× multiplier'],
+            ['Super Bowl', '4× multiplier'],
+          ]}
+        />
+      </Section>
 
-      <div className="card prose">
-        <p>
-          <strong>So say ten of us play, at $50 each, with $10 a week going to the best raw
-          score:</strong>
-        </p>
-      </div>
-
-      <div className="card">
-        <div className="confhead">Ten teams at $50</div>
-        <div className="ruleline">
-          <span>The pot · 10 × $50</span>
-          <span className="rulevalue">${example.total}</span>
-        </div>
-        <div className="ruleline">
-          <span>Best week · $10 × 4 rounds</span>
-          <span className="rulevalue">−${example.weekly}</span>
-        </div>
-        <div className="ruleline total">
-          <span>Left for the places</span>
-          <span className="rulevalue">${example.places}</span>
-        </div>
-        {example.payouts.map((payout) => (
-          <div className="ruleline" key={payout.place}>
-            <span>
-              {['Winner', '2nd', '3rd', '4th', '5th'][payout.place - 1]}
-              <span className="dot"> · </span>
-              {payout.share}% of ${example.places}
-            </span>
-            <span className="rulevalue">${payout.amount}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="card prose">
-        <p>
-          So the winner takes <strong>${example.payouts[0]?.amount}</strong>, second{' '}
-          <strong>${example.payouts[1]?.amount}</strong>, third{' '}
-          <strong>${example.payouts[2]?.amount}</strong>, and ${example.weekly} goes out across the four
-          weeks in $10 lots. It adds up to the ${example.total} that went in — nothing is kept back.
-        </p>
-        <p>
-          The weekly prize is <strong>raw points, multipliers ignored</strong>, so it stays winnable
-          by somebody whose contest is already over. <strong>A tied week is split</strong> evenly
-          between everybody tied for the best score.
-        </p>
-        <p>
-          <strong>Tied at the end?</strong> Two teams on the same total are separated by, in order:
-          the higher score in the <strong>Super Bowl round</strong>; then the higher score in the{' '}
-          <strong>Conference round</strong>; then the most <strong>raw points</strong> across all four
-          rounds, multipliers ignored. Still level after all three, they share the place and{' '}
-          <strong>split the money</strong> for the places they cover — tied for first, they split
-          first and second between them.
-        </p>
-      </div>
-
-      </>
+      <Section title="Lineup Changes, Deadlines, and Privacy">
+        <ul>
+          <li>You may change your lineup before each round&apos;s deadline.</li>
+          <li><strong>Your entire lineup locks at that round&apos;s first kickoff.</strong></li>
+          <li>Check the posted schedule for exact deadlines.</li>
+          <li>You may replace a player whose team is still alive, but the replacement starts at <strong>1×</strong>.</li>
+          <li>Picks are hidden from everyone else until the round locks, <strong>including the commissioner</strong>.</li>
+        </ul>
+        <Grid head={['Round', 'When']} rows={schedule.map((round) => [round.name, round.when])} />
+        {schedule === UPCOMING && (
+          <p className="rulenote">Expected dates. Exact deadlines are posted as soon as the NFL sets the kickoff times.</p>
         )}
+      </Section>
 
-      <div className="card prose">
-        <h2>Scoring</h2>
-        <p>
-          Eastside rules, the same as the regular season. Every figure below is read from the
-          contest itself rather than typed here, so this page cannot drift from what actually pays.
-        </p>
-        {scoring.wholePoints ? (
-          <p>
-            <strong>Yards pay whole points.</strong> 78 receiving yards is 7, and so is 79 — the
-            eighth arrives at 80. Nothing is ever rounded; the fraction simply never happens.
-          </p>
-        ) : (
-          <p>
-            <strong>Yards pay in tenths.</strong> 78 receiving yards is 7.8, not 7 — for a
-            receiver, a running back and a tight end alike. Passing is a point every 25 yards, so
-            a quarterback moves in units of 0.04, which is why figures here carry two decimals.
-          </p>
-        )}
-      </div>
+      <Section title="Commissioner Assistance">
+        <p>If the commissioner opens your team to help resolve a problem:</p>
+        <ul>
+          <li>A reason must be provided.</li>
+          <li>The access is recorded on the Board.</li>
+          <li>A notice appears on your Home screen.</li>
+          <li>The access record cannot be edited or deleted.</li>
+        </ul>
+      </Section>
 
-      <Table
-        title="Passing"
-        rows={[
-          ['Yards', per(scoring.passingYardsPerPoint)],
-          ['Touchdown', signed(scoring.passingTouchdown)],
-          ['Interception', signed(scoring.interception)],
-          ['Two point conversion', signed(scoring.twoPointConversion)],
-        ]}
-      />
+      {/* "Right now" only for a real game with payouts of its own. On the rehearsal, or a game
+          still showing the starting table, it would put a real head count beside sample money. */}
+      <RulesMoney plan={plan} draft={draft} rounds={rounds} paid={contest?.prizes?.plan && !isRehearsal(CONTEST) ? paid : null} />
 
-      <Table
-        title="Rushing and receiving"
-        rows={[
+      <Section title="Fantasy Scoring">
+        <ul>
+          <li>The contest uses <strong>Eastside league scoring</strong>.</li>
+          <li>Player and team statistics come from <strong>Sleeper</strong>.</li>
+          <li>Multipliers apply to these fantasy points for overall standings.</li>
+          <li>Best-week standings use these points <strong>without multipliers</strong>.</li>
+        </ul>
+
+        <h3>Passing</h3>
+        <Grid head={['Stat', 'Points']} right={[1]} rows={[
+          ['Passing yards', per(scoring.passingYardsPerPoint)],
+          ['Passing touchdown', signed(scoring.passingTouchdown)],
+          ['Interception thrown', signed(scoring.interception)],
+          ['Two-point conversion', signed(scoring.twoPointConversion)],
+        ]} />
+
+        <h3>Rushing and Receiving</h3>
+        <Grid head={['Stat', 'Points']} right={[1]} rows={[
           ['Reception', signed(scoring.reception)],
           ['Rushing yards', per(scoring.rushingYardsPerPoint)],
           ['Receiving yards', per(scoring.receivingYardsPerPoint)],
           ['Rushing touchdown', signed(scoring.rushingTouchdown)],
           ['Receiving touchdown', signed(scoring.receivingTouchdown)],
-          ['Kick or punt return touchdown', signed(scoring.returnTouchdown)],
+          ['Kickoff or punt return touchdown', signed(scoring.returnTouchdown)],
           ['Fumble lost', signed(scoring.fumbleLost)],
-          ['Two point conversion', signed(scoring.twoPointConversion)],
-        ]}
-      />
+          ['Two-point conversion', signed(scoring.twoPointConversion)],
+        ]} />
 
-      <Table
-        title="Kicking"
-        rows={[
+        <h3>Kicking</h3>
+        <Grid head={['Stat', 'Points']} right={[1]} rows={[
           ['Extra point', signed(scoring.extraPoint)],
-          ['Field goal under 40', signed(scoring.fieldGoalUnder40)],
-          ['Field goal 40 to 49', signed(scoring.fieldGoal40To49)],
-          ['Field goal 50 to 59', signed(scoring.fieldGoal50To59)],
-          ['Field goal 60 or more', signed(scoring.fieldGoal60Plus)],
-          [`Bonus for ${scoring.fieldGoalBonus.atLeast} in a game`, signed(scoring.fieldGoalBonus.points)],
-        ]}
-      />
+          ['Field goal under 40 yards', signed(scoring.fieldGoalUnder40)],
+          ['Field goal from 40–49 yards', signed(scoring.fieldGoal40To49)],
+          ['Field goal from 50–59 yards', signed(scoring.fieldGoal50To59)],
+          ['Field goal of 60 yards or more', signed(scoring.fieldGoal60Plus)],
+          [`${scoring.fieldGoalBonus.atLeast === 5 ? 'Five' : scoring.fieldGoalBonus.atLeast} or more field goals made in one game`, `${scoring.fieldGoalBonus.points} bonus points`],
+        ]} />
 
-      <Table
-        title="Defense and special teams"
-        rows={[
+        <h3>Defense and Special Teams</h3>
+        <Grid head={['Stat', 'Points']} right={[1]} rows={[
           ['Sack', signed(scoring.sack)],
           ['Interception', signed(scoring.defensiveInterception)],
           ['Fumble recovery', signed(scoring.fumbleRecovery)],
@@ -410,120 +284,181 @@ export function Rules() {
           ['Blocked kick', signed(scoring.blockedKick)],
           ['Touchdown', signed(scoring.defensiveTouchdown)],
           ['Return yards', per(scoring.returnYardsPerPoint)],
-          ...scoring.pointsAllowed.map((tier): [string, string] => [
-            tier.upTo === 0 ? 'Shutout' : `Concede ${tier.upTo} or fewer`,
+          ...scoring.pointsAllowed.map((tier, index, all): [string, string] => [
+            tier.upTo === 0 ? 'Shutout' : `Allowing ${(all[index - 1]?.upTo ?? -1) + 1}–${tier.upTo} points`,
             signed(tier.points),
           ]),
-        ]}
-      />
+          [`Allowing more than ${scoring.pointsAllowed[scoring.pointsAllowed.length - 1]?.upTo ?? 0} points`, '0 for points allowed'],
+        ]} />
+        <ul>
+          <li>Only one points-allowed award applies per game.</li>
+          <li>Other defensive and special teams points are added separately.</li>
+        </ul>
 
+        <h3>Fractional Points</h3>
+        {scoring.wholePoints ? (
+          <ul>
+            <li>Yardage earns whole points only: 78 receiving yards earns 7, and the eighth point arrives at 80.</li>
+          </ul>
+        ) : (
+          <ul>
+            <li>Yardage earns fractional points.</li>
+            <li><strong>78 rushing or receiving yards earns {(78 / scoring.receivingYardsPerPoint).toFixed(1)} points.</strong></li>
+            <li>Passing yardage earns <strong>{(1 / scoring.passingYardsPerPoint).toFixed(2)} points per yard</strong>.</li>
+            <li>Scores are displayed to two decimal places.</li>
+          </ul>
+        )}
+      </Section>
     </>
   );
 }
 
-const ordinal = (place: number) => (place === 1 ? 'Winner' : place === 2 ? '2nd' : place === 3 ? '3rd' : `${place}th`);
-const dollars = (amount: number) => `$${Math.round(amount).toLocaleString()}`;
-const LADDER = [5, 10, 15, 20, 30, 50, 75, 100];
-
 /**
- * The money, as the commissioner set it in the calculator.
- *
- * Ray: "Once I lock it in, I want the rules to auto update so people know." Read from the contest
- * and worked out by the same breakdown() that pays it, so the page cannot drift from the payout.
- * Until he locks it in it says it is a draft.
+ * The money sections, from the game's payout plan: entry fees, best-week prizes, overall prizes, a
+ * worked example, and how ties are paid. Every figure is breakdown() or split(), the same arithmetic
+ * that pays it, so the page cannot promise a dollar the game would not pay.
  */
-export function PlanMoney({ plan, lockedAt, rounds, paid }: { plan: Plan; lockedAt?: Date; rounds: number; paid: number | null }) {
-  const sorted = [...plan.tiers].sort((a, b) => a.upTo - b.upTo);
+export function RulesMoney({ plan, draft, rounds, paid }: { plan: Plan; draft: boolean; rounds: number; paid: number | null }) {
   const weekly = [...plan.weeklyTiers].sort((a, b) => a.upTo - b.upTo);
+  const places = [...plan.tiers].sort((a, b) => a.upTo - b.upTo);
+  const spotsWide = Math.max(1, ...weekly.map((tier) => tier.shares.length));
+  // Ray: "in the rules, have a slider bar so that people can see the sample payouts". It opens on ten
+  // paid entries, as his written example does, and anybody can drag it to any size of field.
+  const [exampleField, setExampleField] = useState(10);
+  const example = breakdown(exampleField, plan, rounds);
   const now = paid && paid > 0 ? breakdown(paid, plan, rounds) : null;
+  // The tie example: the first band that pays two weekly spots, and two tied for the top of it.
+  const twoSpot = weekly.find((tier) => tier.shares.length >= 2);
+  const twoSpotIndex = twoSpot ? weekly.indexOf(twoSpot) : -1;
+  const twoSpotPaid = twoSpot ? weeklySpots(twoSpot) : [];
+
   return (
     <>
-      <div className="card prose">
-        <h2>The money</h2>
-        {!lockedAt && <p><strong>Draft.</strong> These are the payouts as they stand, and they may still change before Wild Card weekend.</p>}
-        <p>
-          The buy-in is <strong>{dollars(plan.buyIn)}</strong>. <strong>Nothing is kept back</strong>: every
-          dollar paid in is paid out. The more of us who play, the bigger the pot and the more places pay.
-          Only paid entries count towards the size of the field.
-        </p>
-        <p>
-          <strong>The best week</strong> is paid every round, to the best raw score with multipliers
-          ignored, so a week stays winnable by anybody — even somebody whose contest is over. What it is
-          worth grows with the field (below), and it comes off the top: the rest of the pot is paid to the
-          final standings. <strong>A tied week is split</strong> between everybody level on
-          it, sharing whatever the weekly spots they cover are worth.
-        </p>
-        <p>
-          <strong>Tied at the end?</strong> Two teams on the same total are separated by, in order:
-          the higher score in the <strong>Super Bowl round</strong>; then the higher score in the{' '}
-          <strong>Conference round</strong>; then the most <strong>raw points</strong> across all four
-          rounds, multipliers ignored. Still level after all three, they share the place and{' '}
-          <strong>split the money</strong> for the places they cover — tied for first, they split
-          first and second between them.
-        </p>
-      </div>
+      <Section title="Entry Fees and Prize Pool">
+        {draft && <p className="rulenote"><strong>Draft.</strong> These amounts may still change before the Wild Card lock.</p>}
+        <ul>
+          <li><strong>Entry fee: {dollars(plan.buyIn)} per team.</strong></li>
+          <li>Only paid entries count toward the payout schedule.</li>
+          <li>All entry fees are paid out as prizes. Nothing is withheld.</li>
+          <li>As the number of paid entries increases, more overall places receive prizes.</li>
+          <li>Weekly prize money is set aside for all {rounds} rounds first.</li>
+          <li>The remaining money funds the overall prizes.</li>
+          <li><strong>The entry fee and payout structure become final at the Wild Card lineup lock.</strong></li>
+          <li>Final dollar amounts are posted on the Standings and Rules pages.</li>
+          <li>Overall payouts are allocated in whole dollars, with rounding adjustments so the full prize pool is paid out.</li>
+        </ul>
+        {now && (
+          <Grid
+            head={[`Right now · ${paid} paid`, 'Amount']}
+            right={[1]}
+            rows={[
+              ['Entry fees collected', dollars(now.pot)],
+              [`Best-week prizes, ${rounds} rounds`, `−${dollars(now.weeklyTotal)}`],
+              ...now.places.map((amount, index) => [`${ordinalWord(index + 1)} overall`, dollars(amount)]),
+            ]}
+          />
+        )}
+      </Section>
 
-      {now && (
-        <div className="card">
-          <div className="confhead">Right now · {paid} paid</div>
-          <div className="ruleline"><span>The pot</span><span className="rulevalue">{dollars(now.pot)}</span></div>
-          <div className="ruleline">
-            <span>Best week, each of {rounds} rounds</span>
-            <span className="rulevalue">{now.weeklySpots.map(dollars).join(' / ') || '—'}</span>
-          </div>
-          {now.places.map((amount, index) => (
-            <div className="ruleline" key={index}>
-              <span>{ordinal(index + 1)} · {now.shares[index]}%</span>
-              <span className="rulevalue">{dollars(amount)}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="card">
-        <div className="confhead">How many places pay<span className="colhead">Split</span></div>
-        {sorted.map((tier, index) => (
-          <div className="ruleline" key={tier.upTo}>
-            <span>{tierFrom(sorted, tier)}{index === sorted.length - 1 ? ' or more' : `–${tier.upTo}`} players · {tier.shares.length} paid</span>
-            <span className="rulevalue">{sharesText(tier.shares)}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="card">
-        <div className="confhead">The best week, every round<span className="colhead">Paid</span></div>
-        {weekly.map((tier, index) => (
-          <div className="ruleline" key={tier.upTo}>
-            <span>
-              {tierFrom(weekly, tier)}{index === weekly.length - 1 ? ' or more' : `–${tier.upTo}`} players
-              {' · '}{tier.shares.length === 1 ? 'one winner' : `top ${tier.shares.length}, split ${sharesText(tier.shares)}`}
-            </span>
-            <span className="rulevalue">
-              {tier.amount !== undefined ? `$${tier.amount} a round` : `${plan.weeklyPercent ?? 0}% of the pot`}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      <div className="card">
-        <div className="confhead">What that comes to</div>
-        <div className="ladder">
-          <div className="ladderrow ladderhead"><span>Paid</span><span>Pot</span><span>Places</span><span>Winner</span><span>2nd</span><span>3rd</span><span>Last paid</span><span>Weekly</span></div>
-          {LADDER.map((size) => {
-            const row = breakdown(size, plan, rounds);
-            return (
-              <div className="ladderrow" key={size}>
-                <span>{size}</span><span>{dollars(row.pot)}</span><span>{row.places.length}</span>
-                <span>{dollars(row.places[0] ?? 0)}</span>
-                <span>{row.places[1] !== undefined ? dollars(row.places[1]) : '—'}</span>
-                <span>{row.places[2] !== undefined ? dollars(row.places[2]) : '—'}</span>
-                <span>{dollars(row.places[row.places.length - 1] ?? 0)}</span>
-                <span>{row.weeklySpots.map(dollars).join(' / ') || '—'}</span>
-              </div>
-            );
+      <Section title="Best-Week Prizes">
+        <ul>
+          <li>Best-week prizes are awarded in <strong>each of the {rounds} playoff rounds</strong>.</li>
+          <li>Rankings use only that round&apos;s fantasy points, <strong>without multipliers</strong>.</li>
+          <li>You can win a best-week prize regardless of your overall standing.</li>
+          <li>All amounts below are <strong>per round</strong>.</li>
+        </ul>
+        <Grid
+          head={['Paid entries', ...Array.from({ length: spotsWide }, (_, index) => ['1st', '2nd', '3rd'][index] ?? `${index + 1}th`), 'Per round']}
+          right={Array.from({ length: spotsWide + 1 }, (_, index) => index + 1)}
+          rows={weekly.map((tier, index) => {
+            const spots = weeklySpots(tier);
+            return [
+              range(weekly, tier, index),
+              ...Array.from({ length: spotsWide }, (_, spot) => (spots[spot] !== undefined ? dollars(spots[spot]!) : '—')),
+              <strong key="total">{dollars(tier.amount ?? 0)}</strong>,
+            ];
           })}
-        </div>
-      </div>
+        />
+      </Section>
+
+      <Section title="Overall Prizes">
+        <ul>
+          <li>Overall standings use your combined score across all {rounds} rounds, <strong>including multipliers</strong>.</li>
+          <li>The percentages below apply to the money remaining <strong>after all {rounds} rounds of best-week prizes are set aside</strong>.</li>
+          <li>Prize splits are listed in order, starting with first place.</li>
+        </ul>
+        <Grid
+          head={['Paid entries', 'Overall places paid', 'Overall prize split']}
+          right={[1]}
+          rows={places.map((tier, index) => [range(places, tier, index), tier.shares.length, tier.shares.map((share) => `${share}%`).join(' / ')])}
+        />
+      </Section>
+
+      <Section title={`Example: ${exampleField} Paid Entries`}>
+        <label className="ruleslider">
+          <span>Slide to see what any number of paid entries pays</span>
+          <input
+            type="range" min={2} max={120} value={exampleField} aria-label="Paid entries"
+            onChange={(event) => setExampleField(Number(event.target.value))}
+          />
+          <span className="ruleslidervalue">{exampleField} paid</span>
+        </label>
+        <Grid
+          head={['Prize pool calculation', 'Amount']}
+          right={[1]}
+          rows={[
+            [`Entry fees collected: ${exampleField} × ${dollars(plan.buyIn)}`, dollars(example.pot)],
+            [`Best-week prizes: ${dollars(example.weeklySpots.reduce((a, b) => a + b, 0))} × ${rounds} rounds`, `−${dollars(example.weeklyTotal)}`],
+            [<strong key="l">Remaining for overall prizes</strong>, <strong key="v">{dollars(example.placesPool)}</strong>],
+          ]}
+        />
+        <Grid
+          head={['Overall finish', 'Share', 'Payout']}
+          right={[1, 2]}
+          rows={example.places.map((amount, index) => [ordinalWord(index + 1), `${example.shares[index]}%`, <strong key={index}>{dollars(amount)}</strong>])}
+        />
+        <p>
+          All <strong>{dollars(example.pot)}</strong> is paid out: <strong>{dollars(example.weeklyTotal)}</strong> in
+          best-week prizes and <strong>{dollars(example.placesPool)}</strong> in overall prizes.
+        </p>
+      </Section>
+
+      <Section title="Overall Standings Tiebreakers">
+        <p>If teams finish with the same total score, ties are resolved in this order:</p>
+        <ol>
+          <li>Higher Super Bowl round score, <strong>including multipliers</strong>.</li>
+          <li>Higher Conference Championship round score, <strong>including multipliers</strong>.</li>
+          <li>Higher combined score across all four rounds, <strong>without multipliers</strong>.</li>
+        </ol>
+        <p>If teams are still tied:</p>
+        <ul>
+          <li>Combine the prizes for the places they occupy and divide the money equally.</li>
+          <li>Two teams tied for first split the first- and second-place prizes.</li>
+          <li>Three teams tied for first split the first-, second-, and third-place prizes.</li>
+          <li>The same rule applies at any other position.</li>
+          <li>Unpaid positions contribute $0 to the combined payout.</li>
+        </ul>
+      </Section>
+
+      <Section title="Best-Week Prize Ties">
+        <ul>
+          <li>Weekly ties are split equally. Overall standings tiebreakers do not apply.</li>
+          <li>Combine the prizes for the positions occupied by the tied teams, then divide that amount equally among them.</li>
+          <li>Unpaid positions contribute $0.</li>
+          {twoSpot && twoSpotPaid.length >= 2 && (
+            <li>
+              For example, with {range(weekly, twoSpot, twoSpotIndex)} paid entries, two teams tied for first split the{' '}
+              {dollars(twoSpotPaid[0]!)} and {dollars(twoSpotPaid[1]!)} prizes, receiving{' '}
+              <strong>{dollars((twoSpotPaid[0]! + twoSpotPaid[1]!) / 2)} each</strong>.
+            </li>
+          )}
+        </ul>
+      </Section>
     </>
   );
+}
+
+/** Kept for the design preview, which shows the money on its own. */
+export function PlanMoney({ plan, lockedAt, rounds, paid }: { plan: Plan; lockedAt?: Date; rounds: number; paid: number | null }) {
+  return <RulesMoney plan={plan} draft={!lockedAt} rounds={rounds} paid={paid} />;
 }
