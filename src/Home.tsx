@@ -3,7 +3,7 @@ import { EASTSIDE } from './domain/rules.ts';
 import { standingsFor } from './domain/multiplier.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
 import {
-  readAllRosters, readContest, readEntries, readHistory, readPool, readPosts, readTeams,
+  readContest, readHistory, readLeague, readLineups, readMine, readPool, readPosts, readTeams,
 } from './store/firestore.ts';
 import type { Contest, Manager, PoolPlayer, RoundTeams } from './store/firestore.ts';
 import { PlayerRow } from './PlayerRow.tsx';
@@ -94,13 +94,16 @@ export function Home({
       if (!found) return;
       setContest(found);
       const round = found.currentRound;
-      const [roundTeams, board, past, people, posts] = await Promise.all([
+      const [roundTeams, board, past, people, posts, me] = await Promise.all([
         readTeams(CONTEST, round).catch(() => null),
         readPool(CONTEST).catch(() => []),
         readHistory(CONTEST, uid, round).catch(() => []),
-        readEntries(CONTEST).catch(() => []),
+        // One read for the league's names and logos, one for this manager's own entry — not one per
+        // manager, which is what this used to cost on every visit to the screen people open most.
+        readLeague(CONTEST),
         // Five is plenty: the question is whether to go and look, not what was said.
         readPosts(CONTEST, 5).catch(() => []),
+        readMine(CONTEST, uid).catch(() => null),
       ]);
       setTeams(roundTeams);
       setPool(new Map(board.map((player) => [player.id, player])));
@@ -108,7 +111,7 @@ export function Home({
       setManagers(people);
       setRoster(past[round] ?? []);
       setRecent(posts);
-      setLastRead(people.find((person) => person.uid === uid)?.lastReadBoard ?? null);
+      setLastRead(me?.lastReadBoard ?? null);
 
     })();
   }, [uid]);
@@ -139,7 +142,7 @@ export function Home({
 
     let cancelled = false;
     void (async () => {
-      const rosters = await readAllRosters(CONTEST, managers.map((person) => person.uid), round)
+      const rosters = await readLineups(CONTEST, managers.map((person) => person.uid), round)
         .catch(() => ({}));
       if (cancelled) return;
       setPlayedRound(config.name);

@@ -190,6 +190,21 @@ describe('a visitor who has not signed in', () => {
     await assertFails(setDoc(doc(asVisitor(), 'contests', CONTEST, 'posts', 'p2'), { uid: 'nobody', name: 'X', text: 'hi' }));
   });
 
+  it('may read a round's lineup copy once it has locked, and not before', async () => {
+    await env.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'contests', CONTEST, 'lineups', '0'), { rosters: { [MANAGER]: nine } });
+      await setDoc(doc(db, 'contests', CONTEST, 'lineups', '1'), { rosters: { [MANAGER]: nine } });
+    });
+    await assertSucceeds(getDoc(doc(asVisitor(), 'contests', CONTEST, 'lineups', '0')));
+    await assertFails(getDoc(doc(asVisitor(), 'contests', CONTEST, 'lineups', '1')));
+  });
+
+  it('only the commissioner may write a lineup copy', async () => {
+    await assertFails(setDoc(doc(asManager(), 'contests', CONTEST, 'lineups', '0'), { rosters: {} }));
+    await assertSucceeds(setDoc(doc(asCommissioner(), 'contests', CONTEST, 'lineups', '0'), { rosters: { [MANAGER]: nine } }));
+  });
+
   it('may not write the public team names', async () => {
     await assertFails(setDoc(doc(asVisitor(), 'contests', CONTEST, 'public', 'teams'), { teams: {} }));
     await assertFails(setDoc(doc(asManager(), 'contests', CONTEST, 'public', 'teams'), { teams: {} }));

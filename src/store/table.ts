@@ -3,22 +3,8 @@ import { table } from '../domain/standings.ts';
 import type { Entry, Placing } from '../domain/standings.ts';
 import type { HeldPlayer } from '../domain/multiplier.ts';
 import type { StatLine } from '../domain/scoring.ts';
-import { readAllRosters, readContest, readCorrections, readEntries, readPool, readScores, readTeamLabels } from './firestore.ts';
+import { readContest, readCorrections, readLeague, readLineups, readPool, readScores } from './firestore.ts';
 import type { Contest, Manager, PoolPlayer } from './firestore.ts';
-
-/**
- * The league as somebody who is not in it may see it: team names and logos, no real names.
- *
- * The rules refuse a visitor the entries, so a visitor's table is built from the public team list
- * instead. Shaped as managers so everything downstream draws it the same way, with the name set to
- * the team's and nobody marked as paid — neither of which a visitor is entitled to know.
- */
-async function publicManagers(contestId: string): Promise<Manager[]> {
-  const labels = await readTeamLabels(contestId);
-  return labels.map((label) => ({
-    uid: label.uid, name: label.teamName, teamName: label.teamName, logo: label.logo, paid: false, visits: 0,
-  }));
-}
 
 /**
  * Everything the table is made of, read once.
@@ -43,14 +29,21 @@ export interface Loaded {
   nextLock: Date | null;
 }
 
+/**
+ * visitor is kept so callers can say who is asking; both now read the same public documents, and
+ * the rules decide what each may actually see.
+ */
 export async function loadTable(contestId: string, { visitor = false }: { visitor?: boolean } = {}): Promise<Loaded | null> {
+  void visitor;
   const contest = await readContest(contestId);
   if (!contest) return null;
 
   const now = new Date();
   const locked = contest.rounds.filter((round) => (contest.locks[String(round.round)] ?? now) <= now);
   const [people, board] = await Promise.all([
-    visitor ? publicManagers(contestId) : readEntries(contestId),
+    // The public team list for everybody, member or not: names and logos are all a table draws,
+    // and it is one read rather than one per manager. A visitor is refused the entries fallback.
+    readLeague(contestId),
     readPool(contestId),
   ]);
   const loaded: Loaded = {
@@ -71,7 +64,7 @@ export async function loadTable(contestId: string, { visitor = false }: { visito
   for (const round of locked) {
     const [scores, rosters, fixes] = await Promise.all([
       readScores(contestId, round.round),
-      readAllRosters(contestId, uids, round.round),
+      readLineups(contestId, uids, round.round),
       readCorrections(contestId, round.round).catch(() => ({})),
     ]);
     statsByRound.push(scores);

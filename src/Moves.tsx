@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { readContest, readEntries, readMoves, readPool } from './store/firestore.ts';
+import { readContest, readLeague, readMoves, readPool } from './store/firestore.ts';
 import type { Contest, Manager, Move, PoolPlayer } from './store/firestore.ts';
 import { Face } from './PlayerRow.tsx';
 
@@ -32,7 +32,7 @@ export function Moves() {
       const found = await readContest(CONTEST).catch(() => null);
       setContest(found);
       const [people, board] = await Promise.all([
-        readEntries(CONTEST).catch(() => []),
+        readLeague(CONTEST),
         readPool(CONTEST).catch(() => []),
       ]);
       setManagers(new Map(people.map((person) => [person.uid, person])));

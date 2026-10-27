@@ -12,7 +12,7 @@ import { Version } from './Version.tsx';
 import { Home } from './Home.tsx';
 import { Theme } from './Theme.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
-import { noteVisit, readContest, readEntries, readPosts, readTeamLabels, rememberEmail, syncTeamLabels } from './store/firestore.ts';
+import { buildLineups, noteVisit, readContest, readEntries, readLeague, readMine, readPosts, readTeamLabels, rememberEmail, syncTeamLabels } from './store/firestore.ts';
 import { NextSeason } from './NextSeason.tsx';
 import { Results } from './Results.tsx';
 import type { Contest } from './store/firestore.ts';
@@ -172,10 +172,17 @@ export function App() {
     void (async () => {
       try {
         const found = await readContest(CONTEST);
-        const people = await readEntries(CONTEST);
+        // His own entry, which is also the membership test: the rules refuse it to anybody who has
+        // none. One read, where reading the whole league to find out cost one per manager.
+        const mine = await readMine(CONTEST, user.uid);
+        // A commissioner may run the league without a team in it; the rules let him read entries
+        // regardless, so a missing one only means "not a member" for everybody else.
+        const commissioning = Boolean(found?.commissioners?.includes(user.uid));
+        if (!mine && !commissioning) throw Object.assign(new Error('not a member'), { code: 'permission-denied' });
+        const league = await readLeague(CONTEST);
         if (!current) return;
         setContest(found);
-        setManagers(people.length);
+        setManagers(league.length);
         setMember(true);
         // So the commissioner can reach him. Written to the application, which only the two of
         // them can read, rather than to the entry, which the whole league can.
@@ -184,12 +191,27 @@ export function App() {
         void noteVisit(CONTEST, user.uid).catch(() => undefined);
         // The commissioner keeps the public team list in step with the entries, so a rename by any
         // route reaches visitors the next time he opens the app.
-        if (found?.commissioners?.includes(user.uid)) void syncTeamLabels(CONTEST, people).catch(() => undefined);
+        //
+        // He also keeps the one-document copy of each locked round's lineups, which is what spares
+        // everybody else a read per manager on every page. A round that has just locked gets its copy
+        // the first time he opens the app after kickoff; until then pages read the rosters one by one.
+        if (found?.commissioners?.includes(user.uid)) {
+          void (async () => {
+            const people = await readEntries(CONTEST);
+            await syncTeamLabels(CONTEST, people);
+            const uids = people.map((person) => person.uid);
+            const now = new Date();
+            for (const round of found.rounds) {
+              const lock = found.locks[String(round.round)];
+              if (lock && lock <= now) await buildLineups(CONTEST, uids, round.round);
+            }
+          })().catch(() => undefined);
+        }
 
         // His own posts are not news to him, which is the difference between a notice and a
         // receipt. Five is plenty: past that the number is "several" either way.
         const posts = await readPosts(CONTEST, 5).catch(() => []);
-        const read = people.find((person) => person.uid === user.uid)?.lastReadBoard;
+        const read = mine?.lastReadBoard;
         if (!current) return;
         setUnread(posts.filter((post) => post.uid !== user.uid && (!read || post.at > read)).length);
       } catch (cause) {

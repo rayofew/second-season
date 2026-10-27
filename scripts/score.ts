@@ -76,6 +76,18 @@ console.log(`scored: ${played}   suppressed (out or resting): ${suppressed}`);
 if (!dryRun) {
   await db.doc(`contests/${CONTEST}/scores/${round}`).set({ round, week, season, updatedAt: new Date(), players });
   console.log('written to Firestore.');
+
+  // The round's lineups in one document, so every page that draws a table reads one document
+  // rather than one per manager. The commissioner's browser makes the same copy; doing it here as
+  // well means a round is never left without one just because nobody opened Commish that week.
+  const entries = await db.collection(`contests/${CONTEST}/entries`).listDocuments();
+  const rosters: Record<string, unknown[]> = {};
+  for (const entry of entries) {
+    const snapshot = await entry.collection('rounds').doc(String(round)).get();
+    rosters[entry.id] = snapshot.exists ? ((snapshot.data()?.players ?? []) as unknown[]) : [];
+  }
+  await db.doc(`contests/${CONTEST}/lineups/${round}`).set({ round, rosters, builtAt: new Date() });
+  console.log(`lineups copied: ${entries.length} teams.`);
 } else {
   console.log('nothing written: a dry run does not touch the contest.');
 }

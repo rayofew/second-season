@@ -5,7 +5,7 @@ import { Editor } from './Editor.tsx';
 import type { EditorHandle } from './Editor.tsx';
 import { Markup } from './Markup.tsx';
 import { sinceWords } from './domain/seen.ts';
-import { noteBoardRead, readEntries, readPosts, removePost, writePost } from './store/firestore.ts';
+import { noteBoardRead, readMine, readPosts, removePost, writePost } from './store/firestore.ts';
 import type { Manager } from './store/firestore.ts';
 
 /**
@@ -23,6 +23,7 @@ import type { Manager } from './store/firestore.ts';
  */
 
 const CONTEST = 'rehearsal-2026';
+const PAGE = 40;
 
 export function Board({
   uid,
@@ -51,16 +52,23 @@ export function Board({
   const [problem, setProblem] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const editor = useRef<EditorHandle | null>(null);
+  /**
+   * How many posts to fetch. Each one is a read, so the board starts with the newest forty and
+   * fetches more only when somebody asks — two hundred on every visit was the costliest page on the
+   * site once the league grows.
+   */
+  const [showing, setShowing] = useState(PAGE);
 
   const load = useCallback(async () => {
     try {
       // A visitor may not read the entries, and has no place on the board to mark as read.
       if (visitor) {
-        setPosts(await readPosts(CONTEST));
+        setPosts(await readPosts(CONTEST, showing));
         return;
       }
-      const [people, written] = await Promise.all([readEntries(CONTEST), readPosts(CONTEST)]);
-      setMe(people.find((person) => person.uid === uid) ?? null);
+      // His own entry, for the name his posts go out under. One read, not the whole league.
+      const [mine, written] = await Promise.all([readMine(CONTEST, uid), readPosts(CONTEST, showing)]);
+      setMe(mine);
       setPosts(written);
 
       // Seen, so Home and the tab stop saying there is something to see. Failing is no reason to
@@ -70,7 +78,7 @@ export function Board({
     } catch (cause) {
       setProblem(explain(cause));
     }
-  }, [uid, onRead, visitor]);
+  }, [uid, onRead, visitor, showing]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -190,6 +198,10 @@ export function Board({
             </div>
           );
         })
+      )}
+
+      {posts.length >= showing && (
+        <button className="ghost wide" onClick={() => setShowing(showing + PAGE)}>Show older posts</button>
       )}
 
       <p className="footnote">

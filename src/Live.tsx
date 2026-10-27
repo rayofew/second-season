@@ -16,8 +16,7 @@ import { projections, stats } from './providers/sleeper.ts';
 import { clubGames } from './providers/schedule.ts';
 import type { ClubGame } from './providers/schedule.ts';
 import {
-  readAllRosters, readContest, readCorrections, readEntries, readHistory, readPool, readScores,
-  readTeams,
+  readContest, readCorrections, readLeague, readLineups, readPool, readScores, readTeams,
 } from './store/firestore.ts';
 import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
 import { LiveBracket } from './LiveBracket.tsx';
@@ -83,12 +82,16 @@ export function Live({ uid }: { uid: string }) {
       // The football below is public. Everybody else's nine is not, until the first kickoff.
       if (!shut) return;
 
-      const people = await readEntries(CONTEST);
+      const people = await readLeague(CONTEST);
       const uids = people.map((person) => person.uid);
-      const [rosters, histories] = await Promise.all([
-        readAllRosters(CONTEST, uids, round),
-        Promise.all(uids.map((id) => readHistory(CONTEST, id, round).catch(() => []))),
-      ]);
+      // Every locked round's lineups, one document each, and each manager's history read across
+      // them — rather than every manager's every round fetched one by one, which at a hundred
+      // managers in the Super Bowl was four hundred reads before anything was drawn.
+      const byRound = await Promise.all(
+        Array.from({ length: round + 1 }, (_, earlier) => readLineups(CONTEST, uids, earlier).catch(() => ({}) as Record<string, HeldPlayer[]>)),
+      );
+      const rosters = byRound[round] ?? {};
+      const histories = uids.map((id) => byRound.map((lineups) => lineups[id] ?? []));
 
       /**
        * What everybody is carrying into this round.

@@ -110,6 +110,88 @@ export async function syncTeamLabels(contestId: string, managers: readonly Manag
   if (!same) await setDoc(doc(db, 'contests', contestId, 'public', 'teams'), { teams });
 }
 
+/**
+ * The league for drawing it: every team's name and logo, from one document.
+ *
+ * Reading the entries costs one read per manager, every page, every visit — at a hundred managers
+ * that alone is most of a day's free allowance by Sunday lunchtime. The public team list carries
+ * exactly what a table, a field or a leaderboard draws, in a single read. Only Commish, which needs
+ * who has paid and how to reach them, still reads the entries themselves.
+ *
+ * Empty until the commissioner's browser has written it for the first time; a member then falls
+ * back to the entries, so a brand new contest is slower rather than blank.
+ */
+export async function readLeague(contestId: string): Promise<Manager[]> {
+  const labels = await readTeamLabels(contestId).catch(() => []);
+  if (labels.length > 0) {
+    return labels.map((label) => ({
+      uid: label.uid, name: label.teamName, teamName: label.teamName, logo: label.logo, paid: false, visits: 0,
+    }));
+  }
+  return readEntries(contestId).catch(() => []);
+}
+
+/** One manager's own entry: one read rather than the whole league's, for the few pages that need it. */
+export async function readMine(contestId: string, uid: string): Promise<Manager | null> {
+  const snapshot = await getDoc(doc(db, 'contests', contestId, 'entries', uid));
+  if (!snapshot.exists()) return null;
+  const data = snapshot.data();
+  const name = (data.name as string) ?? uid;
+  return {
+    uid,
+    name,
+    teamName: (data.teamName as string) || name,
+    logo: (data.logo as string) ?? '',
+    paid: Boolean(data.paid),
+    visits: (data.visits as number) ?? 0,
+    lastSeen: data.lastSeen ? (data.lastSeen as { toDate(): Date }).toDate() : undefined,
+    lastReadBoard: data.lastReadBoard ? (data.lastReadBoard as { toDate(): Date }).toDate() : undefined,
+  };
+}
+
+/**
+ * Every lineup for one locked round, in one read.
+ *
+ * Rosters live one document per manager per round, which is right for writing — each manager owns
+ * his own and nobody else's — and expensive for reading: a table of a hundred teams over four rounds
+ * was four hundred reads, plus the rules' own lookup on each. Once a round locks its rosters can no
+ * longer change (only the commissioner may touch one after the lock), so a copy of all of them in a
+ * single document is safe to read instead.
+ *
+ * The copy is made by the commissioner's browser whenever it opens the app (buildLineups) and by
+ * the scoring script. Until it exists, this falls back to reading each roster, so a round is never
+ * missing — only slower.
+ */
+export async function readLineups(
+  contestId: string,
+  uids: string[],
+  round: number,
+): Promise<Record<string, HeldPlayer[]>> {
+  const copy = await getDoc(doc(db, 'contests', contestId, 'lineups', String(round))).catch(() => null);
+  if (copy?.exists()) {
+    const stored = (copy.data().rosters ?? {}) as Record<string, HeldPlayer[]>;
+    return Object.fromEntries(uids.map((uid) => [uid, stored[uid] ?? []]));
+  }
+  return readAllRosters(contestId, uids, round);
+}
+
+/**
+ * Writes the one-document copy of a locked round's lineups, if it is missing or out of date.
+ *
+ * The commissioner's browser calls this for every locked round each time it opens the app. It costs
+ * him one read per manager per round; it saves every other visitor the same, every page they open.
+ * Comparing before writing keeps a quiet week from writing at all.
+ */
+export async function buildLineups(contestId: string, uids: string[], round: number): Promise<void> {
+  const rosters = await readAllRosters(contestId, uids, round);
+  const ref = doc(db, 'contests', contestId, 'lineups', String(round));
+  const had = await getDoc(ref);
+  const sorted = (value: Record<string, unknown>) =>
+    JSON.stringify(Object.keys(value).sort().map((key) => [key, value[key]]));
+  if (had.exists() && sorted(had.data().rosters ?? {}) === sorted(rosters)) return;
+  await setDoc(ref, { round, rosters, builtAt: serverTimestamp() });
+}
+
 /** The commissioner setting when the next contest starts, which the countdown on Home runs to. */
 export async function setNextKickoff(contestId: string, when: Date | null): Promise<void> {
   await updateDoc(doc(db, 'contests', contestId), { nextKickoff: when ?? deleteField() });
