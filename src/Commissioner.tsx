@@ -11,6 +11,36 @@ import { Managers } from './Managers.tsx';
 import { StandIns } from './StandIns.tsx';
 import { KickoffSetting } from './KickoffSetting.tsx';
 import { Calculator } from './Calculator.tsx';
+import { GamesPanel } from './GamesPanel.tsx';
+import { Moves } from './Moves.tsx';
+import { Rules } from './Rules.tsx';
+
+/**
+ * Commish in sections rather than one long page.
+ *
+ * Ray: "in the commish tab, I want sub tabs to better manage settings like a player tab, log tab
+ * money tab rules tab". Everything that was here still is, grouped by what you came to do. Which
+ * section was open is remembered on this device, so a reload does not throw you back to the top.
+ */
+type Section = 'players' | 'money' | 'rounds' | 'log' | 'rules' | 'games';
+const SECTIONS: { id: Section; label: string; owner?: boolean }[] = [
+  { id: 'players', label: 'Players' },
+  { id: 'money', label: 'Money' },
+  { id: 'rounds', label: 'Rounds' },
+  { id: 'log', label: 'Log' },
+  { id: 'rules', label: 'Rules' },
+  { id: 'games', label: 'Games', owner: true },
+];
+const SAVED = 'commish-section';
+const remembered = (): Section => {
+  try {
+    const saved = localStorage.getItem(SAVED) as Section | null;
+    return saved && SECTIONS.some((each) => each.id === saved) ? saved : 'players';
+  } catch {
+    return 'players';
+  }
+};
+import { useGame } from './game.tsx';
 
 /**
  * The commissioner's tab: who wants in, and who has not picked yet.
@@ -27,9 +57,9 @@ import { Calculator } from './Calculator.tsx';
  * do; hiding the tab from everyone else is only courtesy.
  */
 
-const CONTEST = 'rehearsal-2026';
 
 export function Commissioner({ uid }: { uid: string }) {
+  const CONTEST = useGame();
   const [contest, setContest] = useState<Contest | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   // Every application ever written, including admitted managers — where phone and email live.
@@ -45,6 +75,11 @@ export function Commissioner({ uid }: { uid: string }) {
   // Whose team the commissioner is currently fixing, if any.
   const [editing, setEditing] = useState<Manager | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
+  const [section, setSection] = useState<Section>(remembered);
+  const show = (next: Section) => {
+    setSection(next);
+    try { localStorage.setItem(SAVED, next); } catch { /* a private window keeps nothing, which is fine */ }
+  };
 
   const load = useCallback(async () => {
     try {
@@ -107,8 +142,22 @@ export function Commissioner({ uid }: { uid: string }) {
     );
   }
 
+  const isOwner = owner === uid;
+  const offered = SECTIONS.filter((each) => !each.owner || isOwner);
+  const showing = offered.some((each) => each.id === section) ? section : 'players';
+
   return (
     <>
+      <nav className="subnav" aria-label="Commish sections">
+        {offered.map((each) => (
+          <button key={each.id} aria-current={showing === each.id} onClick={() => show(each.id)}>
+            {each.label}
+            {each.id === 'players' && applications.length > 0 && <span className="tabcount">{applications.length}</span>}
+          </button>
+        ))}
+      </nav>
+
+      {showing === 'players' && <>
       <div className="card">
         <div className="confhead">Waiting to be let in ({applications.length})</div>
         {applications.length === 0 ? (
@@ -182,19 +231,35 @@ export function Commissioner({ uid }: { uid: string }) {
         onPaid={(manager) => void act(manager.uid, () => setPaid(CONTEST, manager.uid, !manager.paid))}
       />
 
-      <Pool contest={contest} managers={managers} commissioner onChange={() => void load()} />
-
-      <Calculator contest={contest} paid={managers.filter((manager) => manager.paid).length} onDone={() => void load()} />
-
-      <Advance contest={contest} onDone={() => void load()} />
-
-      <KickoffSetting contest={contest} onDone={() => void load()} />
-
-      <Corrections contest={contest} by={uid} />
-
       {/* The bench. It lived on a Lab tab that existed to preview layouts against live football,
           which the design preview at ?preview now covers without a tab of its own. */}
       <StandIns />
+      </>}
+
+      {showing === 'money' && <>
+        <Pool contest={contest} managers={managers} commissioner onChange={() => void load()} />
+        <Calculator contest={contest} paid={managers.filter((manager) => manager.paid).length} onDone={() => void load()} />
+      </>}
+
+      {showing === 'rounds' && <>
+        <Advance contest={contest} onDone={() => void load()} />
+        <Corrections contest={contest} by={uid} />
+      </>}
+
+      {/* Every move, the round being played included — a commissioner may read what nobody else can
+          until the lock. The same screen as the Moves tab, which says as much at the top. */}
+      {showing === 'log' && <Moves />}
+
+      {showing === 'rules' && <>
+        <KickoffSetting contest={contest} onDone={() => void load()} />
+        <div className="pending subnote">
+          Below is the Rules page exactly as players see it. The money section is written by the calculator
+          on the Money tab, and the schedule by each round&apos;s lock.
+        </div>
+        <Rules />
+      </>}
+
+      {showing === 'games' && isOwner && <GamesPanel uid={uid} onChange={() => void load()} />}
     </>
   );
 }

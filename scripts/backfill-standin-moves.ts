@@ -16,7 +16,8 @@
 import { admin } from './admin.ts';
 import { whenPicked } from '../src/domain/standin.ts';
 
-const CONTEST = 'rehearsal-2026';
+// Which game: set GAME to run against another, e.g. $env:GAME = 'high-2027'. The rehearsal by default.
+const CONTEST = process.env.GAME ?? 'rehearsal-2026';
 const writing = process.argv.includes('--write');
 
 const db = admin();

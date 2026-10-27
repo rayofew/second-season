@@ -18,7 +18,8 @@ import { decide, reseed } from '../src/domain/advance.ts';
 import type { Field } from '../src/domain/advance.ts';
 import type { StatLine } from '../src/domain/scoring.ts';
 
-const CONTEST = 'rehearsal-2026';
+// Which game: set GAME to run against another, e.g. $env:GAME = 'high-2027'. The rehearsal by default.
+const CONTEST = process.env.GAME ?? 'rehearsal-2026';
 const dry = process.argv.includes('--dry-run');
 // Season and week may be overridden so the decision logic can be tried against football that has
 // actually been played, months before our own week arrives.

@@ -7,6 +7,7 @@ import { advanceRound, readAllRosters, readEntries, readPool, readScores, readTe
 import type { Contest, RoundTeams } from './store/firestore.ts';
 import { colorOf, crest } from './domain/clubs.ts';
 import type { HeldPlayer } from './domain/multiplier.ts';
+import { useGame } from './game.tsx';
 
 /**
  * Deciding a round from the commissioner's phone.
@@ -25,9 +26,9 @@ import type { HeldPlayer } from './domain/multiplier.ts';
  * script" is still worth far more than finding out in February.
  */
 
-const CONTEST = 'rehearsal-2026';
 
 export function Advance({ contest, onDone }: { contest: Contest; onDone: () => void }) {
+  const CONTEST = useGame();
   const [teams, setTeams] = useState<RoundTeams | null>(null);
   const [decisions, setDecisions] = useState<Decision[] | null>(null);
   const [unfinished, setUnfinished] = useState<string[]>([]);

@@ -7,6 +7,7 @@ import { auth, db } from './firebase.ts';
 import { isUsPhone, typingPhone } from './domain/phone.ts';
 import { fullName, shortName, splitName } from './domain/name.ts';
 import { ThemeChoice } from './Theme.tsx';
+import { useGame } from './game.tsx';
 
 /**
  * Asking to join, which is not the same as being in.
@@ -20,11 +21,10 @@ import { ThemeChoice } from './Theme.tsx';
  * megabyte is not worth a billing account.
  */
 
-const CONTEST = 'rehearsal-2026';
 const BADGE = 128;
 
 /** Draws whatever they picked into a small square and hands back a data URL. */
-async function shrink(file: File): Promise<string> {
+export async function shrink(file: File): Promise<string> {
   const bitmap = await createImageBitmap(file);
   const canvas = document.createElement('canvas');
   canvas.width = BADGE;
@@ -41,6 +41,7 @@ async function shrink(file: File): Promise<string> {
 }
 
 export function Register({ user }: { user: User }) {
+  const CONTEST = useGame();
   // Google hands a name over as one string; everything after the first word is the surname.
   const given = splitName(user.displayName ?? '');
   const [first, setFirst] = useState(given.first);

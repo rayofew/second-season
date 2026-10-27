@@ -4,6 +4,7 @@ import type { Plan, Tier } from './domain/payouts.ts';
 import { setPrizes } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
 import { explain } from './domain/trouble.ts';
+import { useGame } from './game.tsx';
 
 /**
  * Where the commissioner works out the money, and then locks it in.
@@ -18,7 +19,6 @@ import { explain } from './domain/trouble.ts';
  * lock, and after that the database refuses any change to the money.
  */
 
-const CONTEST = 'rehearsal-2026';
 const money = (amount: number) => `$${Math.round(amount).toLocaleString()}`;
 const ORDINAL = (place: number) => (place === 1 ? '1st' : place === 2 ? '2nd' : place === 3 ? '3rd' : `${place}th`);
 const SAMPLES = [5, 10, 15, 20, 30, 50, 75, 100];
@@ -79,6 +79,7 @@ function BandRows({ tiers, onChange, what }: { tiers: Tier[]; onChange: (next: T
 }
 
 export function Calculator({ contest, paid, onDone }: { contest: Contest; paid: number; onDone: () => void }) {
+  const CONTEST = useGame();
   const saved = contest.prizes?.plan ?? null;
   const [plan, setPlan] = useState<Plan>(saved ?? DEFAULT_PLAN);
   const [field, setField] = useState(Math.max(5, paid || 15));

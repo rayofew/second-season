@@ -4,7 +4,6 @@ import { Bracket } from './Bracket.tsx';
 import { Standings } from './Standings.tsx';
 import { Live } from './Live.tsx';
 import { Rules } from './Rules.tsx';
-import { Register } from './Register.tsx';
 import { Commissioner } from './Commissioner.tsx';
 import { Moves } from './Moves.tsx';
 import { Board } from './Board.tsx';
@@ -12,15 +11,16 @@ import { Version } from './Version.tsx';
 import { Home } from './Home.tsx';
 import { Theme } from './Theme.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
-import { buildLineups, noteVisit, readContest, readEntries, readLeague, readMine, readPosts, readTeamLabels, rememberEmail, syncTeamLabels } from './store/firestore.ts';
+import { FALLBACK_GAMES, buildLineups, noteVisit, readContest, readEntries, readGames, readLeague, readMine, readPosts, readTeamLabels, rememberEmail, syncTeamLabels } from './store/firestore.ts';
+import type { Game } from './store/firestore.ts';
+import { GameProvider, OWNER_UID, REHEARSAL, rememberGame, rememberedGame, useGame } from './game.tsx';
+import { MyGames, needsMyGames } from './MyGames.tsx';
 import { NextSeason } from './NextSeason.tsx';
 import { Results } from './Results.tsx';
 import type { Contest } from './store/firestore.ts';
 import { isRefusal } from './domain/trouble.ts';
 import { hashFor, tabFromHash } from './domain/tabs.ts';
 import type { Tab } from './domain/tabs.ts';
-
-const CONTEST = 'rehearsal-2026';
 
 export function App() {
   // Whatever the address says, so a link to a tab opens that tab.
@@ -58,6 +58,57 @@ export function App() {
   const clearUnread = useCallback(() => setUnread(0), []);
   /** A visitor who has asked to sign in, which swaps the open pages for the sign-in screen. */
   const [signingIn, setSigningIn] = useState(false);
+
+  /**
+   * The games, and which one is on screen.
+   *
+   * Every page below reads the chosen game through useGame(), and the whole of it is keyed on that
+   * id, so switching remounts everything rather than drawing one game's numbers under another's
+   * name. Players see the games that are switched on; the owner sees them all.
+   */
+  const [games, setGames] = useState<Game[]>(FALLBACK_GAMES);
+  const [game, setGame] = useState<string>(rememberedGame);
+  const CONTEST = game;
+  /** Games taking sign-ups now: switched on, and before their first lock. */
+  const [open, setOpen] = useState<Game[]>([]);
+  /** Whether the step before anything else is showing — needed, or asked for from "My games". */
+  const [askGames, setAskGames] = useState<'needed' | 'asked' | null>(null);
+  const [recheck, setRecheck] = useState(0);
+  const visible = games.filter((each) => each.enabled || user?.uid === OWNER_UID);
+
+  useEffect(() => { void readGames().then(setGames); }, []);
+  // A remembered game that has since been switched off or removed falls back to the first one shown.
+  useEffect(() => {
+    if (visible.length > 0 && !visible.some((each) => each.id === game)) setGame(visible[0]!.id);
+  }, [games, user?.uid]);
+  const pick = (id: string) => {
+    if (!mayLeave(tabFromHash(window.location.hash), 'home')) return;
+    rememberGame(id);
+    setGame(id);
+  };
+
+  // Which games are open for sign-ups: each one's first lock, read once the list is known.
+  useEffect(() => {
+    let current = true;
+    void (async () => {
+      const now = new Date();
+      const checked = await Promise.all(games.filter((each) => each.enabled).map(async (each) => {
+        const found = await readContest(each.id).catch(() => null);
+        const lock = found?.locks?.['0'];
+        return found && (!lock || lock > now) ? each : null;
+      }));
+      if (current) setOpen(checked.filter((each): each is Game => each !== null));
+    })();
+    return () => { current = false; };
+  }, [games]);
+
+  // And whether this person still has to answer: a game they have not been asked about, or no phone.
+  useEffect(() => {
+    if (!user || open.length === 0) { setAskGames(null); return; }
+    let current = true;
+    void needsMyGames(user.uid, open).then((needed) => { if (current) setAskGames((was) => (was === 'asked' ? was : needed ? 'needed' : null)); });
+    return () => { current = false; };
+  }, [user?.uid, open, recheck]);
 
   /**
    * Going somewhere, in a way the browser can undo.
@@ -220,7 +271,7 @@ export function App() {
       }
     })();
     return () => { current = false; };
-  }, [user?.uid]);
+  }, [user?.uid, game, recheck]);
 
   return (
     <div className="wrap">
@@ -232,6 +283,14 @@ export function App() {
             <h1>Second Season</h1>
           </div>
           <span className="headerside">
+            {visible.length > 1 && (
+              <select className="gamepick-select" value={game} aria-label="Game" onChange={(event) => pick(event.target.value)}>
+                {visible.map((each) => <option key={each.id} value={each.id}>{each.name}{each.enabled ? '' : ' (hidden)'}</option>)}
+              </select>
+            )}
+            {user && open.length > 0 && askGames === null && (
+              <button className="ghost small" onClick={() => setAskGames('asked')}>My games</button>
+            )}
             <Theme />
             {user && <SignOut user={user} />}
           </span>
@@ -243,7 +302,16 @@ export function App() {
         </p>
       </header>
 
-      {checking ? null : !user && signingIn ? (
+      <GameProvider value={game}>
+      <div key={game}>
+      {checking ? null : user && askGames ? (
+        <MyGames
+          user={user}
+          open={open}
+          onDone={() => { setAskGames(null); setRecheck((count) => count + 1); }}
+          onCancel={askGames === 'asked' ? () => setAskGames(null) : undefined}
+        />
+      ) : !user && signingIn ? (
         <>
           <button className="ghost" onClick={() => setSigningIn(false)}>← Back to the pages</button>
           <SignIn />
@@ -251,7 +319,15 @@ export function App() {
       ) : !user ? (
         <Visitor tab={tab} go={go} contest={contest} onSignIn={() => setSigningIn(true)} />
       ) : member === false ? (
-        <Register user={user} />
+        // Signed in, but not in the game on screen: still waiting to be let in, or never joined.
+        // They see what a visitor sees, and "My games" in the header whenever there is one to join.
+        <>
+          <div className="card notice">
+            You are signed in, but not in {visible.find((each) => each.id === game)?.name ?? 'this game'}.
+            {open.length > 0 ? ' Use My games, at the top, to join one or check where your request stands.' : ' Sign-ups open in December.'}
+          </div>
+          <Visitor tab={tab} go={go} contest={contest} />
+        </>
       ) : (
         <>
           <nav>
@@ -295,6 +371,8 @@ export function App() {
             : <Standings uid={user.uid} />}
         </>
       )}
+      </div>
+      </GameProvider>
     </div>
   );
 }
@@ -316,8 +394,10 @@ function Visitor({ tab, go, contest, onSignIn }: {
   tab: Tab;
   go: (next: Tab) => void;
   contest: Contest | null;
-  onSignIn: () => void;
+  /** Absent for somebody already signed in who is not in this game: there is nothing to sign in to. */
+  onSignIn?: () => void;
 }) {
+  const CONTEST = useGame();
   const showing = OPEN.includes(tab) ? tab : 'home';
   return (
     <>
@@ -327,25 +407,29 @@ function Visitor({ tab, go, contest, onSignIn }: {
         <button aria-current={showing === 'standings'} onClick={() => go('standings')}>Standings</button>
         <button aria-current={showing === 'board'} onClick={() => go('board')}>Board</button>
         <button aria-current={showing === 'rules'} onClick={() => go('rules')}>Rules</button>
-        <button onClick={onSignIn}>Sign in</button>
+        {onSignIn && <button onClick={onSignIn}>Sign in</button>}
       </nav>
 
       {showing === 'bracket' ? <Bracket />
         : showing === 'standings' ? <Standings uid="" visitor />
         : showing === 'rules' ? <Rules />
-        : showing === 'board' ? <Board uid="" commissioner={false} onRead={noop} onSignIn={onSignIn} />
+        : showing === 'board' ? <Board uid="" commissioner={false} onRead={noop} onSignIn={onSignIn ?? noop} />
         : (
           <>
             <NextSeason contest={contest} onSignIn={onSignIn} />
             {contest?.status === 'final' ? (
               <>
-                <h2 className="sectionhead">
-                  How the rehearsal finished
-                  <span>{contest.season}, played on the regular season to test everything before January</span>
-                </h2>
+                {CONTEST === REHEARSAL ? (
+                  <h2 className="sectionhead">
+                    How the rehearsal finished
+                    <span>{contest.season}, played on the regular season to test everything before January</span>
+                  </h2>
+                ) : (
+                  <h2 className="sectionhead">How {contest.name} finished</h2>
+                )}
                 <Results contestId={CONTEST} visitor />
               </>
-            ) : contest ? (
+            ) : contest && CONTEST === REHEARSAL ? (
               <div className="card prose">
                 <p>
                   The rehearsal is being played now, on ordinary weeks of the regular season, to shake

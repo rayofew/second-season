@@ -21,7 +21,8 @@ import { getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { admin } from './admin.ts';
 
-const CONTEST = 'rehearsal-2026';
+// Which game: set GAME to run against another, e.g. $env:GAME = 'high-2027'. The rehearsal by default.
+const CONTEST = process.env.GAME ?? 'rehearsal-2026';
 const PROJECT = 'second-season-app-2cf68';
 /** The public web key. It identifies the project and grants nothing on its own. */
 const KEY = 'AIzaSyCRvAGyL6whH0dZqZC2_kwpUOiZWAfFLU0';

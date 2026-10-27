@@ -18,6 +18,7 @@ import { points, projectedPoints, rawPoints } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
 import { Breakdown } from './Breakdown.tsx';
 import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
+import { useGame } from './game.tsx';
 
 /**
  * Where the game is played: nine slots, and the consequence of touching any of them.
@@ -31,7 +32,6 @@ import type { Contest, PoolPlayer, RoundTeams } from './store/firestore.ts';
  * only that the button goes away, which is courtesy rather than security.
  */
 
-const CONTEST = 'rehearsal-2026';
 
 export function RosterBuilder({
   uid,
@@ -46,6 +46,7 @@ export function RosterBuilder({
   onBehalfOf?: { name: string };
   onDone?: () => void;
 }) {
+  const CONTEST = useGame();
   const [contest, setContest] = useState<Contest | null>(null);
   const [teams, setTeams] = useState<RoundTeams | null>(null);
   const [pool, setPool] = useState<PoolPlayer[]>([]);

@@ -25,6 +25,7 @@ import { plain } from './domain/markup.ts';
 import { sinceWords } from './domain/seen.ts';
 import type { Post } from './domain/post.ts';
 import { useHeartbeat } from './useHeartbeat.ts';
+import { useGame } from './game.tsx';
 
 /**
  * The screen somebody opens on a Sunday, in the order they need it.
@@ -39,7 +40,6 @@ import { useHeartbeat } from './useHeartbeat.ts';
  * printed twice.
  */
 
-const CONTEST = 'rehearsal-2026';
 
 /**
  * How often the live numbers are asked for again.
@@ -58,6 +58,7 @@ export function Home({
   onGoToTeam: () => void;
   onGoToBoard: () => void;
 }) {
+  const CONTEST = useGame();
   const [contest, setContest] = useState<Contest | null>(null);
   const [teams, setTeams] = useState<RoundTeams | null>(null);
   const [pool, setPool] = useState<Map<string, PoolPlayer>>(new Map());

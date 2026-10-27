@@ -20,7 +20,8 @@ import { admin } from './admin.ts';
 import { EASTSIDE } from '../src/domain/rules.ts';
 import type { Position } from '../src/domain/rules.ts';
 
-const CONTEST = 'rehearsal-2026';
+// Which game: set GAME to run against another, e.g. $env:GAME = 'high-2027'. The rehearsal by default.
+const CONTEST = process.env.GAME ?? 'rehearsal-2026';
 const PREFIX = 'stand-in-';
 
 /** Deliberately obvious. Nobody should ever wonder whether one of these is somebody's cousin. */

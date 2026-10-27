@@ -89,7 +89,11 @@ service cloud.firestore {
 
     match /contests/{contestId} {
       allow read: if isPublic();
-      allow create: if isCommissioner(contestId);
+      // A new game is made by the owner, from the Games tab on Commish, and he is on it from the start.
+      // Checked first: a commissioner check reads the contest, which does not exist yet.
+      allow create: if (signedIn() && request.auth.uid == OWNER()
+                        && request.resource.data.commissioners.hasAll([OWNER()]))
+                    || isCommissioner(contestId);
       // The money is fixed once the first round kicks off. Before that the commissioner may change
       // the payout plan as often as he likes; after it, nothing about the prizes may move — not by
       // the calculator, not by a typo, not by anybody — because people chose to play on those terms.
@@ -145,7 +149,11 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(
             ['name', 'firstName', 'lastName', 'teamName', 'phone', 'email', 'logo', 'appliedAt']
           );
-        allow delete: if isCommissioner(contestId);
+        // The applicant may take his request back until the first round locks; after that, or once he
+        // has been let in, it is the commissioner's decision.
+        allow delete: if isCommissioner(contestId)
+                      || (isOwner(uid)
+                          && (!('0' in contest(contestId).locks) || request.time < contest(contestId).locks['0']));
       }
 
       /**
@@ -279,6 +287,29 @@ service cloud.firestore {
         allow read: if isCommissioner(contestId);
         allow write: if false;
       }
+    }
+
+    /**
+     * The list of games: a name, and whether players can see it. Anyone may read it — the header
+     * and the sign-in step both need it before knowing who is asking — and only the owner writes it.
+     */
+    match /site/{docId} {
+      allow read: if true;
+      allow write: if signedIn() && request.auth.uid == OWNER();
+    }
+
+    /**
+     * Who somebody is, once, for every game: name, team, logo, phone, email.
+     *
+     * The phone number is why this is not public. The person may read and write their own; the owner
+     * may read anybody's, because settling payouts means calling people. Nobody else may see one.
+     */
+    match /profiles/{uid} {
+      allow read: if isOwner(uid) || (signedIn() && request.auth.uid == OWNER());
+      allow write: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(
+          ['firstName', 'lastName', 'teamName', 'logo', 'phone', 'email', 'seen', 'updatedAt']
+        );
     }
 
     /**

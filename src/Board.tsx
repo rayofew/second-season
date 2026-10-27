@@ -7,6 +7,7 @@ import { Markup } from './Markup.tsx';
 import { sinceWords } from './domain/seen.ts';
 import { noteBoardRead, readMine, readPosts, removePost, writePost } from './store/firestore.ts';
 import type { Manager } from './store/firestore.ts';
+import { useGame } from './game.tsx';
 
 /**
  * The board: what the group chat was for, kept next to the thing it is about.
@@ -22,7 +23,6 @@ import type { Manager } from './store/firestore.ts';
  * still written, so it comes back on the day there is a plan that can send properly.
  */
 
-const CONTEST = 'rehearsal-2026';
 const PAGE = 40;
 
 export function Board({
@@ -44,6 +44,7 @@ export function Board({
    */
   onSignIn?: () => void;
 }) {
+  const CONTEST = useGame();
   const visitor = Boolean(onSignIn);
   const [posts, setPosts] = useState<Post[] | null>(null);
   const [me, setMe] = useState<Manager | null>(null);

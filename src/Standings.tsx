@@ -8,6 +8,7 @@ import { loadTable } from './store/table.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import type { Contest, Manager, PoolPlayer } from './store/firestore.ts';
 import { Pool } from './Pool.tsx';
+import { useGame } from './game.tsx';
 
 /**
  * The table, and the arithmetic behind every number in it.
@@ -16,7 +17,6 @@ import { Pool } from './Pool.tsx';
  * never disagree about who won.
  */
 
-const CONTEST = 'rehearsal-2026';
 
 /**
  * The table cut into boxes of five.
@@ -36,6 +36,7 @@ function inFives<T>(all: readonly T[]): T[][] {
  * the entries, and does not get the prize pool card — it says who has paid, which is not his business.
  */
 export function Standings({ uid, visitor = false }: { uid: string; visitor?: boolean }) {
+  const CONTEST = useGame();
   const [placings, setPlacings] = useState<Placing[] | null>(null);
   const [names, setNames] = useState<Map<string, PoolPlayer>>(new Map());
   const [roundNames, setRoundNames] = useState<string[]>([]);

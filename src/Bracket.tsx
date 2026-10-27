@@ -7,6 +7,7 @@ import type { Slot } from './domain/tree.ts';
 import { explain } from './domain/trouble.ts';
 import { clubGames } from './providers/schedule.ts';
 import type { ClubGame } from './providers/schedule.ts';
+import { useGame } from './game.tsx';
 
 /**
  * The whole bracket, all four rounds, drawn as a bracket.
@@ -29,7 +30,6 @@ import type { ClubGame } from './providers/schedule.ts';
  * Split from the fetching so the design preview can drive it with invented clubs.
  */
 
-const CONTEST = 'rehearsal-2026';
 
 const lockDate = (when: Date) =>
   when.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -158,6 +158,7 @@ export function BracketLadder({ contest, rounds, scores = [] }: {
 }
 
 export function Bracket() {
+  const CONTEST = useGame();
   const [contest, setContest] = useState<Contest | null>(null);
   const [rounds, setRounds] = useState<(RoundTeams | null)[]>([]);
   const [problem, setProblem] = useState<string | null>(null);

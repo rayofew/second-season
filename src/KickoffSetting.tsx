@@ -3,8 +3,8 @@ import { setNextKickoff } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
 import { ESTIMATED_KICKOFF } from './NextSeason.tsx';
 import { explain } from './domain/trouble.ts';
+import { useGame } from './game.tsx';
 
-const CONTEST = 'rehearsal-2026';
 
 /** A Date as the value a datetime-local input wants, in the browser's own time zone. */
 const asLocal = (date: Date) => {
@@ -20,6 +20,7 @@ const asLocal = (date: Date) => {
  * moves to it.
  */
 export function KickoffSetting({ contest, onDone }: { contest: Contest; onDone: () => void }) {
+  const CONTEST = useGame();
   const [value, setValue] = useState(asLocal(contest.nextKickoff ?? ESTIMATED_KICKOFF));
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);

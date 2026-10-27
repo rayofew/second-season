@@ -6,6 +6,7 @@ import { display, points, rawPoints } from './domain/scoring.ts';
 import type { StatLine } from './domain/scoring.ts';
 import type { Position } from './domain/rules.ts';
 import { Face } from './PlayerRow.tsx';
+import { useGame } from './game.tsx';
 
 /**
  * Setting a figure by hand when the data is wrong.
@@ -18,9 +19,9 @@ import { Face } from './PlayerRow.tsx';
  * they changed it from, and in February it is the only thing anybody will ask about.
  */
 
-const CONTEST = 'rehearsal-2026';
 
 export function Corrections({ contest, by }: { contest: Contest; by: string }) {
+  const CONTEST = useGame();
   const [round, setRound] = useState(contest.currentRound);
   const [pool, setPool] = useState<PoolPlayer[]>([]);
   const [imported, setImported] = useState<Record<string, number>>({});

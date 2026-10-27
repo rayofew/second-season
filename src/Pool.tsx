@@ -3,6 +3,7 @@ import { collected, defaultShares, fieldFor, NO_PRIZES, placesFor, pot } from '.
 import type { Prizes } from './domain/pool.ts';
 import { setPrizes } from './store/firestore.ts';
 import type { Contest, Manager } from './store/firestore.ts';
+import { useGame } from './game.tsx';
 
 /**
  * The buy-in, who has paid, and what each place is worth.
@@ -14,7 +15,6 @@ import type { Contest, Manager } from './store/firestore.ts';
  * public list of debtors is a different thing from a prize table.
  */
 
-const CONTEST = 'rehearsal-2026';
 const money = (amount: number) => `$${amount.toLocaleString()}`;
 const ORDINAL = ['Winner', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
 
@@ -35,6 +35,7 @@ export function Pool({
    */
   paid?: number | null;
 }) {
+  const CONTEST = useGame();
   const saved: Prizes = contest.prizes ?? NO_PRIZES;
   const rounds = contest.rounds?.length ?? 4;
 

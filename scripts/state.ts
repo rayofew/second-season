@@ -1,6 +1,7 @@
 /** Where the contest actually stands, for answering "what do I do next". */
 import { admin } from './admin.ts';
-const CONTEST = 'rehearsal-2026';
+// Which game: set GAME to run against another, e.g. $env:GAME = 'high-2027'. The rehearsal by default.
+const CONTEST = process.env.GAME ?? 'rehearsal-2026';
 const db = admin();
 const contest = (await db.doc(`contests/${CONTEST}`).get()).data()!;
 console.log(`status: ${contest.status}   currentRound: ${contest.currentRound}`);

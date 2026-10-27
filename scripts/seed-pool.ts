@@ -10,7 +10,8 @@ import { rawPoints } from '../src/domain/scoring.ts';
 import type { Position } from '../src/domain/rules.ts';
 import { admin } from './admin.ts';
 
-const CONTEST = 'rehearsal-2026';
+// Which game: set GAME to run against another, e.g. $env:GAME = 'high-2027'. The rehearsal by default.
+const CONTEST = process.env.GAME ?? 'rehearsal-2026';
 const FIELD = ['DEN', 'NE', 'JAX', 'PIT', 'BUF', 'HOU', 'LAC', 'SEA', 'PHI', 'CHI', 'TB', 'LAR', 'SF', 'GB'];
 const WANTED = new Set<Position>(['QB', 'RB', 'WR', 'TE', 'K', 'DEF']);
 

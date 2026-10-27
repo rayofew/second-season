@@ -14,7 +14,8 @@ import { EASTSIDE } from '../src/domain/rules.ts';
 import { admin } from './admin.ts';
 
 const COMMISSIONER = 'YmGUiqlUSudC5CEW5UYcsLYhnuE3';
-const CONTEST = 'rehearsal-2026';
+// Which game: set GAME to run against another, e.g. $env:GAME = 'high-2027'. The rehearsal by default.
+const CONTEST = process.env.GAME ?? 'rehearsal-2026';
 const SEASON = 2026;
 
 // Four ordinary weeks standing in for the four playoff rounds. Configured, not hardcoded, so

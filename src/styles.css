@@ -2103,3 +2103,20 @@ td { font-variant-numeric: tabular-nums; }
 .ladderrow.short { color: var(--gone); }
 .calcproblems { margin: 8px 15px; padding-left: 18px; font-size: 12.5px; }
 .calculator .summary { flex-wrap: wrap; gap: 8px; }
+
+/* Commish sections (Commissioner.tsx), and the Games tab (GamesPanel.tsx). */
+.subnav { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 var(--gap); }
+.subnav button { min-height: 36px; padding: 6px 14px; font-size: 13px; }
+.subnav button[aria-current='true'] { background: var(--raised); border-color: var(--line-strong); font-weight: 700; }
+.subnote { margin-bottom: var(--gap); }
+.gamerow { align-items: center; }
+.gametick input { width: 20px; height: 20px; }
+.gamename { width: 100%; font-weight: 650; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* The game switch in the header, and the game choices on the sign-in step (MyGames.tsx). */
+.gamepick-select { max-width: 180px; min-height: 34px; font-weight: 650; }
+.gamepicks { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 14px; }
+.gamepick { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; }
+.gamepick input { width: 20px; height: 20px; margin-top: 2px; flex: none; }
+.gamepick > span { display: flex; flex-direction: column; gap: 2px; }

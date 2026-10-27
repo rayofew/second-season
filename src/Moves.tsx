@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { readContest, readLeague, readMoves, readPool } from './store/firestore.ts';
 import type { Contest, Manager, Move, PoolPlayer } from './store/firestore.ts';
 import { Face } from './PlayerRow.tsx';
+import { useGame } from './game.tsx';
 
 /**
  * Who did what, and when.
@@ -17,9 +18,9 @@ import { Face } from './PlayerRow.tsx';
  * Barkley is seeing their team, so the rules refuse it on exactly the same terms as the rosters.
  */
 
-const CONTEST = 'rehearsal-2026';
 
 export function Moves() {
+  const CONTEST = useGame();
   const [moves, setMoves] = useState<Move[] | null>(null);
   const [managers, setManagers] = useState<Map<string, Manager>>(new Map());
   const [players, setPlayers] = useState<Map<string, PoolPlayer>>(new Map());

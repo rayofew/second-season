@@ -16,6 +16,7 @@ import {
   writeRosterFor, writeStandIns,
 } from './store/firestore.ts';
 import type { Contest, Manager, PoolPlayer, StandInRegister } from './store/firestore.ts';
+import { useGame } from './game.tsx';
 
 /**
  * A field of managers who do not exist, named by hand.
@@ -33,7 +34,6 @@ import type { Contest, Manager, PoolPlayer, StandInRegister } from './store/fire
  * whole league and a field saying standIn would announce the thing it records.
  */
 
-const CONTEST = 'rehearsal-2026';
 
 /** One stand-in's nine for the open round, with what each man is currently worth to him. */
 interface Lineup {
@@ -46,6 +46,7 @@ interface Lineup {
 const TEMPERAMENTS: Temperament[] = ['loyal', 'chaser', 'patcher', 'fiddler', 'absent'];
 
 export function StandIns() {
+  const CONTEST = useGame();
   const [contest, setContest] = useState<Contest | null>(null);
   const [managers, setManagers] = useState<Manager[]>([]);
   const [rows, setRows] = useState<StandIn[]>(STAND_INS.slice(0, 6));

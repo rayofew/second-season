@@ -823,3 +823,137 @@ export async function setCorrection(
     { merge: true },
   );
 }
+
+/* ------------------------------------------------------------------------------------------------
+ * Games, and the one profile a person carries between them.
+ *
+ * Ray: "i should be able to run as many games as i want". A game is a contest like the rehearsal,
+ * each with its own bracket, rosters, standings and money. The list of them lives in one public
+ * document, site/games, which the owner edits from Commish: a name, whether it is switched on, and
+ * nothing else. Switching one off hides it from players without deleting a thing.
+ * ---------------------------------------------------------------------------------------------- */
+
+export interface Game {
+  id: string;
+  name: string;
+  /** Shown to players, and open for sign-ups until its first lock. Off hides it from all but the owner. */
+  enabled: boolean;
+}
+
+/** Before the list exists the site has exactly one game, the rehearsal, which is how it always was. */
+export const FALLBACK_GAMES: Game[] = [{ id: 'rehearsal-2026', name: 'Rehearsal', enabled: true }];
+
+export async function readGames(): Promise<Game[]> {
+  const snapshot = await getDoc(doc(db, 'site', 'games')).catch(() => null);
+  const games = (snapshot?.data()?.games ?? []) as Game[];
+  return games.length > 0 ? games : FALLBACK_GAMES;
+}
+
+export async function saveGames(games: readonly Game[]): Promise<void> {
+  await setDoc(doc(db, 'site', 'games'), { games: games.map(({ id, name, enabled }) => ({ id, name, enabled })) });
+}
+
+/** "High Stakes" → "high-stakes-2027". Lower case and dashes, because it ends up in addresses. */
+export const gameIdFor = (name: string, year: number): string =>
+  `${name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'game'}-${year}`;
+
+/**
+ * A new, empty game: switched off, nobody in it, no bracket and no players yet.
+ *
+ * What a January game needs that a browser cannot give it — the player pool and the real bracket
+ * seeds — is written by the setup scripts once the playoff field is known, the same as the
+ * rehearsal's was (seed-pool.ts and seed-bracket.ts, run with GAME set to this id). The round weeks
+ * below are the NFL postseason's own numbering and are checked by that setup.
+ */
+export async function createGame(
+  id: string,
+  name: string,
+  owner: string,
+  settings: ContestSettings,
+  season: number,
+): Promise<void> {
+  // Never over the top of one that exists. A game taken off the list keeps its contest, and putting
+  // the same name back must bring that contest back as it was, not wipe it for an empty one.
+  const existing = await getDoc(doc(db, 'contests', id)).catch(() => null);
+  if (existing?.exists()) return;
+  await setDoc(doc(db, 'contests', id), {
+    name,
+    season,
+    settings,
+    rounds: [
+      { round: 0, name: 'Wild Card', seasonType: 'post', week: 1, status: 'upcoming' },
+      { round: 1, name: 'Divisional', seasonType: 'post', week: 2, status: 'upcoming' },
+      { round: 2, name: 'Conference', seasonType: 'post', week: 3, status: 'upcoming' },
+      { round: 3, name: 'Super Bowl', seasonType: 'post', week: 5, status: 'upcoming' },
+    ],
+    currentRound: 0,
+    status: 'upcoming',
+    commissioners: [owner],
+    field: {},
+    locks: {},
+  });
+}
+
+/**
+ * Who somebody is, once, for every game they join.
+ *
+ * Ray: team name and logo the same everywhere. The phone number is here too, so a player updates it
+ * once rather than once per game, and it is readable only by them and the owner — never the league.
+ * Joining a game copies it into that game's application, which is what the commissioner admits.
+ */
+export interface Profile {
+  firstName: string;
+  lastName: string;
+  teamName: string;
+  logo: string;
+  phone: string;
+  email: string;
+  /** Games this person has already been asked about, so the sign-in step does not ask twice. */
+  seen: string[];
+}
+
+export async function readProfile(uid: string): Promise<Profile | null> {
+  const snapshot = await getDoc(doc(db, 'profiles', uid)).catch(() => null);
+  if (!snapshot?.exists()) return null;
+  const data = snapshot.data();
+  return {
+    firstName: data.firstName ?? '',
+    lastName: data.lastName ?? '',
+    teamName: data.teamName ?? '',
+    logo: data.logo ?? '',
+    phone: data.phone ?? '',
+    email: data.email ?? '',
+    seen: Array.isArray(data.seen) ? data.seen : [],
+  };
+}
+
+export async function saveProfile(uid: string, profile: Profile): Promise<void> {
+  await setDoc(doc(db, 'profiles', uid), { ...profile, updatedAt: serverTimestamp() });
+}
+
+/** What this person has asked to join, and been let into, in one game. */
+export async function readStanding(gameId: string, uid: string): Promise<'in' | 'waiting' | 'out'> {
+  const entry = await getDoc(doc(db, 'contests', gameId, 'entries', uid)).catch(() => null);
+  if (entry?.exists()) return 'in';
+  const application = await getDoc(doc(db, 'contests', gameId, 'applications', uid)).catch(() => null);
+  return application?.exists() ? 'waiting' : 'out';
+}
+
+/** Asking to join a game, with the profile copied onto the application the commissioner reads. */
+export async function joinGame(gameId: string, uid: string, profile: Profile): Promise<void> {
+  await setDoc(doc(db, 'contests', gameId, 'applications', uid), {
+    name: [profile.firstName, profile.lastName].filter(Boolean).join(' ').trim(),
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    teamName: profile.teamName || shortName(profile.firstName, profile.lastName),
+    phone: profile.phone,
+    email: profile.email,
+    logo: profile.logo,
+    appliedAt: serverTimestamp(),
+  });
+}
+
+/** Taking back a request to join, before the commissioner has let them in. After that, it is his call. */
+export async function leaveGame(gameId: string, uid: string): Promise<void> {
+  await deleteDoc(doc(db, 'contests', gameId, 'applications', uid));
+}

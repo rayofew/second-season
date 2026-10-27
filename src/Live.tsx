@@ -24,6 +24,7 @@ import type { Held } from './LiveBracket.tsx';
 import { clubPoints } from './domain/clubpoints.ts';
 import { PlayerRow } from './PlayerRow.tsx';
 import { useHeartbeat } from './useHeartbeat.ts';
+import { useGame } from './game.tsx';
 
 /**
  * Everybody, right now.
@@ -37,7 +38,6 @@ import { useHeartbeat } from './useHeartbeat.ts';
  * to show and nothing here that could leak.
  */
 
-const CONTEST = 'rehearsal-2026';
 const HEARTBEAT = 45_000;
 
 interface Loaded {
@@ -46,6 +46,7 @@ interface Loaded {
 }
 
 export function Live({ uid }: { uid: string }) {
+  const CONTEST = useGame();
   const [contest, setContest] = useState<Contest | null>(null);
   const [teams, setTeams] = useState<RoundTeams | null>(null);
   const [pool, setPool] = useState<Map<string, PoolPlayer>>(new Map());

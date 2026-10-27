@@ -6,6 +6,7 @@ import type { Contest } from './store/firestore.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import { placesFor, pot } from './domain/pool.ts';
 import type { Scoring } from './domain/rules.ts';
+import { useGame } from './game.tsx';
 
 /**
  * What the game is, and what everything is worth.
@@ -15,16 +16,15 @@ import type { Scoring } from './domain/rules.ts';
  * with it. A rules page that has drifted from the rules is worse than no rules page.
  */
 
-const CONTEST = 'rehearsal-2026';
 
 /**
- * Whether the contest this page reads is the autumn rehearsal rather than a real January one.
+ * Whether the game this page reads is the autumn rehearsal rather than a real January one.
  *
  * While it is, the schedule shows January's expected dates instead of the rehearsal's regular-season
  * weeks, because the rehearsal is over and the page is now read by people deciding whether to play.
- * Point CONTEST at January's contest and the schedule goes back to being read from it.
+ * A January game's schedule is read from the game itself.
  */
-const REHEARSAL = CONTEST.startsWith('rehearsal');
+const isRehearsal = (game: string) => game.startsWith('rehearsal');
 
 /** The 2026 season's playoffs, as scheduled: week 18 is January 9–10, Super Bowl LXI is February 14. */
 const UPCOMING = [
@@ -90,6 +90,7 @@ function Table({ title, rows }: { title: string; rows: [string, string][] }) {
 }
 
 export function Rules() {
+  const CONTEST = useGame();
   const [contest, setContest] = useState<Contest | null>(null);
   const [paid, setPaid] = useState<number | null>(null);
 
@@ -148,7 +149,7 @@ export function Rules() {
         </p>
       </div>
 
-      {REHEARSAL ? (
+      {isRehearsal(CONTEST) ? (
         <div className="card">
           <div className="confhead">January's schedule</div>
           {UPCOMING.map((round) => (
