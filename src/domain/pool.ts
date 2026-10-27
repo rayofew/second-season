@@ -5,6 +5,8 @@
  * get, which is the part that otherwise lives in a group chat and gets argued about in February.
  * Settling up stays between people.
  */
+import { breakdown } from './payouts.ts';
+import type { Plan } from './payouts.ts';
 
 export interface Payout {
   place: number;
@@ -20,6 +22,13 @@ export interface Prizes {
   shares: number[] | null;
   /** Paid each round to the best raw score. Comes out of the pot before the places are worked out. */
   weekly: number;
+  /**
+   * The payout table by field size, from the calculator on Commish. When it is set it decides
+   * everything above — places, shares and the weekly prize — and those fields are ignored.
+   */
+  plan?: Plan;
+  /** When the commissioner locked the plan in. Until then Rules calls it a draft. */
+  lockedAt?: Date;
 }
 
 export const NO_PRIZES: Prizes = { buyIn: 0, places: null, shares: null, weekly: 0 };
@@ -61,9 +70,21 @@ export interface Pot {
   /** What the places divide between them. */
   places: number;
   payouts: Payout[];
+  /** What each weekly spot is worth every round, best raw score first. One entry for a single winner. */
+  weeklySpots: number[];
 }
 
 export function pot(managers: number, prizes: Prizes, rounds: number): Pot {
+  if (prizes.plan) {
+    const paid = breakdown(managers, prizes.plan, rounds);
+    return {
+      total: paid.pot,
+      weekly: paid.weeklyTotal,
+      places: paid.placesPool,
+      payouts: paid.places.map((amount, index) => ({ place: index + 1, share: paid.shares[index] ?? 0, amount })),
+      weeklySpots: paid.weeklySpots,
+    };
+  }
   const total = managers * prizes.buyIn;
   // The weekly prizes come off the top: a pot that pays them out of nowhere does not add up.
   const weekly = Math.min(prizes.weekly * rounds, total);
@@ -84,7 +105,19 @@ export function pot(managers: number, prizes: Prizes, rounds: number): Pot {
       // still divides the pot instead of inventing or losing money.
       amount: Math.round((remaining * share) / sum),
     })),
+    weeklySpots: prizes.weekly > 0 ? [prizes.weekly] : [],
   };
+}
+
+/**
+ * How many people the payouts are sized on.
+ *
+ * With a payout plan, only those the commissioner has marked as paid — Ray: "it should only count
+ * once i hit the paid button". Without one (the autumn rehearsal's simple settings) it is everybody
+ * entered, as it always was, so a finished contest keeps the result it was given.
+ */
+export function fieldFor(prizes: Prizes | undefined, entered: number, paid: number | null): number {
+  return prizes?.plan ? (paid ?? 0) : entered;
 }
 
 /** What is actually in hand, as against what the field is worth if everybody pays. */

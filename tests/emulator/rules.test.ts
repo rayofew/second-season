@@ -190,7 +190,7 @@ describe('a visitor who has not signed in', () => {
     await assertFails(setDoc(doc(asVisitor(), 'contests', CONTEST, 'posts', 'p2'), { uid: 'nobody', name: 'X', text: 'hi' }));
   });
 
-  it('may read a round's lineup copy once it has locked, and not before', async () => {
+  it("may read a round's lineup copy once it has locked, and not before", async () => {
     await env.withSecurityRulesDisabled(async (context) => {
       const db = context.firestore();
       await setDoc(doc(db, 'contests', CONTEST, 'lineups', '0'), { rosters: { [MANAGER]: nine } });

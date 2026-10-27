@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { collected, defaultShares, NO_PRIZES, placesFor, pot } from './domain/pool.ts';
+import { collected, defaultShares, fieldFor, NO_PRIZES, placesFor, pot } from './domain/pool.ts';
 import type { Prizes } from './domain/pool.ts';
 import { setPrizes } from './store/firestore.ts';
 import type { Contest, Manager } from './store/firestore.ts';
@@ -16,18 +16,24 @@ import type { Contest, Manager } from './store/firestore.ts';
 
 const CONTEST = 'rehearsal-2026';
 const money = (amount: number) => `$${amount.toLocaleString()}`;
-const ORDINAL = ['Winner', '2nd', '3rd', '4th', '5th'];
+const ORDINAL = ['Winner', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
 
 export function Pool({
   contest,
   managers,
   commissioner,
   onChange,
+  paid,
 }: {
   contest: Contest;
   managers: Manager[];
   commissioner: boolean;
   onChange: () => void;
+  /**
+   * How many have paid, for a contest whose payouts are sized on it. The commissioner's managers
+   * carry the paid flag themselves; everybody else is given the published count.
+   */
+  paid?: number | null;
 }) {
   const saved: Prizes = contest.prizes ?? NO_PRIZES;
   const rounds = contest.rounds?.length ?? 4;
@@ -39,8 +45,9 @@ export function Pool({
   const live = editing ? draft : saved;
   const places = live.places ?? placesFor(managers.length);
   const shares = live.shares?.length === places ? live.shares : defaultShares(places);
-  const table = pot(managers.length, { ...live, places, shares }, rounds);
   const paidCount = managers.filter((manager) => manager.paid).length;
+  const field = fieldFor(saved, managers.length, commissioner ? paidCount : (paid ?? null));
+  const table = pot(field, { ...live, places, shares }, rounds);
   const sharesTotal = shares.reduce((sum, share) => sum + share, 0);
 
   async function save() {
@@ -60,10 +67,17 @@ export function Pool({
   return (
     <>
       <div className="card">
-        <div className="confhead">Prize pool{table.total > 0 && ` — ${money(table.total)}`}</div>
+        <div className="confhead">
+          Prize pool{table.total > 0 && ` — ${money(table.total)}`}
+          {saved.plan && <span className="colhead">{field} paid {field === 1 ? 'entry' : 'entries'}</span>}
+        </div>
 
         {table.total === 0 ? (
-          <div className="pending">No buy-in set — nobody is playing for money.</div>
+          <div className="pending">
+            {saved.plan
+              ? 'Nobody has paid yet. The pot and the places fill in as the commissioner marks people paid.'
+              : 'No buy-in set — nobody is playing for money.'}
+          </div>
         ) : (
           <>
             {table.payouts.map((payout) => (
@@ -83,13 +97,19 @@ export function Pool({
                   <span className="dot"> · </span>
                   {rounds} rounds
                 </span>
-                <span className="rulevalue">{money(live.weekly)} each</span>
+                <span className="rulevalue">
+                  {table.weeklySpots.length > 1 ? table.weeklySpots.map(money).join(' / ') : money(table.weeklySpots[0] ?? 0)} each round
+                </span>
               </div>
             )}
           </>
         )}
 
-        {commissioner && !editing && (
+        {commissioner && !editing && saved.plan && (
+          <div className="pending">Set by the payout calculator below.</div>
+        )}
+
+        {commissioner && !editing && !saved.plan && (
           <div className="summary">
             <span>
               {money(collected(paidCount, saved.buyIn))} in hand of {money(table.total)}

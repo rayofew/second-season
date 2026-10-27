@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { readContest } from './store/firestore.ts';
+import { readContest, readPaidCount } from './store/firestore.ts';
+import { breakdown, sharesText, tierFrom } from './domain/payouts.ts';
+import type { Plan } from './domain/payouts.ts';
 import type { Contest } from './store/firestore.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import { placesFor, pot } from './domain/pool.ts';
@@ -89,11 +91,13 @@ function Table({ title, rows }: { title: string; rows: [string, string][] }) {
 
 export function Rules() {
   const [contest, setContest] = useState<Contest | null>(null);
+  const [paid, setPaid] = useState<number | null>(null);
 
   useEffect(() => {
     void (async () => {
       try {
         setContest(await readContest(CONTEST));
+        setPaid(await readPaidCount(CONTEST));
       } catch {
         /* fall back to the defaults below, which are what a new contest is created with anyway */
       }
@@ -239,6 +243,10 @@ export function Rules() {
         </p>
       </div>
 
+      {contest?.prizes?.plan
+        ? <PlanMoney plan={contest.prizes.plan} lockedAt={contest.prizes.lockedAt} rounds={contest.rounds.length || 4} paid={paid} />
+        : (
+      <>
       <div className="card prose">
         <h2>The money</h2>
         <p>
@@ -318,6 +326,9 @@ export function Rules() {
         </p>
       </div>
 
+      </>
+        )}
+
       <div className="card prose">
         <h2>Scoring</h2>
         <p>
@@ -391,6 +402,93 @@ export function Rules() {
         ]}
       />
 
+    </>
+  );
+}
+
+const ordinal = (place: number) => (place === 1 ? 'Winner' : place === 2 ? '2nd' : place === 3 ? '3rd' : `${place}th`);
+const dollars = (amount: number) => `$${Math.round(amount).toLocaleString()}`;
+const LADDER = [5, 10, 15, 20, 30, 50, 75, 100];
+
+/**
+ * The money, as the commissioner set it in the calculator.
+ *
+ * Ray: "Once I lock it in, I want the rules to auto update so people know." Read from the contest
+ * and worked out by the same breakdown() that pays it, so the page cannot drift from the payout.
+ * Until he locks it in it says it is a draft.
+ */
+export function PlanMoney({ plan, lockedAt, rounds, paid }: { plan: Plan; lockedAt?: Date; rounds: number; paid: number | null }) {
+  const sorted = [...plan.tiers].sort((a, b) => a.upTo - b.upTo);
+  const weekly = [...plan.weeklyTiers].sort((a, b) => a.upTo - b.upTo);
+  const now = paid && paid > 0 ? breakdown(paid, plan, rounds) : null;
+  return (
+    <>
+      <div className="card prose">
+        <h2>The money</h2>
+        {!lockedAt && <p><strong>Draft.</strong> These are the payouts as they stand, and they may still change before Wild Card weekend.</p>}
+        <p>
+          The buy-in is <strong>{dollars(plan.buyIn)}</strong>. <strong>Nothing is kept back</strong>: every
+          dollar paid in is paid out. The more of us who play, the bigger the pot and the more places pay.
+          Only paid entries count towards the size of the field.
+        </p>
+        <p>
+          <strong>{plan.weeklyPercent}% of the pot</strong> goes to the best raw score each round, multipliers
+          ignored, so a week stays winnable by anybody — even somebody whose contest is over. The rest is
+          paid to the final standings. Ties split whatever the places they cover are worth.
+        </p>
+      </div>
+
+      {now && (
+        <div className="card">
+          <div className="confhead">Right now · {paid} paid</div>
+          <div className="ruleline"><span>The pot</span><span className="rulevalue">{dollars(now.pot)}</span></div>
+          <div className="ruleline">
+            <span>Best week, each of {rounds} rounds</span>
+            <span className="rulevalue">{now.weeklySpots.map(dollars).join(' / ') || '—'}</span>
+          </div>
+          {now.places.map((amount, index) => (
+            <div className="ruleline" key={index}>
+              <span>{ordinal(index + 1)} · {now.shares[index]}%</span>
+              <span className="rulevalue">{dollars(amount)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="card">
+        <div className="confhead">How many places pay<span className="colhead">Split</span></div>
+        {sorted.map((tier, index) => (
+          <div className="ruleline" key={tier.upTo}>
+            <span>{tierFrom(sorted, tier)}{index === sorted.length - 1 ? ' or more' : `–${tier.upTo}`} players · {tier.shares.length} paid</span>
+            <span className="rulevalue">{sharesText(tier.shares)}</span>
+          </div>
+        ))}
+        {weekly.length > 0 && weekly.some((tier) => tier.shares.length > 1) && (
+          <div className="pending">
+            Weekly: {weekly.map((tier, index) => `${tier.shares.length === 1 ? 'one winner' : `top ${tier.shares.length} (${sharesText(tier.shares)})`} ${index === weekly.length - 1 ? `from ${tierFrom(weekly, tier)} players` : `up to ${tier.upTo}`}`).join('; ')}.
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <div className="confhead">What that comes to</div>
+        <div className="ladder">
+          <div className="ladderrow ladderhead"><span>Paid</span><span>Pot</span><span>Places</span><span>Winner</span><span>2nd</span><span>3rd</span><span>Last paid</span><span>Weekly</span></div>
+          {LADDER.map((size) => {
+            const row = breakdown(size, plan, rounds);
+            return (
+              <div className="ladderrow" key={size}>
+                <span>{size}</span><span>{dollars(row.pot)}</span><span>{row.places.length}</span>
+                <span>{dollars(row.places[0] ?? 0)}</span>
+                <span>{row.places[1] !== undefined ? dollars(row.places[1]) : '—'}</span>
+                <span>{row.places[2] !== undefined ? dollars(row.places[2]) : '—'}</span>
+                <span>{dollars(row.places[row.places.length - 1] ?? 0)}</span>
+                <span>{row.weeklySpots.map(dollars).join(' / ') || '—'}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </>
   );
 }

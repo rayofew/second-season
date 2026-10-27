@@ -3,7 +3,7 @@ import { table } from '../domain/standings.ts';
 import type { Entry, Placing } from '../domain/standings.ts';
 import type { HeldPlayer } from '../domain/multiplier.ts';
 import type { StatLine } from '../domain/scoring.ts';
-import { readContest, readCorrections, readLeague, readLineups, readPool, readScores } from './firestore.ts';
+import { readContest, readCorrections, readLeague, readLineups, readPaidCount, readPool, readScores } from './firestore.ts';
 import type { Contest, Manager, PoolPlayer } from './firestore.ts';
 
 /**
@@ -27,6 +27,8 @@ export interface Loaded {
   roundNames: string[];
   /** When the round now being picked locks, if it has not yet. */
   nextLock: Date | null;
+  /** How many have paid, as published by the commissioner's browser. Null before it has said. */
+  paid: number | null;
 }
 
 /**
@@ -40,11 +42,12 @@ export async function loadTable(contestId: string, { visitor = false }: { visito
 
   const now = new Date();
   const locked = contest.rounds.filter((round) => (contest.locks[String(round.round)] ?? now) <= now);
-  const [people, board] = await Promise.all([
+  const [people, board, paid] = await Promise.all([
     // The public team list for everybody, member or not: names and logos are all a table draws,
     // and it is one read rather than one per manager. A visitor is refused the entries fallback.
     readLeague(contestId),
     readPool(contestId),
+    readPaidCount(contestId),
   ]);
   const loaded: Loaded = {
     contest,
@@ -53,6 +56,7 @@ export async function loadTable(contestId: string, { visitor = false }: { visito
     players: new Map(board.map((player) => [player.id, player])),
     roundNames: locked.map((round) => round.name),
     nextLock: contest.locks[String(contest.currentRound)] ?? null,
+    paid,
   };
   if (locked.length === 0) return loaded;
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { points } from './domain/scoring.ts';
-import { weeklyWins } from './domain/weekly.ts';
-import { defaultShares, NO_PRIZES, placesFor, pot } from './domain/pool.ts';
+import { weeklyPaid, weeklyWins } from './domain/weekly.ts';
+import { defaultShares, fieldFor, NO_PRIZES, placesFor, pot } from './domain/pool.ts';
 import type { Placing } from './domain/standings.ts';
 import { explain } from './domain/trouble.ts';
 import { loadTable } from './store/table.ts';
@@ -56,9 +56,13 @@ export function ResultsView({ loaded, uid }: { loaded: Loaded; uid?: string }) {
   const { contest, placings, managers } = loaded;
   const logoOf = new Map(managers.map((manager) => [manager.uid, manager.logo]));
   const prizes = contest.prizes ?? NO_PRIZES;
-  const places = prizes.places ?? placesFor(managers.length);
+  const field = fieldFor(contest.prizes, managers.length, loaded.paid);
+  const places = prizes.places ?? placesFor(field);
   const shares = prizes.shares?.length === places ? prizes.shares : defaultShares(places);
-  const purse = pot(managers.length, { ...prizes, places, shares }, contest.rounds.length);
+  const purse = pot(field, { ...prizes, places, shares }, contest.rounds.length);
+  // The top spot's prize, and the rest of the week's paid spots when the plan pays more than one.
+  const weeklyTop = purse.weeklySpots[0] ?? 0;
+  const weeklyRest = purse.weeklySpots.length > 1 ? weeklyPaid(placings, purse.weeklySpots) : null;
   const paid = payoutsFor(placings, purse.total > 0 ? purse.payouts.map((payout) => payout.amount) : []);
   const weeks = weeklyWins(placings);
   const champions = placings.filter((placing) => placing.rank === 1);
@@ -113,7 +117,11 @@ export function ResultsView({ loaded, uid }: { loaded: Loaded; uid?: string }) {
         <div className="card">
           <div className="confhead">
             Best week, every round
-            {prizes.weekly > 0 && <span className="team">{money(prizes.weekly)} each</span>}
+            {weeklyTop > 0 && (
+              <span className="team">
+                {purse.weeklySpots.length > 1 ? purse.weeklySpots.map(money).join(' / ') : money(weeklyTop)} each round
+              </span>
+            )}
           </div>
           {weeks.map((week) => (
             <div className="weekrow" key={week.round}>
@@ -128,9 +136,14 @@ export function ResultsView({ loaded, uid }: { loaded: Loaded; uid?: string }) {
                 {week.winners.length > 1 && <span className="weekshared">shared</span>}
               </span>
               <span className="weekraw">{points(week.raw)}</span>
-              {prizes.weekly > 0 && week.winners.length > 0 && (
+              {weeklyTop > 0 && week.winners.length > 0 && !weeklyRest && (
                 <span className="weekmoney">
-                  {week.winners.length > 1 ? `${money(prizes.weekly / week.winners.length)} each` : money(prizes.weekly)}
+                  {week.winners.length > 1 ? `${money(weeklyTop / week.winners.length)} each` : money(weeklyTop)}
+                </span>
+              )}
+              {weeklyRest && (
+                <span className="weekmoney">
+                  {weeklyRest[week.round]?.paid.map((entry) => `${entry.name} ${money(entry.amount)}`).join(' · ')}
                 </span>
               )}
             </div>

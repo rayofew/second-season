@@ -71,6 +71,9 @@ export async function readContest(contestId: string): Promise<Contest | null> {
       Object.entries(data.locks ?? {}).map(([round, at]) => [round, (at as { toDate(): Date }).toDate()]),
     ),
     nextKickoff: data.nextKickoff ? (data.nextKickoff as { toDate(): Date }).toDate() : undefined,
+    prizes: data.prizes
+      ? { ...data.prizes, lockedAt: data.prizes.lockedAt ? (data.prizes.lockedAt as { toDate(): Date }).toDate() : undefined }
+      : undefined,
   } as Contest;
 }
 
@@ -105,9 +108,25 @@ export async function syncTeamLabels(contestId: string, managers: readonly Manag
   );
   const current = await getDoc(doc(db, 'contests', contestId, 'public', 'teams'));
   const had = current.data()?.teams ?? {};
+  // How many have paid, as a number and nothing more. The payouts are sized on it, so everybody
+  // needs it; who exactly has paid stays on the entries, which only the commissioner reads.
+  const paid = managers.filter((manager) => manager.paid).length;
   const same = JSON.stringify(Object.keys(had).sort().map((uid) => [uid, had[uid].teamName, had[uid].logo]))
-    === JSON.stringify(Object.keys(teams).map((uid) => [uid, teams[uid]!.teamName, teams[uid]!.logo]));
-  if (!same) await setDoc(doc(db, 'contests', contestId, 'public', 'teams'), { teams });
+    === JSON.stringify(Object.keys(teams).map((uid) => [uid, teams[uid]!.teamName, teams[uid]!.logo]))
+    && current.data()?.paid === paid;
+  if (!same) await setDoc(doc(db, 'contests', contestId, 'public', 'teams'), { teams, paid });
+}
+
+/**
+ * How many managers have paid, which is the field the payouts are sized on.
+ *
+ * Ray: "it should only count once i hit the paid button". Read from the public team list, where the
+ * commissioner's browser keeps the count; null before it has ever written one.
+ */
+export async function readPaidCount(contestId: string): Promise<number | null> {
+  const snapshot = await getDoc(doc(db, 'contests', contestId, 'public', 'teams')).catch(() => null);
+  const paid = snapshot?.data()?.paid;
+  return typeof paid === 'number' ? paid : null;
 }
 
 /**
@@ -752,7 +771,12 @@ export async function advanceRound(
 
 /** The whole prize arrangement. Nothing here handles money — it is a note of what was agreed. */
 export async function setPrizes(contestId: string, prizes: Prizes): Promise<void> {
-  await updateDoc(doc(db, 'contests', contestId), { prizes });
+  // undefined is not a value Firestore will store, and a plan locked in carries a server timestamp.
+  const { lockedAt, ...rest } = prizes;
+  await updateDoc(doc(db, 'contests', contestId), {
+    prizes: JSON.parse(JSON.stringify({ ...rest })),
+    ...(lockedAt ? { 'prizes.lockedAt': serverTimestamp() } : {}),
+  });
 }
 
 /** Ticking somebody off as having paid. A note in a ledger, not a transaction. */

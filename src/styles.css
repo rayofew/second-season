@@ -2084,3 +2084,22 @@ td { font-variant-numeric: tabular-nums; }
   .champname { font-size: 20px; }
   .champmoney { flex-basis: 100%; padding-left: 62px; }
 }
+
+/* The payout calculator on Commish (Calculator.tsx). */
+.calculator { padding-bottom: 6px; }
+.calcrow { display: flex; flex-wrap: wrap; gap: 14px 22px; padding: 12px 15px; }
+.calchead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 15px 4px; font-size: 13px; font-weight: 750; }
+.calchint { margin: 0 15px 8px; font-size: 12px; color: var(--dim); }
+.bands { display: flex; flex-direction: column; gap: 6px; padding: 0 15px 6px; align-items: flex-start; }
+.bandrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; }
+.bandsize { min-width: 118px; font-variant-numeric: tabular-nums; font-size: 13px; }
+.bandsize input { width: 54px; }
+.bandshares { flex: 1 1 200px; min-width: 0; font-variant-numeric: tabular-nums; }
+.bandsum { font-size: 12px; color: var(--dim); min-width: 92px; }
+.calcslider { width: calc(100% - 30px); margin: 4px 15px 8px; }
+.ladder { padding: 0 15px 8px; overflow-x: auto; }
+.ladderrow { display: grid; grid-template-columns: 44px 70px 50px repeat(4, 70px) minmax(110px, 1fr); gap: 6px; padding: 5px 0; font-size: 12.5px; font-variant-numeric: tabular-nums; border-bottom: 1px solid var(--line); min-width: 620px; }
+.ladderhead { color: var(--faint); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.ladderrow.short { color: var(--gone); }
+.calcproblems { margin: 8px 15px; padding-left: 18px; font-size: 12.5px; }
+.calculator .summary { flex-wrap: wrap; gap: 8px; }

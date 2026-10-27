@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { explain } from './domain/trouble.ts';
 import { points } from './domain/scoring.ts';
-import { weeklyWins, winCounts } from './domain/weekly.ts';
+import { weeklyPaid, weeklyWins, winCounts } from './domain/weekly.ts';
+import { fieldFor, NO_PRIZES, pot } from './domain/pool.ts';
 import type { Placing } from './domain/standings.ts';
 import { loadTable } from './store/table.ts';
 import { PlayerRow } from './PlayerRow.tsx';
@@ -43,6 +44,7 @@ export function Standings({ uid, visitor = false }: { uid: string; visitor?: boo
   const [nextLock, setNextLock] = useState<Date | null>(null);
   const [managers, setManagers] = useState<Map<string, Manager>>(new Map());
   const [contest, setContest] = useState<Contest | null>(null);
+  const [paidCount, setPaidCount] = useState<number | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -50,6 +52,7 @@ export function Standings({ uid, visitor = false }: { uid: string; visitor?: boo
         const loaded = await loadTable(CONTEST, { visitor });
         if (!loaded) { setProblem('No contest found.'); return; }
         setContest(loaded.contest);
+        setPaidCount(loaded.paid);
         setRoundNames(loaded.roundNames);
         setNextLock(loaded.nextLock);
         setNames(loaded.players);
@@ -67,7 +70,7 @@ export function Standings({ uid, visitor = false }: { uid: string; visitor?: boo
   if (placings.length === 0) {
     return (
       <>
-      {contest && !visitor && <Pool contest={contest} managers={[...managers.values()]} commissioner={false} onChange={() => undefined} />}
+      {contest && !visitor && <Pool contest={contest} managers={[...managers.values()]} commissioner={false} onChange={() => undefined} paid={paidCount} />}
       <div className="card gate">
         <h2>Everyone's team is hidden</h2>
         <p>
@@ -93,7 +96,7 @@ export function Standings({ uid, visitor = false }: { uid: string; visitor?: boo
   }
 
   const pool = contest && !visitor
-    ? <Pool contest={contest} managers={[...managers.values()]} commissioner={false} onChange={() => undefined} />
+    ? <Pool contest={contest} managers={[...managers.values()]} commissioner={false} onChange={() => undefined} paid={paidCount} />
     : null;
 
   const leader = placings[0]?.credited ?? 0;
@@ -107,7 +110,12 @@ export function Standings({ uid, visitor = false }: { uid: string; visitor?: boo
    * Nought when the league is not collecting anything, and then the money disappears entirely
    * rather than showing a row of dollar signs with no dollars behind them.
    */
-  const weekly = contest?.prizes?.weekly ?? 0;
+  const purse = contest
+    ? pot(fieldFor(contest.prizes, managers.size, paidCount), contest.prizes ?? NO_PRIZES, contest.rounds.length)
+    : null;
+  const weekly = purse?.weeklySpots[0] ?? 0;
+  // When the plan pays more than the top score each week, who else is paid and what.
+  const weeklyRest = purse && purse.weeklySpots.length > 1 ? weeklyPaid(placings, purse.weeklySpots) : null;
 
   return (
     <>
@@ -250,7 +258,12 @@ export function Standings({ uid, visitor = false }: { uid: string; visitor?: boo
                 </span>
                 <span className="weekraw">{points(week.raw)}</span>
                 {/* Split on a dead heat, because two winners and one prize is not two prizes. */}
-                {weekly > 0 && (
+                {weeklyRest && (
+                  <span className="weekmoney">
+                    {weeklyRest[week.round]?.paid.map((entry) => `${entry.name} ${Math.round(entry.amount * 100) / 100}`).join(' · ')}
+                  </span>
+                )}
+                {weekly > 0 && !weeklyRest && (
                   <span className="weekmoney">
                     {week.winners.length > 1
                       ? `$${Math.round((weekly / week.winners.length) * 100) / 100} each`

@@ -10,6 +10,7 @@ import { Corrections } from './Corrections.tsx';
 import { Managers } from './Managers.tsx';
 import { StandIns } from './StandIns.tsx';
 import { KickoffSetting } from './KickoffSetting.tsx';
+import { Calculator } from './Calculator.tsx';
 
 /**
  * The commissioner's tab: who wants in, and who has not picked yet.
@@ -182,6 +183,8 @@ export function Commissioner({ uid }: { uid: string }) {
       />
 
       <Pool contest={contest} managers={managers} commissioner onChange={() => void load()} />
+
+      <Calculator contest={contest} paid={managers.filter((manager) => manager.paid).length} onDone={() => void load()} />
 
       <Advance contest={contest} onDone={() => void load()} />
 

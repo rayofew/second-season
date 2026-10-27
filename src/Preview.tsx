@@ -3,6 +3,9 @@ import type { RowPlayer } from './PlayerRow.tsx';
 import { BracketLadder } from './Bracket.tsx';
 import { Rules } from './Rules.tsx';
 import { ResultsView } from './Results.tsx';
+import { Calculator } from './Calculator.tsx';
+import { PlanMoney } from './Rules.tsx';
+import { DEFAULT_PLAN } from './domain/payouts.ts';
 import type { Loaded } from './store/table.ts';
 import type { Placing } from './domain/standings.ts';
 import type { Contest, RoundTeams } from './store/firestore.ts';
@@ -113,6 +116,7 @@ const FINISHED: Loaded = (() => {
     players: new Map(),
     roundNames: ['Wild Card', 'Divisional', 'Conference', 'Super Bowl'],
     nextLock: null,
+    paid: null,
   };
 })();
 
@@ -154,6 +158,11 @@ export function Preview() {
         </span>
         <button className="submit">Submit</button>
       </div>
+
+      {/* Saving does nothing here: the rules refuse a browser that is not signed in as the commissioner. */}
+      <Calculator contest={{ ...CONTEST, locks: { ...CONTEST.locks, '0': new Date(Date.now() + 8.64e8) } }} paid={23} onDone={() => undefined} />
+
+      <PlanMoney plan={DEFAULT_PLAN} rounds={4} paid={23} />
 
       <ResultsView loaded={FINISHED} uid="e3" />
 

@@ -48,3 +48,36 @@ export function winCounts(wins: readonly WeekWin[]): Map<string, number> {
   }
   return counts;
 }
+
+export interface WeekPaid {
+  round: number;
+  /** Everybody paid that round, best raw score first. A dead heat splits the spots it covers. */
+  paid: { entryId: string; name: string; raw: number; amount: number }[];
+}
+
+/**
+ * Who is paid each round when the weekly prize pays more than one spot.
+ *
+ * Raw points, multipliers ignored, exactly as weeklyWins — so a man out of the contest can still
+ * take a week. Two managers level on the same score share what their spots were worth between them,
+ * the same way the places do, because two people tied for second have earned second and third
+ * between them, not two seconds.
+ */
+export function weeklyPaid(entries: readonly EntryScore[], spots: readonly number[]): WeekPaid[] {
+  const rounds = Math.max(0, ...entries.map((entry) => entry.rounds.length));
+  return Array.from({ length: rounds }, (_, round): WeekPaid => {
+    const scored = entries
+      .map((entry) => ({ entryId: entry.entryId, name: entry.name, raw: entry.rounds[round]?.raw ?? 0 }))
+      .filter((entry) => entry.raw > 0)
+      .sort((a, b) => b.raw - a.raw);
+    const paid: WeekPaid['paid'] = [];
+    let at = 0;
+    while (at < scored.length && at < spots.length) {
+      const level = scored.filter((entry) => Math.abs(entry.raw - scored[at]!.raw) < 1e-9);
+      const covered = spots.slice(at, at + level.length).reduce((sum, value) => sum + value, 0);
+      for (const entry of level) paid.push({ ...entry, amount: covered / level.length });
+      at += level.length;
+    }
+    return { round, paid };
+  });
+}

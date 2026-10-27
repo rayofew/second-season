@@ -90,8 +90,14 @@ service cloud.firestore {
     match /contests/{contestId} {
       allow read: if isPublic();
       allow create: if isCommissioner(contestId);
+      // The money is fixed once the first round kicks off. Before that the commissioner may change
+      // the payout plan as often as he likes; after it, nothing about the prizes may move — not by
+      // the calculator, not by a typo, not by anybody — because people chose to play on those terms.
       allow update: if isCommissioner(contestId)
-                    && request.resource.data.commissioners.hasAll([OWNER()]);
+                    && request.resource.data.commissioners.hasAll([OWNER()])
+                    && (request.resource.data.get('prizes', null) == resource.data.get('prizes', null)
+                        || !('0' in resource.data.get('locks', {}))
+                        || request.time < resource.data.locks['0']);
       allow delete: if false;
 
       // A manager's entry. He may set his own name; everything else about him is the
