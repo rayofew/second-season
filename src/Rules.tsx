@@ -415,6 +415,20 @@ export function RulesMoney({ plan, draft, rounds, paid }: { plan: Plan; draft: b
             [<strong key="l">Remaining for overall prizes</strong>, <strong key="v">{dollars(example.placesPool)}</strong>],
           ]}
         />
+        {/* What a best week pays at this size of field, every round. Ray: "the example needs to have
+            the weekly prizes as well" — the table above only took their total off the top. */}
+        {example.weeklySpots.length > 0 && (
+          <Grid
+            head={['Best week, each round', 'Prize', `All ${rounds} rounds`]}
+            right={[1, 2]}
+            rows={[
+              ...example.weeklySpots.map((amount, index) => [
+                `${ordinalWord(index + 1)} place`, <strong key={`w${index}`}>{dollars(amount)}</strong>, dollars(amount * rounds),
+              ]),
+              [<strong key="wt">Total</strong>, <strong key="wr">{dollars(example.weeklySpots.reduce((a, b) => a + b, 0))}</strong>, <strong key="wa">{dollars(example.weeklyTotal)}</strong>],
+            ]}
+          />
+        )}
         <Grid
           head={['Overall finish', 'Share', 'Payout']}
           right={[1, 2]}
