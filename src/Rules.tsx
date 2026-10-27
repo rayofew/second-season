@@ -133,7 +133,6 @@ export function Rules() {
       <Section title="Signing Up">
         <ul>
           <li>Registration opens in <strong>December</strong>.</li>
-          <li>A <strong>phone number is required</strong> to register. Only the commissioner sees it.</li>
           <li>Low Stakes and High Stakes are entered as <strong>separate teams</strong>. If you participate in both, manage each team separately.</li>
         </ul>
       </Section>
