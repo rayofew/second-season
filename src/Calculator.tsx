@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DEFAULT_PLAN, breakdown, parseShares, problems, sharesText, tierFrom, weeklyShareOfPot } from './domain/payouts.ts';
 import type { Plan, Tier } from './domain/payouts.ts';
 import { setPrizes } from './store/firestore.ts';
@@ -23,6 +23,35 @@ const money = (amount: number) => `$${Math.round(amount).toLocaleString()}`;
 const ORDINAL = (place: number) => (place === 1 ? '1st' : place === 2 ? '2nd' : place === 3 ? '3rd' : `${place}th`);
 const SAMPLES = [5, 10, 15, 20, 30, 50, 75, 100];
 
+/**
+ * Where a band ends, typed freely and taken only when the typing is done.
+ *
+ * Ray: "best week needs me to easily change the amount of players. rn i cant change a band without
+ * issues". It applied every keystroke: typing 49 passed through 4 first, which moved that band to
+ * the top of the list and dragged the others round with it before the 9 arrived. Now the number is
+ * held here until Enter or a click elsewhere, then fitted between its neighbours.
+ */
+function BandEnd({ value, min, max, label, onCommit }: {
+  value: number; min: number; max: number; label: string; onCommit: (next: number) => void;
+}) {
+  const [text, setText] = useState(String(value));
+  useEffect(() => { setText(String(value)); }, [value]);
+  const commit = () => {
+    const typed = Math.floor(Number(text));
+    const next = Number.isFinite(typed) && typed > 0 ? Math.min(Math.max(typed, min), Math.max(min, max)) : value;
+    setText(String(next));
+    if (next !== value) onCommit(next);
+  };
+  return (
+    <input
+      type="number" inputMode="numeric" value={text} aria-label={label} title={`Between ${min} and ${Math.max(min, max)}`}
+      onChange={(event) => setText(event.target.value)}
+      onBlur={commit}
+      onKeyDown={(event) => { if (event.key === 'Enter') (event.target as HTMLInputElement).blur(); }}
+    />
+  );
+}
+
 /** One band of the table, editable as "up to N" and "45/27/18/10". */
 function BandRows({ tiers, onChange, what }: { tiers: Tier[]; onChange: (next: Tier[]) => void; what: string }) {
   const sorted = [...tiers].sort((a, b) => a.upTo - b.upTo);
@@ -43,9 +72,14 @@ function BandRows({ tiers, onChange, what }: { tiers: Tier[]; onChange: (next: T
               {last
                 ? <span title="The last band covers any field bigger than the one before it.">{tier.upTo >= 1000 ? 'any' : tier.upTo}</span>
                 : (
-                  <input
-                    type="number" inputMode="numeric" value={tier.upTo} aria-label={`${what} band ends at`}
-                    onChange={(event) => set(index, { ...tier, upTo: Math.max(1, Number(event.target.value) || 1) })}
+                  <BandEnd
+                    value={tier.upTo}
+                    // Held between the band above and the band below, so no edit can make two bands
+                    // overlap or swap places.
+                    min={(sorted[index - 1]?.upTo ?? 0) + 1}
+                    max={(sorted[index + 1]?.upTo ?? 1000) - 1}
+                    label={`${what} band ends at`}
+                    onCommit={(upTo) => set(index, { ...tier, upTo })}
                   />
                 )}
               {' '}players
