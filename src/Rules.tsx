@@ -228,10 +228,10 @@ export function Rules() {
       <Section title="Commissioner Assistance">
         <p>If the commissioner opens your team to help resolve a problem:</p>
         <ul>
-          <li>A reason must be provided.</li>
-          <li>The access is recorded on the Board.</li>
-          <li>A notice appears on your Home screen.</li>
-          <li>The access record cannot be edited or deleted.</li>
+          <li><strong>The commissioner must give a reason</strong> before your team can be opened.</li>
+          <li><strong>Every player in the league is told:</strong> the reason is posted on the Board for everyone to see.</li>
+          <li>A notice also appears on your Home screen.</li>
+          <li>The record cannot be edited or deleted, by the commissioner or anyone else.</li>
         </ul>
       </Section>
 
