@@ -134,6 +134,7 @@ export function Rules() {
         <ul>
           <li>Registration opens in <strong>December</strong>.</li>
           <li>Low Stakes and High Stakes are entered as <strong>separate teams</strong>. If you participate in both, manage each team separately.</li>
+          {contest?.cap ? <li>This game is capped at <strong>{contest.cap} players</strong>. Once it is full, anyone else who signs up goes on a <strong>waitlist</strong> and gets in if a spot opens.</li> : null}
         </ul>
       </Section>
 
@@ -236,7 +237,7 @@ export function Rules() {
 
       {/* "Right now" only for a real game with payouts of its own. On the rehearsal, or a game
           still showing the starting table, it would put a real head count beside sample money. */}
-      <RulesMoney plan={plan} draft={draft} rounds={rounds} paid={contest?.prizes?.plan && !isRehearsal(CONTEST) ? paid : null} />
+      <RulesMoney plan={plan} draft={draft} rounds={rounds} paid={contest?.prizes?.plan && !isRehearsal(CONTEST) ? paid : null} cap={contest?.cap ?? null} />
 
       <Section title="Fantasy Scoring">
         <ul>
@@ -319,13 +320,13 @@ export function Rules() {
  * worked example, and how ties are paid. Every figure is breakdown() or split(), the same arithmetic
  * that pays it, so the page cannot promise a dollar the game would not pay.
  */
-export function RulesMoney({ plan, draft, rounds, paid }: { plan: Plan; draft: boolean; rounds: number; paid: number | null }) {
+export function RulesMoney({ plan, draft, rounds, paid, cap = null }: { plan: Plan; draft: boolean; rounds: number; paid: number | null; cap?: number | null }) {
   const weekly = [...plan.weeklyTiers].sort((a, b) => a.upTo - b.upTo);
   const places = [...plan.tiers].sort((a, b) => a.upTo - b.upTo);
   const spotsWide = Math.max(1, ...weekly.map((tier) => tier.shares.length));
   // Ray: "in the rules, have a slider bar so that people can see the sample payouts". It opens on ten
   // paid entries, as his written example does, and anybody can drag it to any size of field.
-  const [exampleField, setExampleField] = useState(10);
+  const [exampleField, setExampleField] = useState(Math.min(10, cap ?? 10));
   const example = breakdown(exampleField, plan, rounds);
   const now = paid && paid > 0 ? breakdown(paid, plan, rounds) : null;
   // The tie example: the first band that pays two weekly spots, and two tied for the top of it.
@@ -399,7 +400,7 @@ export function RulesMoney({ plan, draft, rounds, paid }: { plan: Plan; draft: b
         <label className="ruleslider">
           <span>Slide to see what any number of paid entries pays</span>
           <input
-            type="range" min={2} max={120} value={exampleField} aria-label="Paid entries"
+            type="range" min={2} max={cap ?? 120} value={exampleField} aria-label="Paid entries"
             onChange={(event) => setExampleField(Number(event.target.value))}
           />
           <span className="ruleslidervalue">{exampleField} paid</span>

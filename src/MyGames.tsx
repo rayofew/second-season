@@ -6,7 +6,7 @@ import { auth, db } from './firebase.ts';
 import { isUsPhone, typingPhone } from './domain/phone.ts';
 import { shortName, splitName } from './domain/name.ts';
 import { explain } from './domain/trouble.ts';
-import { joinGame, leaveGame, readProfile, readStanding, saveProfile } from './store/firestore.ts';
+import { joinGame, leaveGame, readContest, readProfile, readStanding, readTeamLabels, saveProfile } from './store/firestore.ts';
 import type { Game, Profile } from './store/firestore.ts';
 import { REHEARSAL } from './game.tsx';
 import { shrink } from './Register.tsx';
@@ -39,6 +39,9 @@ export function MyGames({ user, open, onDone, onCancel }: {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [standing, setStanding] = useState<Record<string, Standing>>({});
   const [chosen, setChosen] = useState<Record<string, boolean>>({});
+  // Games at their player cap. Ray: when full, a sign-up still goes in, on the waitlist. Counted from
+  // everyone already let in, paid or not.
+  const [full, setFull] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -66,6 +69,13 @@ export function MyGames({ user, open, onDone, onCancel }: {
       }
       const states = Object.fromEntries(await Promise.all(open.map(async (game) => [game.id, await readStanding(game.id, user.uid)] as const)));
       setStanding(states);
+      const caps = await Promise.all(open.map(async (game) => {
+        const contest = await readContest(game.id).catch(() => null);
+        if (!contest?.cap) return null;
+        const admitted = (await readTeamLabels(game.id).catch(() => [])).length;
+        return admitted >= contest.cap ? [game.id, contest.cap] as const : null;
+      }));
+      setFull(Object.fromEntries(caps.filter((entry) => entry !== null)));
       setChosen(Object.fromEntries(open.map((game) => [game.id, states[game.id] !== 'out'])));
       setProfile({ ...start, email: start.email || user.email || '' });
     })().catch((cause) => setProblem(explain(cause)));
@@ -120,7 +130,9 @@ export function MyGames({ user, open, onDone, onCancel }: {
               <span>
                 <strong>{game.name}</strong>
                 <span className="rowmeta">
-                  {now === 'in' ? 'You are in.' : now === 'waiting' ? 'Waiting for the commissioner to let you in.' : 'Not joined yet.'}
+                  {now === 'in' ? 'You are in.'
+                    : full[game.id] ? `Full at ${full[game.id]} players. ${now === 'waiting' ? 'You are on the waitlist.' : 'Join to go on the waitlist.'}`
+                    : now === 'waiting' ? 'Waiting for the commissioner to let you in.' : 'Not joined yet.'}
                 </span>
               </span>
             </label>

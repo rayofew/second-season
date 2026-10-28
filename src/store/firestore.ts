@@ -54,6 +54,11 @@ export interface Contest {
    * means the app falls back to its own estimate of Wild Card weekend.
    */
   nextKickoff?: Date;
+  /**
+   * The most teams this game takes, or none for no limit. Ray: "we also need to put a cap on the
+   * amount of players". Counts everybody let in, paid or not; past it, sign-ups join a waitlist.
+   */
+  cap?: number | null;
 }
 
 export interface RoundTeams {
@@ -210,6 +215,11 @@ export async function buildLineups(contestId: string, uids: string[], round: num
     JSON.stringify(Object.keys(value).sort().map((key) => [key, value[key]]));
   if (had.exists() && sorted(had.data().rosters ?? {}) === sorted(rosters)) return;
   await setDoc(ref, { round, rosters, builtAt: serverTimestamp() });
+}
+
+/** The commissioner setting how many teams a game takes; null takes the limit off. */
+export async function setCap(contestId: string, cap: number | null): Promise<void> {
+  await updateDoc(doc(db, 'contests', contestId), { cap: cap && cap > 0 ? Math.floor(cap) : deleteField() });
 }
 
 /** The commissioner setting when the next contest starts, which the countdown on Home runs to. */

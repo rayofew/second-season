@@ -162,3 +162,28 @@ export const parseShares = (text: string): number[] =>
 
 /** The whole weekly purse as a share of the pot, so the calculator can flag a field where it eats the places. */
 export const weeklyShareOfPot = (paid: Breakdown): number => (paid.pot > 0 ? paid.weeklyTotal / paid.pot : 0);
+
+/**
+ * The plan cut down to a player cap: the bands nobody can reach are dropped, and the last one left
+ * covers everything up to the cap.
+ *
+ * Ray: "this way the table can make an auto adjustment suggestion based on that". A game capped at
+ * 30 has no use for bands that start at 50 or 75, and leaving them in makes the table, the ladder
+ * and the Rules page describe payouts that can never happen. Offered as a suggestion the
+ * commissioner accepts, not applied behind his back, so it never overwrites his own edits.
+ */
+export function fitToCap(plan: Plan, cap: number): Plan {
+  const trim = (tiers: readonly Tier[]): Tier[] => {
+    const sorted = [...tiers].sort((a, b) => a.upTo - b.upTo);
+    const kept = sorted.filter((tier) => tierFrom(sorted, tier) <= cap);
+    if (kept.length === 0) return sorted.slice(0, 1).map((tier) => ({ ...tier, upTo: cap }));
+    return kept.map((tier, index) => (index === kept.length - 1 ? { ...tier, upTo: cap } : { ...tier, upTo: Math.min(tier.upTo, cap) }));
+  };
+  return { ...plan, tiers: trim(plan.tiers), weeklyTiers: trim(plan.weeklyTiers) };
+}
+
+/** Field sizes worth showing in a ladder: the usual ones up to the cap, and the cap itself. */
+export function sampleSizes(cap: number | null | undefined, usual: readonly number[] = [5, 10, 15, 20, 30, 50, 75, 100]): number[] {
+  if (!cap) return [...usual];
+  return [...new Set([...usual.filter((size) => size < cap), cap])];
+}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { DEFAULT_PLAN, breakdown, parseShares, problems, sharesText, tierFrom, weeklyShareOfPot } from './domain/payouts.ts';
+import { DEFAULT_PLAN, breakdown, fitToCap, parseShares, problems, sampleSizes, sharesText, tierFrom, weeklyShareOfPot } from './domain/payouts.ts';
 import type { Plan, Tier } from './domain/payouts.ts';
-import { readPayoutTemplate, savePayoutTemplate, setPrizes } from './store/firestore.ts';
+import { readPayoutTemplate, savePayoutTemplate, setCap, setPrizes } from './store/firestore.ts';
 import type { Contest } from './store/firestore.ts';
 import { explain } from './domain/trouble.ts';
 import { useGame } from './game.tsx';
@@ -21,7 +21,6 @@ import { useGame } from './game.tsx';
 
 const money = (amount: number) => `$${Math.round(amount).toLocaleString()}`;
 const ORDINAL = (place: number) => (place === 1 ? '1st' : place === 2 ? '2nd' : place === 3 ? '3rd' : `${place}th`);
-const SAMPLES = [5, 10, 15, 20, 30, 50, 75, 100];
 
 /**
  * Where a band ends, typed freely and taken only when the typing is done.
@@ -167,7 +166,10 @@ export function Calculator({ contest, paid, onDone, owner = false }: {
     writeDraft(CONTEST, JSON.stringify(plan) === JSON.stringify(baseline) ? null : plan);
   }, [plan, baseline, CONTEST]);
   const unsaved = JSON.stringify(plan) !== JSON.stringify(baseline);
-  const [field, setField] = useState(Math.max(5, paid || 15));
+  // The most this game lets in; past it, sign-ups wait. Saved on its own, apart from the table.
+  const [cap, setCapHere] = useState<number | null>(contest.cap ?? null);
+  const [capText, setCapText] = useState(contest.cap ? String(contest.cap) : '');
+  const [field, setField] = useState(Math.min(Math.max(5, paid || 15), contest.cap ?? 120));
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const rounds = contest.rounds.length || 4;
@@ -182,6 +184,25 @@ export function Calculator({ contest, paid, onDone, owner = false }: {
   const wrong = problems(plan);
   const preview = breakdown(field, plan, rounds);
   const changed = JSON.stringify(plan) !== JSON.stringify(saved);
+  // Ray: "the table can make an auto adjustment suggestion". Only a suggestion: he presses for it.
+  const fitted = cap ? fitToCap(plan, cap) : null;
+  const canFit = Boolean(fitted && JSON.stringify(fitted) !== JSON.stringify(plan));
+
+  async function saveCap() {
+    const typed = Math.floor(Number(capText));
+    const next = capText.trim() && Number.isFinite(typed) && typed >= 2 ? typed : null;
+    setCapText(next ? String(next) : '');
+    if (next === cap) return;
+    setProblem(null);
+    try {
+      await setCap(CONTEST, next);
+      setCapHere(next);
+      if (next && field > next) setField(next);
+      setSaid(next ? `Capped at ${next} players. Anyone past that goes on the waitlist.` : 'No cap: everyone who signs up can be let in.');
+    } catch (cause) {
+      setProblem(explain(cause));
+    }
+  }
 
   async function save(lockIn: boolean) {
     setBusy(true);
@@ -245,7 +266,24 @@ export function Calculator({ contest, paid, onDone, owner = false }: {
             onChange={(event) => setPlan({ ...plan, buyIn: Math.max(0, Number(event.target.value) || 0) })}
           />
         </label>
+        <label className="inline" title="Leave blank for no cap">
+          Player cap
+          <input
+            type="number" inputMode="numeric" style={{ width: 80 }} disabled={locked} placeholder="none"
+            value={capText}
+            onChange={(event) => setCapText(event.target.value)}
+            onBlur={() => void saveCap()}
+            onKeyDown={(event) => { if (event.key === 'Enter') (event.target as HTMLInputElement).blur(); }}
+          />
+        </label>
       </div>
+      {canFit && fitted && !frozen && (
+        <div className="pending">
+          With a cap of {cap}, some of these bands can never be reached.{' '}
+          <button className="ghost small" onClick={() => setPlan(fitted)}>Use the suggestion for a cap of {cap}</button>
+          <div className="calchint">It drops the bands past {cap} and stretches the last one to end at {cap}. Every size up to {cap} pays the same as now. Nothing is saved until you save the table.</div>
+        </div>
+      )}
 
       <h3 className="calchead">Places, by how many have paid</h3>
       <p className="calchint">Type the split as percentages, first place first, like 45/27/18/10.</p>
@@ -267,7 +305,7 @@ export function Calculator({ contest, paid, onDone, owner = false }: {
         {paid > 0 && field !== paid && <button className="ghost small" onClick={() => setField(paid)}>Back to the real {paid}</button>}
       </h3>
       <input
-        className="calcslider" type="range" min={2} max={120} value={field} aria-label="Field size"
+        className="calcslider" type="range" min={2} max={cap ?? 120} value={field} aria-label="Field size"
         onChange={(event) => setField(Number(event.target.value))}
       />
       <div className="ruleline"><span>The pot · {field} × {money(plan.buyIn)}</span><span className="rulevalue">{money(preview.pot)}</span></div>
@@ -286,7 +324,7 @@ export function Calculator({ contest, paid, onDone, owner = false }: {
       <h3 className="calchead">Across field sizes</h3>
       <div className="ladder">
         <div className="ladderrow ladderhead"><span>Paid</span><span>Pot</span><span>Places</span><span>1st</span><span>2nd</span><span>3rd</span><span>Last paid</span><span>Weekly</span></div>
-        {SAMPLES.map((size) => {
+        {sampleSizes(cap).map((size) => {
           const row = breakdown(size, plan, rounds);
           const last = row.places[row.places.length - 1] ?? 0;
           return (

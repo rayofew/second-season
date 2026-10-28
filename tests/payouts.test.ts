@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { DEFAULT_PLAN, breakdown, parseShares, problems, split, tierFor } from '../src/domain/payouts.ts';
+import { DEFAULT_PLAN, breakdown, fitToCap, parseShares, problems, sampleSizes, split, tierFor } from '../src/domain/payouts.ts';
 import { weeklyPaid } from '../src/domain/weekly.ts';
 import { isUsPhone } from '../src/domain/phone.ts';
 
@@ -136,5 +136,32 @@ describe('the weekly prize in dollars', () => {
   it('still reads an old plan written as a percentage', () => {
     const old = { ...DEFAULT_PLAN, weeklyPercent: 8, weeklyTiers: [{ upTo: 1000, shares: [100] }] };
     assert.deepEqual(breakdown(100, old, 4).weeklySpots, [100]);
+  });
+});
+
+/** Ray: "we also need to put a cap on the amount of players ... the table can make an auto adjustment suggestion". */
+describe('fitting the table to a player cap', () => {
+
+  it('drops the bands nobody can reach and stretches the last one to the cap', () => {
+    const fitted = fitToCap(DEFAULT_PLAN, 30);
+    assert.deepEqual(fitted.tiers.map((tier) => tier.upTo), [7, 11, 19, 29, 30]);
+    assert.deepEqual(fitted.weeklyTiers.map((tier) => tier.upTo), [19, 30]);
+  });
+
+  it('pays exactly the same at every size up to the cap', () => {
+    const fitted = fitToCap(DEFAULT_PLAN, 30);
+    for (let field = 2; field <= 30; field += 1) {
+      assert.deepEqual(breakdown(field, fitted, 4), breakdown(field, DEFAULT_PLAN, 4), `field of ${field}`);
+    }
+  });
+
+  it('leaves a plan with nothing out of reach alone', () => {
+    assert.deepEqual(fitToCap(DEFAULT_PLAN, 1000).tiers.length, DEFAULT_PLAN.tiers.length);
+  });
+
+  it('shows ladder sizes up to the cap, and the cap itself', () => {
+    assert.deepEqual(sampleSizes(30), [5, 10, 15, 20, 30]);
+    assert.deepEqual(sampleSizes(24), [5, 10, 15, 20, 24]);
+    assert.deepEqual(sampleSizes(null), [5, 10, 15, 20, 30, 50, 75, 100]);
   });
 });

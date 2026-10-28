@@ -233,7 +233,11 @@ export function Commissioner({ uid }: { uid: string }) {
 
       {showing === 'players' && <>
       <div className="card">
-        <div className="confhead">Waiting to be let in ({applications.length})</div>
+        {/* Ray: a cap, and past it a waitlist. Everyone let in counts toward it, paid or not. */}
+        <div className="confhead">
+          {contest?.cap && managers.length >= contest.cap ? `Waitlist (${applications.length})` : `Waiting to be let in (${applications.length})`}
+          {contest?.cap ? <span className="colhead">{managers.length} of {contest.cap} let in{managers.length >= contest.cap ? ' · full' : ''}</span> : null}
+        </div>
         {applications.length === 0 ? (
           <div className="pending">Nobody is waiting.</div>
         ) : (
@@ -254,7 +258,11 @@ export function Commissioner({ uid }: { uid: string }) {
                 <button
                   className="submit small"
                   disabled={busy === application.uid}
-                  onClick={() => void act(application.uid, () => admitManager(CONTEST, application))}
+                  onClick={() => {
+                    if (contest?.cap && managers.length >= contest.cap
+                      && !window.confirm(`This game is full at ${contest.cap}. Let ${application.teamName} in anyway, making ${managers.length + 1}?`)) return;
+                    void act(application.uid, () => admitManager(CONTEST, application));
+                  }}
                 >
                   {busy === application.uid ? '…' : 'Let in'}
                 </button>
