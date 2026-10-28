@@ -464,14 +464,26 @@ export function RulesMoney({ plan, draft, rounds, paid, cap = null }: { plan: Pl
       </Section>
 
       <Section title={`Example: ${exampleField} Paid Entries`}>
-        <label className="ruleslider">
-          <span>Slide to see what any number of paid entries pays</span>
+        {/* Ray: "make the slider bar more prominent, its a cool feature". A panel of its own, a thick
+            gold track filled up to the value, and the three figures people actually want to know
+            changing as it moves. */}
+        <div className="payslider">
+          <div className="payslider-top">
+            <span className="payslider-ask">Drag to see the payouts for any number of paid entries</span>
+            <span className="payslider-count"><b>{exampleField}</b> paid</span>
+          </div>
           <input
-            type="range" min={2} max={cap ?? 120} value={exampleField} aria-label="Paid entries"
+            className="payslider-range" type="range" min={2} max={cap ?? 120} value={exampleField} aria-label="Paid entries"
+            style={{ ['--fill' as string]: `${((exampleField - 2) / Math.max(1, (cap ?? 120) - 2)) * 100}%` }}
             onChange={(event) => setExampleField(Number(event.target.value))}
           />
-          <span className="ruleslidervalue">{exampleField} paid</span>
-        </label>
+          <div className="payslider-ends"><span>2</span><span>{cap ? `${cap} (full)` : 120}</span></div>
+          <div className="payslider-figures">
+            <span><small>Prize pool</small><b>{dollars(example.pot)}</b></span>
+            <span><small>1st place</small><b>{dollars(example.places[0] ?? 0)}</b></span>
+            <span><small>Best week, each round</small><b>{dollars(example.weeklySpots[0] ?? 0)}</b></span>
+          </div>
+        </div>
         <PayoutBar paid={example} rounds={rounds} />
         <Grid
           head={['Prize pool calculation', 'Amount']}

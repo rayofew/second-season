@@ -2233,3 +2233,21 @@ td { font-variant-numeric: tabular-nums; }
   .stairs-steps { gap: 6px; }
   .ruleicon { width: 32px; height: 32px; }
 }
+
+/* The payout slider on Rules. Ray: "make the slider bar more prominent its a cool feature". */
+.payslider { margin: 6px 0 14px; padding: 14px 16px 12px; border: 2px solid var(--gold); border-radius: var(--radius); background: var(--raised); }
+.payslider-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.payslider-ask { font-weight: 700; font-size: 14px; }
+.payslider-count { font-size: 14px; color: var(--dim); white-space: nowrap; }
+.payslider-count b { font-size: 30px; color: var(--gold); font-variant-numeric: tabular-nums; margin-right: 4px; }
+.payslider-range { -webkit-appearance: none; appearance: none; width: 100%; height: 14px; margin: 12px 0 4px; border-radius: 999px; cursor: pointer;
+  background: linear-gradient(to right, var(--gold) 0 var(--fill, 0%), var(--sunk) var(--fill, 0%) 100%); border: 1px solid var(--line-strong); }
+.payslider-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 30px; height: 30px; border-radius: 50%; background: var(--gold); border: 4px solid var(--panel); box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35); }
+.payslider-range::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: var(--gold); border: 4px solid var(--panel); box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35); }
+.payslider-range:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+.payslider-ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--faint); }
+.payslider-figures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.payslider-figures span { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border-radius: 10px; background: var(--panel); text-align: center; }
+.payslider-figures small { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.payslider-figures b { font-size: 20px; font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) { .payslider-figures b { font-size: 16px; } .payslider-count b { font-size: 26px; } }
