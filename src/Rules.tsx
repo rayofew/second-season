@@ -6,7 +6,7 @@ import { DEFAULT_PLAN, breakdown, split, tierFrom } from './domain/payouts.ts';
 import type { Plan, Tier } from './domain/payouts.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import type { Scoring, Slot } from './domain/rules.ts';
-import { useGame } from './game.tsx';
+import { useGame, useGamePicker } from './game.tsx';
 import { HeadingIcon, PayoutBar, Staircase, Timeline } from './RulesArt.tsx';
 
 /**
@@ -237,7 +237,9 @@ export function Rules() {
 
       {/* "Right now" only for a real game with payouts of its own. On the rehearsal, or a game
           still showing the starting table, it would put a real head count beside sample money. */}
-      <RulesMoney plan={plan} draft={draft} rounds={rounds} paid={contest?.prizes?.plan && !isRehearsal(CONTEST) ? paid : null} cap={contest?.cap ?? null} />
+      <StakesMoney current={CONTEST}>
+        <RulesMoney plan={plan} draft={draft} rounds={rounds} paid={contest?.prizes?.plan && !isRehearsal(CONTEST) ? paid : null} cap={contest?.cap ?? null} />
+      </StakesMoney>
 
       <Section title="Fantasy Scoring">
         <ul>
@@ -311,6 +313,71 @@ export function Rules() {
           </ul>
         )}
       </Section>
+    </>
+  );
+}
+
+/**
+ * The money for every real game, with a switch between them.
+ *
+ * Ray: "update the rules so it has low stakes and high stakes slider bar". Each game has its own
+ * table, buy-in and cap, so the money sections — and the example slider in them — are drawn from
+ * whichever stakes is picked, opening on the game being looked at. Cheapest first, so with two games
+ * the switch reads Low Stakes, High Stakes. Only games this person can see are offered (switched-off
+ * games are the owner's alone); with none, the page shows the current game's money as before.
+ */
+interface Stakes { id: string; name: string; contest: Contest | null; paid: number | null }
+
+function StakesMoney({ current, children }: { current: string; children: ReactNode }) {
+  const picker = useGamePicker();
+  const real = (picker?.games ?? []).filter((game) => !isRehearsal(game.id));
+  const [stakes, setStakes] = useState<Stakes[] | null>(null);
+  const [chosen, setChosen] = useState<string | null>(null);
+  const ids = real.map((game) => game.id).join(',');
+
+  useEffect(() => {
+    if (real.length === 0) { setStakes([]); return; }
+    let live = true;
+    void Promise.all(real.map(async (game) => ({
+      id: game.id,
+      name: game.name,
+      contest: await readContest(game.id).catch(() => null),
+      paid: await readPaidCount(game.id).catch(() => null),
+    }))).then((found) => {
+      if (!live) return;
+      const buyIn = (each: Stakes) => each.contest?.prizes?.plan?.buyIn ?? Infinity;
+      setStakes([...found].sort((a, b) => buyIn(a) - buyIn(b)));
+    });
+    return () => { live = false; };
+  }, [ids]);
+
+  if (!stakes || stakes.length === 0) return <>{children}</>;
+  const label = (index: number) => (stakes.length === 2 ? (index === 0 ? 'Low Stakes' : 'High Stakes') : stakes[index]!.name);
+  const showing = stakes.find((each) => each.id === (chosen ?? current)) ?? stakes[0]!;
+  const contest = showing.contest;
+  const plan = contest?.prizes?.plan ?? null;
+  const rounds = (contest?.rounds?.length ?? 0) || 4;
+
+  return (
+    <>
+      <nav className="subnav stakes" aria-label="Which game's money">
+        {stakes.map((each, index) => (
+          <button key={each.id} aria-current={each.id === showing.id} onClick={() => setChosen(each.id)}>
+            {label(index)}
+            {each.contest?.prizes?.plan && <span className="stakesfee">{dollars(each.contest.prizes.plan.buyIn)}</span>}
+          </button>
+        ))}
+      </nav>
+      {plan
+        ? <RulesMoney key={showing.id} plan={plan} draft={!contest?.prizes?.lockedAt} rounds={rounds} paid={showing.paid} cap={contest?.cap ?? null} />
+        : (
+          <Section title="Entry Fees and Prize Pool">
+            <p className="rulenote">
+              <strong>{showing.name}:</strong> the payouts haven't been set yet.
+              {contest?.cap ? ` It is capped at ${contest.cap} players.` : ''}
+            </p>
+          </Section>
+        )}
     </>
   );
 }

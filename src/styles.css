@@ -2108,6 +2108,10 @@ td { font-variant-numeric: tabular-nums; }
 .subnav { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 var(--gap); }
 .subnav button { min-height: 36px; padding: 6px 14px; font-size: 13px; }
 .subnav button[aria-current='true'] { background: var(--raised); border-color: var(--line-strong); font-weight: 700; }
+/* The Low Stakes / High Stakes switch on Rules: bigger than a sub-tab, since it changes every dollar under it. */
+.subnav.stakes { margin-top: var(--gap); }
+.subnav.stakes button { min-height: 44px; padding: 8px 18px; font-size: 15px; display: inline-flex; gap: 8px; align-items: center; }
+.stakesfee { font-size: 12px; font-weight: 600; color: var(--dim); font-variant-numeric: tabular-nums; }
 .subnote { margin-bottom: var(--gap); }
 .gamerow { align-items: center; }
 .gametick input { width: 20px; height: 20px; }
