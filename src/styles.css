@@ -2251,3 +2251,4 @@ td { font-variant-numeric: tabular-nums; }
 .payslider-figures small { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.04em; }
 .payslider-figures b { font-size: 20px; font-variant-numeric: tabular-nums; }
 @media (max-width: 480px) { .payslider-figures b { font-size: 16px; } .payslider-count b { font-size: 26px; } }
+.stakespick { margin: 0 0 var(--gap); padding: 14px 16px; border: 2px dashed var(--gold); border-radius: var(--radius); text-align: center; color: var(--dim); }

@@ -237,7 +237,7 @@ export function Rules() {
 
       {/* "Right now" only for a real game with payouts of its own. On the rehearsal, or a game
           still showing the starting table, it would put a real head count beside sample money. */}
-      <StakesMoney current={CONTEST}>
+      <StakesMoney>
         <RulesMoney plan={plan} draft={draft} rounds={rounds} paid={contest?.prizes?.plan && !isRehearsal(CONTEST) ? paid : null} cap={contest?.cap ?? null} />
       </StakesMoney>
 
@@ -322,13 +322,14 @@ export function Rules() {
  *
  * Ray: "update the rules so it has low stakes and high stakes slider bar". Each game has its own
  * table, buy-in and cap, so the money sections — and the example slider in them — are drawn from
- * whichever stakes is picked, opening on the game being looked at. Cheapest first, so with two games
+ * whichever stakes is picked. Nothing is picked to begin with — Ray: "make so you have to hit low stakes
+ * or high stakes to see the rules/slider" — so nobody reads one game's money as the other's. Cheapest first, so with two games
  * the switch reads Low Stakes, High Stakes. Only games this person can see are offered (switched-off
  * games are the owner's alone); with none, the page shows the current game's money as before.
  */
 interface Stakes { id: string; name: string; contest: Contest | null; paid: number | null }
 
-function StakesMoney({ current, children }: { current: string; children: ReactNode }) {
+function StakesMoney({ children }: { children: ReactNode }) {
   const picker = useGamePicker();
   const real = (picker?.games ?? []).filter((game) => !isRehearsal(game.id));
   const [stakes, setStakes] = useState<Stakes[] | null>(null);
@@ -353,8 +354,8 @@ function StakesMoney({ current, children }: { current: string; children: ReactNo
 
   if (!stakes || stakes.length === 0) return <>{children}</>;
   const label = (index: number) => (stakes.length === 2 ? (index === 0 ? 'Low Stakes' : 'High Stakes') : stakes[index]!.name);
-  const showing = stakes.find((each) => each.id === (chosen ?? current)) ?? stakes[0]!;
-  const contest = showing.contest;
+  const showing = stakes.find((each) => each.id === chosen) ?? null;
+  const contest = showing?.contest ?? null;
   const plan = contest?.prizes?.plan ?? null;
   const rounds = (contest?.rounds?.length ?? 0) || 4;
 
@@ -362,13 +363,15 @@ function StakesMoney({ current, children }: { current: string; children: ReactNo
     <>
       <nav className="subnav stakes" aria-label="Which game's money">
         {stakes.map((each, index) => (
-          <button key={each.id} aria-current={each.id === showing.id} onClick={() => setChosen(each.id)}>
+          <button key={each.id} aria-current={each.id === showing?.id} onClick={() => setChosen(each.id === chosen ? null : each.id)}>
             {label(index)}
             {each.contest?.prizes?.plan && <span className="stakesfee">{dollars(each.contest.prizes.plan.buyIn)}</span>}
           </button>
         ))}
       </nav>
-      {plan
+      {!showing
+        ? <p className="stakespick">Pick <strong>{stakes.length === 2 ? 'Low Stakes or High Stakes' : 'a game'}</strong> to see its entry fee, prizes and payout slider.</p>
+        : plan
         ? <RulesMoney key={showing.id} plan={plan} draft={!contest?.prizes?.lockedAt} rounds={rounds} paid={showing.paid} cap={contest?.cap ?? null} />
         : (
           <Section title="Entry Fees and Prize Pool">
