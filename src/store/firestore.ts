@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, deleteField, doc, getDoc, getDocs, increment, limit, orderBy, query, setDoc, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, deleteField, doc, getDoc, getDocs, increment, limit, onSnapshot, orderBy, query, setDoc, serverTimestamp, updateDoc, where, writeBatch } from 'firebase/firestore';
 import type { HeldPlayer } from '../domain/multiplier.ts';
 import type { StatLine } from '../domain/scoring.ts';
 import type { ContestSettings } from '../domain/rules.ts';
@@ -872,6 +872,21 @@ export async function readGames(): Promise<Game[]> {
   const snapshot = await getDoc(doc(db, 'site', 'games')).catch(() => null);
   const games = (snapshot?.data()?.games ?? []) as Game[];
   return games.length > 0 ? games : FALLBACK_GAMES;
+}
+
+/**
+ * The list of games, kept up to date as it changes.
+ *
+ * Ray: "when i create or make changes to a game, it doesnt update until i do a hard reset". The
+ * header read the list once, when the page opened, so a game added or switched on in Commish → Games
+ * stayed missing from the picker until a reload. One small document, so listening costs a read only
+ * when it actually changes. Returns the function that stops listening.
+ */
+export function watchGames(onGames: (games: Game[]) => void): () => void {
+  return onSnapshot(doc(db, 'site', 'games'), (snapshot) => {
+    const games = (snapshot.data()?.games ?? []) as Game[];
+    onGames(games.length > 0 ? games : FALLBACK_GAMES);
+  }, () => { void readGames().then(onGames); });
 }
 
 export async function saveGames(games: readonly Game[]): Promise<void> {

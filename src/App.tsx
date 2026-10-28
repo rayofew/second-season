@@ -11,7 +11,7 @@ import { Version } from './Version.tsx';
 import { Home } from './Home.tsx';
 import { Theme } from './Theme.tsx';
 import { SignIn, SignOut, useUser } from './Auth.tsx';
-import { FALLBACK_GAMES, buildLineups, noteVisit, readContest, readEntries, readGames, readLeague, readMine, readPosts, readTeamLabels, rememberEmail, syncTeamLabels } from './store/firestore.ts';
+import { FALLBACK_GAMES, buildLineups, noteVisit, readContest, readEntries, readLeague, readMine, readPosts, readTeamLabels, rememberEmail, syncTeamLabels, watchGames } from './store/firestore.ts';
 import type { Game } from './store/firestore.ts';
 import { GamePickerProvider, GameProvider, OWNER_UID, REHEARSAL, rememberGame, rememberedGame, useGame } from './game.tsx';
 import { MyGames, needsMyGames } from './MyGames.tsx';
@@ -76,7 +76,7 @@ export function App() {
   const [recheck, setRecheck] = useState(0);
   const visible = games.filter((each) => each.enabled || user?.uid === OWNER_UID);
 
-  useEffect(() => { void readGames().then(setGames); }, []);
+  useEffect(() => watchGames(setGames), []);
   // A remembered game that has since been switched off or removed falls back to the first one shown.
   useEffect(() => {
     if (visible.length > 0 && !visible.some((each) => each.id === game)) setGame(visible[0]!.id);
