@@ -889,6 +889,14 @@ export function watchGames(onGames: (games: Game[]) => void): () => void {
   }, () => { void readGames().then(onGames); });
 }
 
+/**
+ * Puts a game's name on its contest too, so the header, the Commish bar and the final results agree
+ * with the list. Ray renamed "$200 Buy-In" to "$250 Buy-In" and only the list heard about it.
+ */
+export async function renameContest(contestId: string, name: string): Promise<void> {
+  await updateDoc(doc(db, 'contests', contestId), { name });
+}
+
 export async function saveGames(games: readonly Game[]): Promise<void> {
   await setDoc(doc(db, 'site', 'games'), { games: games.map(({ id, name, enabled }) => ({ id, name, enabled })) });
 }

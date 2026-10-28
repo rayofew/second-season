@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createGame, gameIdFor, readGames, saveGames } from './store/firestore.ts';
+import { createGame, gameIdFor, readContest, readGames, renameContest, saveGames } from './store/firestore.ts';
 import type { Game } from './store/firestore.ts';
 import { EASTSIDE } from './domain/rules.ts';
 import { explain } from './domain/trouble.ts';
@@ -22,7 +22,16 @@ export function GamesPanel({ uid, onChange }: { uid: string; onChange: () => voi
   const [problem, setProblem] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
 
-  useEffect(() => { void readGames().then(setGames); }, []);
+  useEffect(() => {
+    void readGames().then(async (found) => {
+      setGames(found);
+      // A game renamed before its contest took the name too gets it now: the list is the name he chose.
+      for (const game of found) {
+        const contest = await readContest(game.id).catch(() => null);
+        if (contest && contest.name !== game.name && !game.id.startsWith('rehearsal')) await renameContest(game.id, game.name).catch(() => undefined);
+      }
+    });
+  }, []);
 
   async function save(next: Game[]) {
     setBusy(true);
@@ -83,7 +92,10 @@ export function GamesPanel({ uid, onChange }: { uid: string; onChange: () => voi
               className="gamename" defaultValue={game.name} key={game.name} disabled={busy} aria-label="Game name"
               onBlur={(event) => {
                 const next = event.target.value.trim();
-                if (next && next !== game.name) void save(games.map((each, at) => (at === index ? { ...each, name: next } : each)));
+                if (next && next !== game.name) {
+                  void save(games.map((each, at) => (at === index ? { ...each, name: next } : each)))
+                    .then(() => renameContest(game.id, next)).catch(() => undefined);
+                }
               }}
             />
             <span className="rowmeta">{game.id} · {game.enabled ? 'shown to players' : 'hidden'}</span>
